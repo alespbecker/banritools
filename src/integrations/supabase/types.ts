@@ -38,6 +38,36 @@ export type Database = {
         }
         Relationships: []
       }
+      badges: {
+        Row: {
+          condition_type: string
+          condition_value: number
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          condition_type: string
+          condition_value?: number
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          condition_type?: string
+          condition_value?: number
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           created_at: string
@@ -163,6 +193,51 @@ export type Database = {
           },
         ]
       }
+      points_log: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          id: string
+          points: number
+          reference_id: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          id?: string
+          points?: number
+          reference_id?: string | null
+          source: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          id?: string
+          points?: number
+          reference_id?: string | null
+          source?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_log_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "points_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           agency_id: string | null
@@ -191,6 +266,51 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ranking_monthly: {
+        Row: {
+          agency_id: string | null
+          id: string
+          month: string
+          points: number
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          id?: string
+          month: string
+          points?: number
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          id?: string
+          month?: string
+          points?: number
+          position?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ranking_monthly_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ranking_monthly_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -225,6 +345,71 @@ export type Database = {
         }
         Relationships: []
       }
+      user_badges: {
+        Row: {
+          badge_id: string
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_badges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_points: {
+        Row: {
+          level: number
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          level?: number
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          level?: number
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_points_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -248,6 +433,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_report_points: {
+        Args: { r: Database["public"]["Tables"]["daily_reports"]["Row"] }
+        Returns: number
+      }
+      check_badges: { Args: { _user_id: string }; Returns: undefined }
+      get_level: { Args: { pts: number }; Returns: number }
       get_user_agency_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -255,6 +446,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      update_monthly_ranking: {
+        Args: { _agency_id: string; _month: string; _user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
