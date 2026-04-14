@@ -31,14 +31,16 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "BanriTools — Produtividade Bancária" },
+      { title: "BanriTools" },
       { name: "description", content: "Ferramenta interna de produtividade e gestão de vendas para funcionários bancários" },
       { name: "author", content: "BanriTools" },
       { property: "og:title", content: "BanriTools" },
-      { property: "og:description", content: "Produtividade e gestão de vendas bancárias" },
+      { property: "og:description", content: "Ferramenta interna de produtividade e gestão de vendas para funcionários bancários" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "BanriTools" },
+      { name: "twitter:description", content: "Ferramenta interna de produtividade e gestão de vendas para funcionários bancários" },
     ],
     links: [
       {
