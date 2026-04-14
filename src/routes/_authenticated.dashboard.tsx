@@ -3,11 +3,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { Topbar } from "@/components/Topbar";
 import { StatCard } from "@/components/StatCard";
+import { GamificationWidgets } from "@/components/GamificationWidgets";
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Shield, TrendingUp, DollarSign, BarChart3, Calendar, Award,
-  CreditCard, AlertCircle, ChevronDown,
+  TrendingUp, DollarSign, BarChart3, Calendar,
+  CreditCard, Award,
 } from "lucide-react";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -15,7 +16,7 @@ import {
 import type { ChartConfig } from "@/components/ui/chart";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  LineChart, Line, ResponsiveContainer,
+  LineChart, Line,
 } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
