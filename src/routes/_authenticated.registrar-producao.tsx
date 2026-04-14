@@ -2,9 +2,19 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { Topbar } from "@/components/Topbar";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/registrar-producao")({
   head: () => ({
@@ -16,7 +26,21 @@ export const Route = createFileRoute("/_authenticated/registrar-producao")({
   component: RegistrarProducaoPage,
 });
 
-const defaultForm = {
+type FormData = {
+  report_date: string;
+  seguro_vida: number;
+  seguro_ap_smart: number;
+  capitalizacao: number;
+  credito_minuto_aumento: number;
+  consignado_volume: number;
+  credito_fidelidade_volume: number;
+  recuperacao_estagio_2: number;
+  recuperacao_estagio_3: number;
+  pj_conta_empresarial: number;
+  pj_maquina_vero: number;
+};
+
+const createDefaultForm = (): FormData => ({
   report_date: new Date().toISOString().split("T")[0],
   seguro_vida: 0,
   seguro_ap_smart: 0,
@@ -28,43 +52,167 @@ const defaultForm = {
   recuperacao_estagio_3: 0,
   pj_conta_empresarial: 0,
   pj_maquina_vero: 0,
-};
+});
+
+const currencyFields = new Set([
+  "consignado_volume",
+  "credito_fidelidade_volume",
+  "recuperacao_estagio_2",
+  "recuperacao_estagio_3",
+]);
+
+function formatBRL(value: number): string {
+  return value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function parseBRL(raw: string): number {
+  const cleaned = raw.replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".");
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : Math.max(0, num);
+}
 
 function RegistrarProducaoPage() {
   const { user, isAuthenticated, isLoading, signOut, profile, userRole } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState(defaultForm);
+  const [form, setForm] = useState<FormData>(createDefaultForm);
+  const [currencyDisplay, setCurrencyDisplay] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
+  const [duplicateId, setDuplicateId] = useState<string | null>(null);
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"save" | "saveAndNew">("save");
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) navigate({ to: "/login" });
-  }, [isLoading, isAuthenticated, navigate]);
+  const handleChange = useCallback((field: string, value: string) => {
+    if (field === "report_date") {
+      setForm((prev) => ({ ...prev, report_date: value }));
+      return;
+    }
+    if (currencyFields.has(field)) {
+      setCurrencyDisplay((prev) => ({ ...prev, [field]: value }));
+      setForm((prev) => ({ ...prev, [field]: parseBRL(value) }));
+    } else {
+      const num = Math.max(0, Math.floor(Number(value) || 0));
+      setForm((prev) => ({ ...prev, [field]: num }));
+    }
+  }, []);
 
-  const handleChange = (field: string, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: field === "report_date" ? value : Number(value) || 0 }));
+  const handleCurrencyBlur = useCallback((field: string) => {
+    const val = (form as any)[field] as number;
+    setCurrencyDisplay((prev) => ({ ...prev, [field]: formatBRL(val) }));
+  }, [form]);
+
+  const handleCurrencyFocus = useCallback((field: string) => {
+    const val = (form as any)[field] as number;
+    setCurrencyDisplay((prev) => ({ ...prev, [field]: val === 0 ? "" : String(val) }));
+  }, [form]);
+
+  const isFormEmpty = (): boolean => {
+    const numericKeys = Object.keys(form).filter((k) => k !== "report_date") as (keyof FormData)[];
+    return numericKeys.every((k) => form[k] === 0);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const saveReport = async (action: "save" | "saveAndNew") => {
+    if (!user) return;
+    if (isFormEmpty()) {
+      toast.warning("Nenhuma produção informada");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      // Check for duplicate
+      const { data: existing } = await supabase
+        .from("daily_reports")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("report_date", form.report_date)
+        .maybeSingle();
+
+      if (existing) {
+        setDuplicateId(existing.id);
+        setPendingAction(action);
+        setShowDuplicateDialog(true);
+        setSaving(false);
+        return;
+      }
+
+      await insertReport(action);
+    } catch (err) {
+      console.error("Erro ao salvar produção:", err);
+      toast.error("Erro ao salvar produção. Tente novamente.");
+      setSaving(false);
+    }
+  };
+
+  const insertReport = async (action: "save" | "saveAndNew") => {
     if (!user) return;
     setSaving(true);
-    setError("");
-    setSuccess(false);
+    try {
+      const { report_date, ...fields } = form;
+      const { error } = await supabase.from("daily_reports").insert({
+        user_id: user.id,
+        agency_id: profile?.agency_id ?? null,
+        report_date,
+        ...fields,
+      });
 
-    const { error: err } = await supabase.from("daily_reports").insert({
-      user_id: user.id,
-      agency_id: profile?.agency_id ?? null,
-      ...form,
-    });
+      if (error) throw error;
 
-    setSaving(false);
-    if (err) {
-      setError(err.message);
-    } else {
-      setSuccess(true);
-      setForm(defaultForm);
+      toast.success("Produção registrada com sucesso");
+      if (action === "save") {
+        navigate({ to: "/dashboard" });
+      } else {
+        setForm(createDefaultForm());
+        setCurrencyDisplay({});
+      }
+    } catch (err) {
+      console.error("Erro ao salvar produção:", err);
+      toast.error("Erro ao salvar produção. Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateReport = async () => {
+    if (!user || !duplicateId) return;
+    setSaving(true);
+    setShowDuplicateDialog(false);
+    try {
+      const { report_date, ...fields } = form;
+      const { error } = await supabase
+        .from("daily_reports")
+        .update({ ...fields })
+        .eq("id", duplicateId);
+
+      if (error) throw error;
+
+      toast.success("Produção atualizada com sucesso");
+      if (pendingAction === "save") {
+        navigate({ to: "/dashboard" });
+      } else {
+        setForm(createDefaultForm());
+        setCurrencyDisplay({});
+      }
+    } catch (err) {
+      console.error("Erro ao atualizar produção:", err);
+      toast.error("Erro ao salvar produção. Tente novamente.");
+    } finally {
+      setSaving(false);
+      setDuplicateId(null);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveReport("save");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const next = inputRefs.current[index + 1];
+      if (next) next.focus();
     }
   };
 
@@ -89,20 +237,22 @@ function RegistrarProducaoPage() {
       ],
     },
     {
-      title: "Recuperação",
+      title: "Recuperação de Inadimplência",
       fields: [
         { key: "recuperacao_estagio_2", label: "Recuperação Estágio 2 (R$)" },
         { key: "recuperacao_estagio_3", label: "Recuperação Estágio 3 (R$)" },
       ],
     },
     {
-      title: "PJ",
+      title: "Produtos PJ",
       fields: [
         { key: "pj_conta_empresarial", label: "PJ Conta Empresarial" },
         { key: "pj_maquina_vero", label: "PJ Máquina Vero" },
       ],
     },
   ];
+
+  let fieldIndex = 0;
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -130,38 +280,82 @@ function RegistrarProducaoPage() {
               <div key={group.title} className="rounded-lg border border-border bg-card p-5">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">{group.title}</h3>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {group.fields.map((field) => (
-                    <div key={field.key}>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                        {field.label}
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step={field.key.includes("volume") || field.key.includes("recuperacao") ? "0.01" : "1"}
-                        value={(form as any)[field.key]}
-                        onChange={(e) => handleChange(field.key, e.target.value)}
-                        className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                      />
-                    </div>
-                  ))}
+                  {group.fields.map((field) => {
+                    const isCurrency = currencyFields.has(field.key);
+                    const currentIndex = fieldIndex++;
+                    return (
+                      <div key={field.key}>
+                        <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                          {field.label}
+                        </label>
+                        <div className="relative">
+                          {isCurrency && (
+                            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                              R$
+                            </span>
+                          )}
+                          <input
+                            ref={(el) => { inputRefs.current[currentIndex] = el; }}
+                            type={isCurrency ? "text" : "number"}
+                            inputMode={isCurrency ? "decimal" : "numeric"}
+                            min={isCurrency ? undefined : "0"}
+                            step={isCurrency ? undefined : "1"}
+                            value={
+                              isCurrency
+                                ? (currencyDisplay[field.key] ?? formatBRL((form as any)[field.key]))
+                                : (form as any)[field.key]
+                            }
+                            onChange={(e) => handleChange(field.key, e.target.value)}
+                            onBlur={isCurrency ? () => handleCurrencyBlur(field.key) : undefined}
+                            onFocus={isCurrency ? () => handleCurrencyFocus(field.key) : undefined}
+                            onKeyDown={(e) => handleKeyDown(e, currentIndex)}
+                            className={`h-9 w-full rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring ${isCurrency ? "pl-9 pr-3" : "px-3"}`}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            {success && <p className="text-sm text-success">Produção registrada com sucesso!</p>}
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="h-10 rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-            >
-              {saving ? "Salvando..." : "Salvar Produção"}
-            </button>
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={saving}
+                className="h-10 rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              >
+                {saving ? "Salvando..." : "Salvar Produção"}
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => saveReport("saveAndNew")}
+                className="h-10 rounded-md border border-input bg-background px-6 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50"
+              >
+                Salvar e Registrar Outro Dia
+              </button>
+            </div>
           </form>
         </main>
       </div>
+
+      <AlertDialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Registro duplicado</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você já registrou produção para este dia. Deseja atualizar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={saving}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction disabled={saving} onClick={updateReport}>
+              Atualizar registro existente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
