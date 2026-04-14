@@ -89,6 +89,7 @@ export type Database = {
         Row: {
           agency_id: string | null
           capitalizacao: number | null
+          capitalizacao_valor: number | null
           consignado_volume: number | null
           created_at: string
           credito_fidelidade_volume: number | null
@@ -100,12 +101,15 @@ export type Database = {
           recuperacao_estagio_3: number | null
           report_date: string
           seguro_ap_smart: number | null
+          seguro_ap_smart_valor: number | null
           seguro_vida: number | null
+          seguro_vida_valor: number | null
           user_id: string
         }
         Insert: {
           agency_id?: string | null
           capitalizacao?: number | null
+          capitalizacao_valor?: number | null
           consignado_volume?: number | null
           created_at?: string
           credito_fidelidade_volume?: number | null
@@ -117,12 +121,15 @@ export type Database = {
           recuperacao_estagio_3?: number | null
           report_date?: string
           seguro_ap_smart?: number | null
+          seguro_ap_smart_valor?: number | null
           seguro_vida?: number | null
+          seguro_vida_valor?: number | null
           user_id: string
         }
         Update: {
           agency_id?: string | null
           capitalizacao?: number | null
+          capitalizacao_valor?: number | null
           consignado_volume?: number | null
           created_at?: string
           credito_fidelidade_volume?: number | null
@@ -134,7 +141,9 @@ export type Database = {
           recuperacao_estagio_3?: number | null
           report_date?: string
           seguro_ap_smart?: number | null
+          seguro_ap_smart_valor?: number | null
           seguro_vida?: number | null
+          seguro_vida_valor?: number | null
           user_id?: string
         }
         Relationships: [
