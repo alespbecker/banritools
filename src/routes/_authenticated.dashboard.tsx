@@ -49,36 +49,6 @@ type Report = {
   pj_maquina_vero: number | null;
 };
 
-type RankingUser = {
-  user_id: string;
-  name: string;
-  points: number;
-};
-
-const POINTS = {
-  seguro_vida: 50,
-  seguro_ap_smart: 30,
-  capitalizacao: 20,
-  credito_minuto_aumento: 40,
-  pj_conta_empresarial: 60,
-  pj_maquina_vero: 50,
-};
-
-function calcPoints(r: Report): number {
-  let pts = 0;
-  pts += (r.seguro_vida ?? 0) * POINTS.seguro_vida;
-  pts += (r.seguro_ap_smart ?? 0) * POINTS.seguro_ap_smart;
-  pts += (r.capitalizacao ?? 0) * POINTS.capitalizacao;
-  pts += (r.credito_minuto_aumento ?? 0) * POINTS.credito_minuto_aumento;
-  pts += (r.pj_conta_empresarial ?? 0) * POINTS.pj_conta_empresarial;
-  pts += (r.pj_maquina_vero ?? 0) * POINTS.pj_maquina_vero;
-  pts += Number(r.consignado_volume ?? 0) / 1000;
-  pts += Number(r.credito_fidelidade_volume ?? 0) / 1000;
-  pts += Number(r.recuperacao_estagio_2 ?? 0) / 500;
-  pts += Number(r.recuperacao_estagio_3 ?? 0) / 500;
-  return Math.round(pts);
-}
-
 function formatCurrency(v: number): string {
   return `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -113,7 +83,6 @@ function DashboardPage() {
   const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [monthOffset, setMonthOffset] = useState(0);
-  const [loadingData, setLoadingData] = useState(true);
 
   const monthRange = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
 
@@ -123,10 +92,8 @@ function DashboardPage() {
     }
   }, [isLoading, isAuthenticated, navigate]);
 
-  // Fetch user's reports
   useEffect(() => {
     if (!user) return;
-    setLoadingData(true);
     supabase
       .from("daily_reports")
       .select("*")
@@ -136,42 +103,8 @@ function DashboardPage() {
       .order("report_date")
       .then(({ data }) => {
         setReports((data as Report[]) ?? []);
-        setLoadingData(false);
       });
   }, [user, monthRange.start, monthRange.end]);
-
-  // Fetch agency ranking
-  useEffect(() => {
-    if (!user || !profile?.agency_id) return;
-    Promise.all([
-      supabase
-        .from("daily_reports")
-        .select("*")
-        .eq("agency_id", profile.agency_id)
-        .gte("report_date", monthRange.start)
-        .lte("report_date", monthRange.end),
-      supabase
-        .from("profiles")
-        .select("id, name")
-        .eq("agency_id", profile.agency_id),
-    ]).then(([reportsRes, profilesRes]) => {
-      const allReports = (reportsRes.data as Report[]) ?? [];
-      const profiles = profilesRes.data ?? [];
-      const nameMap = new Map(profiles.map((p) => [p.id, p.name ?? "Sem nome"]));
-
-      const pointsMap = new Map<string, number>();
-      for (const r of allReports) {
-        pointsMap.set(r.user_id, (pointsMap.get(r.user_id) ?? 0) + calcPoints(r));
-      }
-
-      const ranked: RankingUser[] = Array.from(pointsMap.entries())
-        .map(([uid, pts]) => ({ user_id: uid, name: nameMap.get(uid) ?? "Sem nome", points: pts }))
-        .sort((a, b) => b.points - a.points)
-        .slice(0, 10);
-
-      setRanking(ranked);
-    });
-  }, [user, profile?.agency_id, monthRange.start, monthRange.end]);
 
   const stats = useMemo(() => {
     const totalUnits = reports.reduce(
@@ -181,38 +114,28 @@ function DashboardPage() {
       0
     );
     const volumeFinanceiro = reports.reduce(
-      (s, r) => s + Number(r.consignado_volume ?? 0) + Number(r.credito_fidelidade_volume ?? 0),
-      0
+      (s, r) => s + Number(r.consignado_volume ?? 0) + Number(r.credito_fidelidade_volume ?? 0), 0
     );
     const totalRecuperacao = reports.reduce(
-      (s, r) => s + Number(r.recuperacao_estagio_2 ?? 0) + Number(r.recuperacao_estagio_3 ?? 0),
-      0
+      (s, r) => s + Number(r.recuperacao_estagio_2 ?? 0) + Number(r.recuperacao_estagio_3 ?? 0), 0
     );
-    const diasRegistrados = reports.length;
-
     const totalSeguros = reports.reduce(
-      (s, r) => s + (r.seguro_vida ?? 0) + (r.seguro_ap_smart ?? 0) + (r.capitalizacao ?? 0),
-      0
+      (s, r) => s + (r.seguro_vida ?? 0) + (r.seguro_ap_smart ?? 0) + (r.capitalizacao ?? 0), 0
     );
-    const totalCredito = reports.reduce(
-      (s, r) => s + Number(r.consignado_volume ?? 0) + Number(r.credito_fidelidade_volume ?? 0),
-      0
-    );
-
+    const totalCredito = volumeFinanceiro;
     const consignadoTotal = reports.reduce((s, r) => s + Number(r.consignado_volume ?? 0), 0);
     const fidelidadeTotal = reports.reduce((s, r) => s + Number(r.credito_fidelidade_volume ?? 0), 0);
     const recup2Total = reports.reduce((s, r) => s + Number(r.recuperacao_estagio_2 ?? 0), 0);
     const recup3Total = reports.reduce((s, r) => s + Number(r.recuperacao_estagio_3 ?? 0), 0);
 
     return {
-      totalUnits, volumeFinanceiro, totalRecuperacao, diasRegistrados,
-      totalSeguros, totalCredito,
-      consignadoTotal, fidelidadeTotal, recup2Total, recup3Total,
+      totalUnits, volumeFinanceiro, totalRecuperacao, diasRegistrados: reports.length,
+      totalSeguros, totalCredito, consignadoTotal, fidelidadeTotal, recup2Total, recup3Total,
     };
   }, [reports]);
 
   const productBarData = useMemo(() => {
-    const totals = {
+    const totals: Record<string, number> = {
       "Seguro Vida": 0, "AP Smart": 0, "Capitalização": 0,
       "Créd. Minuto": 0, "PJ Conta": 0, "PJ Vero": 0,
     };
@@ -235,35 +158,6 @@ function DashboardPage() {
         (r.credito_minuto_aumento ?? 0) + (r.pj_conta_empresarial ?? 0) + (r.pj_maquina_vero ?? 0),
     }));
   }, [reports]);
-
-  // Performance alerts
-  const alerts = useMemo(() => {
-    const msgs: string[] = [];
-    const myRank = ranking.findIndex((r) => r.user_id === user?.id);
-    if (myRank >= 0) {
-      msgs.push(`Você está em ${myRank + 1}º no ranking da agência.`);
-    }
-    if (stats.diasRegistrados > 0) {
-      const avgSeguros = stats.totalSeguros / stats.diasRegistrados;
-      const weeklyTarget = Math.ceil(avgSeguros * 5);
-      const weekDay = new Date().getDay();
-      const daysInWeek = Math.min(weekDay === 0 ? 7 : weekDay, 5);
-      const currentWeekSeguros = reports
-        .filter((r) => {
-          const d = new Date(r.report_date + "T12:00:00");
-          const today = new Date();
-          const weekStart = new Date(today);
-          weekStart.setDate(today.getDate() - today.getDay() + 1);
-          return d >= weekStart && d <= today;
-        })
-        .reduce((s, r) => s + (r.seguro_vida ?? 0) + (r.seguro_ap_smart ?? 0) + (r.capitalizacao ?? 0), 0);
-      const remaining = weeklyTarget - currentWeekSeguros;
-      if (remaining > 0) {
-        msgs.push(`Você está a ${remaining} seguros de bater sua média semanal.`);
-      }
-    }
-    return msgs;
-  }, [reports, ranking, user, stats]);
 
   if (isLoading) {
     return (
@@ -300,22 +194,7 @@ function DashboardPage() {
             </Select>
           </div>
 
-          {/* Performance Alerts */}
-          {alerts.length > 0 && (
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary">
-                <AlertCircle className="h-4 w-4" />
-                Insights de Performance
-              </div>
-              <ul className="space-y-1">
-                {alerts.map((msg, i) => (
-                  <li key={i} className="text-sm text-muted-foreground">• {msg}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* 1. Top Summary KPIs */}
+          {/* Top Summary KPIs */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard title="Produção Total do Mês" value={stats.totalUnits} icon={BarChart3} description="Unidades de produtos" />
             <StatCard title="Volume Financeiro" value={formatCurrency(stats.volumeFinanceiro)} icon={DollarSign} description="Consignado + Fidelidade" />
@@ -323,7 +202,16 @@ function DashboardPage() {
             <StatCard title="Dias Registrados" value={stats.diasRegistrados} icon={Calendar} description="Dias com produção" />
           </div>
 
-          {/* 2. Product Performance Bar Chart */}
+          {/* Gamification: Level, Badges, Ranking, Insights */}
+          {user && (
+            <GamificationWidgets
+              userId={user.id}
+              agencyId={profile?.agency_id ?? null}
+              monthStart={monthRange.start}
+            />
+          )}
+
+          {/* Product Performance Bar Chart */}
           <div className="rounded-lg border border-border bg-card p-6">
             <h2 className="mb-4 text-lg font-semibold text-card-foreground">Produtos Vendidos no Mês</h2>
             {reports.length === 0 ? (
@@ -341,7 +229,7 @@ function DashboardPage() {
             )}
           </div>
 
-          {/* 3. Production Over Time Line Chart */}
+          {/* Production Over Time Line Chart */}
           <div className="rounded-lg border border-border bg-card p-6">
             <h2 className="mb-4 text-lg font-semibold text-card-foreground">Produção ao Longo do Mês</h2>
             {lineData.length === 0 ? (
@@ -359,7 +247,7 @@ function DashboardPage() {
             )}
           </div>
 
-          {/* 4. Financial Volume */}
+          {/* Financial Volume */}
           <div>
             <h2 className="mb-4 text-lg font-semibold text-foreground">Volume Financeiro</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -370,7 +258,7 @@ function DashboardPage() {
             </div>
           </div>
 
-          {/* 5. Performance Summary */}
+          {/* Performance Summary */}
           <div className="rounded-lg border border-border bg-card p-6">
             <h2 className="mb-4 text-lg font-semibold text-card-foreground flex items-center gap-2">
               <Award className="h-5 w-5 text-primary" />
@@ -390,43 +278,6 @@ function DashboardPage() {
                 <p className="text-xs text-muted-foreground">Recuperação realizada</p>
               </div>
             </div>
-          </div>
-
-          {/* 6. Agency Ranking */}
-          <div className="rounded-lg border border-border bg-card p-6">
-            <h2 className="mb-4 text-lg font-semibold text-card-foreground flex items-center gap-2">
-              <Award className="h-5 w-5 text-primary" />
-              Ranking da Agência
-            </h2>
-            {ranking.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Ranking não disponível. Verifique se você está vinculado a uma agência.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left">
-                      <th className="pb-2 pr-4 font-medium text-muted-foreground">#</th>
-                      <th className="pb-2 pr-4 font-medium text-muted-foreground">Colaborador</th>
-                      <th className="pb-2 font-medium text-muted-foreground text-right">Pontos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ranking.map((r, i) => (
-                      <tr
-                        key={r.user_id}
-                        className={`border-b border-border/50 ${r.user_id === user?.id ? "bg-primary/5" : ""} ${i < 3 ? "font-semibold" : ""}`}
-                      >
-                        <td className="py-2.5 pr-4">
-                          {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}º`}
-                        </td>
-                        <td className="py-2.5 pr-4 text-foreground">{r.name}</td>
-                        <td className="py-2.5 text-right text-foreground">{r.points.toLocaleString("pt-BR")}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
         </main>
       </div>
