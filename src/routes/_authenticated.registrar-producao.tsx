@@ -29,8 +29,11 @@ export const Route = createFileRoute("/_authenticated/registrar-producao")({
 type FormData = {
   report_date: string;
   seguro_vida: number;
+  seguro_vida_valor: number;
   seguro_ap_smart: number;
+  seguro_ap_smart_valor: number;
   capitalizacao: number;
+  capitalizacao_valor: number;
   credito_minuto_aumento: number;
   consignado_volume: number;
   credito_fidelidade_volume: number;
@@ -43,8 +46,11 @@ type FormData = {
 const createDefaultForm = (): FormData => ({
   report_date: new Date().toISOString().split("T")[0],
   seguro_vida: 0,
+  seguro_vida_valor: 0,
   seguro_ap_smart: 0,
+  seguro_ap_smart_valor: 0,
   capitalizacao: 0,
+  capitalizacao_valor: 0,
   credito_minuto_aumento: 0,
   consignado_volume: 0,
   credito_fidelidade_volume: 0,
@@ -55,6 +61,9 @@ const createDefaultForm = (): FormData => ({
 });
 
 const currencyFields = new Set([
+  "seguro_vida_valor",
+  "seguro_ap_smart_valor",
+  "capitalizacao_valor",
   "consignado_volume",
   "credito_fidelidade_volume",
   "recuperacao_estagio_2",
@@ -119,9 +128,7 @@ function RegistrarProducaoPage() {
     }
 
     setSaving(true);
-
     try {
-      // Check for duplicate
       const { data: existing } = await supabase
         .from("daily_reports")
         .select("id")
@@ -219,13 +226,15 @@ function RegistrarProducaoPage() {
   if (isLoading) return <div className="flex min-h-screen items-center justify-center bg-background"><p className="text-muted-foreground">Carregando...</p></div>;
   if (!isAuthenticated) return null;
 
-  const fieldGroups = [
+  type FieldDef = { key: string; label: string; subFields?: { key: string; label: string }[] };
+
+  const fieldGroups: { title: string; fields: FieldDef[] }[] = [
     {
-      title: "Seguros",
+      title: "Seguros e Capitalização",
       fields: [
-        { key: "seguro_vida", label: "Seguro Vida" },
-        { key: "seguro_ap_smart", label: "Seguro AP Smart" },
-        { key: "capitalizacao", label: "Capitalização" },
+        { key: "seguro_vida", label: "Seguro Vida (Qtd)", subFields: [{ key: "seguro_vida_valor", label: "Valor R$" }] },
+        { key: "seguro_ap_smart", label: "Seguro AP Smart (Qtd)", subFields: [{ key: "seguro_ap_smart_valor", label: "Valor R$" }] },
+        { key: "capitalizacao", label: "Capitalização (Qtd)", subFields: [{ key: "capitalizacao_valor", label: "Valor R$" }] },
       ],
     },
     {
@@ -254,6 +263,34 @@ function RegistrarProducaoPage() {
 
   let fieldIndex = 0;
 
+  const renderInput = (key: string, label: string) => {
+    const isCurrency = currencyFields.has(key);
+    const currentIndex = fieldIndex++;
+    return (
+      <div key={key}>
+        <label className="mb-1 block text-xs font-medium text-muted-foreground">{label}</label>
+        <div className="relative">
+          {isCurrency && (
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
+          )}
+          <input
+            ref={(el) => { inputRefs.current[currentIndex] = el; }}
+            type={isCurrency ? "text" : "number"}
+            inputMode={isCurrency ? "decimal" : "numeric"}
+            min={isCurrency ? undefined : "0"}
+            step={isCurrency ? undefined : "1"}
+            value={isCurrency ? (currencyDisplay[key] ?? formatBRL((form as any)[key])) : (form as any)[key]}
+            onChange={(e) => handleChange(key, e.target.value)}
+            onBlur={isCurrency ? () => handleCurrencyBlur(key) : undefined}
+            onFocus={isCurrency ? () => handleCurrencyFocus(key) : undefined}
+            onKeyDown={(e) => handleKeyDown(e, currentIndex)}
+            className={`h-9 w-full rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring ${isCurrency ? "pl-9 pr-3" : "px-3"}`}
+          />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar onSignOut={signOut} />
@@ -265,7 +302,7 @@ function RegistrarProducaoPage() {
             <p className="text-sm text-muted-foreground">Registre sua produção do dia</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
+          <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-foreground">Data</label>
               <input
@@ -279,39 +316,21 @@ function RegistrarProducaoPage() {
             {fieldGroups.map((group) => (
               <div key={group.title} className="rounded-lg border border-border bg-card p-5">
                 <h3 className="mb-4 text-sm font-semibold text-card-foreground">{group.title}</h3>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-4">
                   {group.fields.map((field) => {
-                    const isCurrency = currencyFields.has(field.key);
-                    const currentIndex = fieldIndex++;
-                    return (
-                      <div key={field.key}>
-                        <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                          {field.label}
-                        </label>
-                        <div className="relative">
-                          {isCurrency && (
-                            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                              R$
-                            </span>
-                          )}
-                          <input
-                            ref={(el) => { inputRefs.current[currentIndex] = el; }}
-                            type={isCurrency ? "text" : "number"}
-                            inputMode={isCurrency ? "decimal" : "numeric"}
-                            min={isCurrency ? undefined : "0"}
-                            step={isCurrency ? undefined : "1"}
-                            value={
-                              isCurrency
-                                ? (currencyDisplay[field.key] ?? formatBRL((form as any)[field.key]))
-                                : (form as any)[field.key]
-                            }
-                            onChange={(e) => handleChange(field.key, e.target.value)}
-                            onBlur={isCurrency ? () => handleCurrencyBlur(field.key) : undefined}
-                            onFocus={isCurrency ? () => handleCurrencyFocus(field.key) : undefined}
-                            onKeyDown={(e) => handleKeyDown(e, currentIndex)}
-                            className={`h-9 w-full rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring ${isCurrency ? "pl-9 pr-3" : "px-3"}`}
-                          />
+                    if (field.subFields) {
+                      return (
+                        <div key={field.key} className="rounded-md border border-border/50 bg-background/50 p-3">
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            {renderInput(field.key, field.label)}
+                            {field.subFields.map((sf) => renderInput(sf.key, sf.label))}
+                          </div>
                         </div>
+                      );
+                    }
+                    return (
+                      <div key={field.key} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {renderInput(field.key, field.label)}
                       </div>
                     );
                   })}
