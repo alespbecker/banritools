@@ -112,7 +112,6 @@ function DashboardPage() {
   const { user, isAuthenticated, isLoading, signOut, profile, userRole } = useAuth();
   const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
-  const [ranking, setRanking] = useState<RankingUser[]>([]);
   const [monthOffset, setMonthOffset] = useState(0);
   const [loadingData, setLoadingData] = useState(true);
 
