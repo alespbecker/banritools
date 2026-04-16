@@ -1,10 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { DashboardSidebar } from "@/components/DashboardSidebar";
-import { Topbar } from "@/components/Topbar";
 import { StatCard } from "@/components/StatCard";
 import { GamificationWidgets } from "@/components/GamificationWidgets";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   TrendingUp, DollarSign, BarChart3, Calendar,
@@ -79,20 +77,13 @@ const lineChartConfig: ChartConfig = {
 };
 
 function DashboardPage() {
-  const { user, isAuthenticated, isLoading, signOut, profile, userRole } = useAuth();
-  const navigate = useNavigate();
+  const { user, profile } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [monthOffset, setMonthOffset] = useState(0);
 
   const monthRange = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate({ to: "/login" });
-    }
-  }, [isLoading, isAuthenticated, navigate]);
-
-  useEffect(() => {
+  const fetchReports = useCallback(() => {
     if (!user) return;
     supabase
       .from("daily_reports")
@@ -105,6 +96,34 @@ function DashboardPage() {
         setReports((data as Report[]) ?? []);
       });
   }, [user, monthRange.start, monthRange.end]);
+
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("dashboard-reports")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "daily_reports" },
+        () => {
+          fetchReports();
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, fetchReports]);
+
+  // Manual sync
+  useEffect(() => {
+    const handler = () => fetchReports();
+    window.addEventListener("banritools:sync", handler);
+    return () => window.removeEventListener("banritools:sync", handler);
+  }, [fetchReports]);
 
   const stats = useMemo(() => {
     const totalUnits = reports.reduce(
@@ -159,127 +178,111 @@ function DashboardPage() {
     }));
   }, [reports]);
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-muted-foreground">Carregando...</p>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) return null;
-
   return (
-    <div className="flex min-h-screen bg-background">
-      <DashboardSidebar onSignOut={signOut} />
-      <div className="flex flex-1 flex-col">
-        <Topbar userName={profile?.name ?? null} userRole={userRole} />
-        <main className="flex-1 space-y-6 p-6">
-          {/* Header + Month Filter */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-sm text-muted-foreground">{monthRange.label}</p>
-            </div>
-            <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">Mês Atual</SelectItem>
-                <SelectItem value="-1">Mês Anterior</SelectItem>
-                <SelectItem value="-2">{getMonthRange(-2).label}</SelectItem>
-                <SelectItem value="-3">{getMonthRange(-3).label}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+    <div className="space-y-6">
+      {/* Header + Month Filter */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">{monthRange.label}</p>
+        </div>
+        <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="0">Mês Atual</SelectItem>
+            <SelectItem value="-1">Mês Anterior</SelectItem>
+            <SelectItem value="-2">{getMonthRange(-2).label}</SelectItem>
+            <SelectItem value="-3">{getMonthRange(-3).label}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-          {/* Top Summary KPIs */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Produção Total do Mês" value={stats.totalUnits} icon={BarChart3} description="Unidades de produtos" />
-            <StatCard title="Volume Financeiro" value={formatCurrency(stats.volumeFinanceiro)} icon={DollarSign} description="Consignado + Fidelidade" />
-            <StatCard title="Total Recuperado" value={formatCurrency(stats.totalRecuperacao)} icon={TrendingUp} description="Estágio 2 + Estágio 3" />
-            <StatCard title="Dias Registrados" value={stats.diasRegistrados} icon={Calendar} description="Dias com produção" />
-          </div>
+      {/* Top Summary KPIs */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <StatCard title="Produção Total" value={stats.totalUnits} icon={BarChart3} description="Unidades" />
+        <StatCard title="Vol. Financeiro" value={formatCurrency(stats.volumeFinanceiro)} icon={DollarSign} description="Consig. + Fidel." />
+        <StatCard title="Total Recuperado" value={formatCurrency(stats.totalRecuperacao)} icon={TrendingUp} description="Est. 2 + Est. 3" />
+        <StatCard title="Dias Registrados" value={stats.diasRegistrados} icon={Calendar} description="Com produção" />
+      </div>
 
-          {/* Gamification: Level, Badges, Ranking, Insights */}
-          {user && (
-            <GamificationWidgets
-              userId={user.id}
-              agencyId={profile?.agency_id ?? null}
-              monthStart={monthRange.start}
-            />
-          )}
+      {/* Gamification */}
+      {user && (
+        <GamificationWidgets
+          userId={user.id}
+          agencyId={profile?.agency_id ?? null}
+          monthStart={monthRange.start}
+        />
+      )}
 
-          {/* Product Performance Bar Chart */}
-          <div className="rounded-lg border border-border bg-card p-6">
-            <h2 className="mb-4 text-lg font-semibold text-card-foreground">Produtos Vendidos no Mês</h2>
-            {reports.length === 0 ? (
-              <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Nenhum dado para o período</div>
-            ) : (
-              <ChartContainer config={barChartConfig} className="h-72 w-full">
-                <BarChart data={productBarData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-                  <XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={11} tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ChartContainer>
-            )}
-          </div>
+      {/* Product Performance Bar Chart */}
+      <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
+        <h2 className="mb-4 text-lg font-semibold text-card-foreground">Produtos Vendidos</h2>
+        {reports.length === 0 ? (
+          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Nenhum dado para o período</div>
+        ) : (
+          <ChartContainer config={barChartConfig} className="h-72 w-full">
+            <BarChart data={productBarData}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
+              <XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis fontSize={11} tickLine={false} axisLine={false} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        )}
+      </div>
 
-          {/* Production Over Time Line Chart */}
-          <div className="rounded-lg border border-border bg-card p-6">
-            <h2 className="mb-4 text-lg font-semibold text-card-foreground">Produção ao Longo do Mês</h2>
-            {lineData.length === 0 ? (
-              <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Nenhum dado para o período</div>
-            ) : (
-              <ChartContainer config={lineChartConfig} className="h-72 w-full">
-                <LineChart data={lineData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-                  <XAxis dataKey="date" fontSize={11} tickLine={false} axisLine={false} />
-                  <YAxis fontSize={11} tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
-                </LineChart>
-              </ChartContainer>
-            )}
-          </div>
+      {/* Line Chart */}
+      <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
+        <h2 className="mb-4 text-lg font-semibold text-card-foreground">Produção ao Longo do Mês</h2>
+        {lineData.length === 0 ? (
+          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Nenhum dado para o período</div>
+        ) : (
+          <ChartContainer config={lineChartConfig} className="h-72 w-full">
+            <LineChart data={lineData}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
+              <XAxis dataKey="date" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis fontSize={11} tickLine={false} axisLine={false} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
+          </ChartContainer>
+        )}
+      </div>
 
-          {/* Financial Volume */}
-          <div>
-            <h2 className="mb-4 text-lg font-semibold text-foreground">Volume Financeiro</h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard title="Consignado" value={formatCurrency(stats.consignadoTotal)} icon={CreditCard} />
-              <StatCard title="Crédito Fidelidade" value={formatCurrency(stats.fidelidadeTotal)} icon={CreditCard} />
-              <StatCard title="Recuperação Est. 2" value={formatCurrency(stats.recup2Total)} icon={TrendingUp} />
-              <StatCard title="Recuperação Est. 3" value={formatCurrency(stats.recup3Total)} icon={TrendingUp} />
-            </div>
-          </div>
+      {/* Financial Volume */}
+      <div>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Volume Financeiro</h2>
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+          <StatCard title="Consignado" value={formatCurrency(stats.consignadoTotal)} icon={CreditCard} />
+          <StatCard title="Créd. Fidelidade" value={formatCurrency(stats.fidelidadeTotal)} icon={CreditCard} />
+          <StatCard title="Recup. Est. 2" value={formatCurrency(stats.recup2Total)} icon={TrendingUp} />
+          <StatCard title="Recup. Est. 3" value={formatCurrency(stats.recup3Total)} icon={TrendingUp} />
+        </div>
+      </div>
 
-          {/* Performance Summary */}
-          <div className="rounded-lg border border-border bg-card p-6">
-            <h2 className="mb-4 text-lg font-semibold text-card-foreground flex items-center gap-2">
-              <Award className="h-5 w-5 text-primary" />
-              Minha Performance
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-md border border-border bg-background p-4 text-center">
-                <p className="text-2xl font-bold text-foreground">{stats.totalSeguros}</p>
-                <p className="text-xs text-muted-foreground">Seguros vendidos</p>
-              </div>
-              <div className="rounded-md border border-border bg-background p-4 text-center">
-                <p className="text-2xl font-bold text-foreground">{formatCurrency(stats.totalCredito)}</p>
-                <p className="text-xs text-muted-foreground">Crédito gerado</p>
-              </div>
-              <div className="rounded-md border border-border bg-background p-4 text-center">
-                <p className="text-2xl font-bold text-foreground">{formatCurrency(stats.totalRecuperacao)}</p>
-                <p className="text-xs text-muted-foreground">Recuperação realizada</p>
-              </div>
-            </div>
+      {/* Performance Summary */}
+      <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
+        <h2 className="mb-4 text-lg font-semibold text-card-foreground flex items-center gap-2">
+          <Award className="h-5 w-5 text-primary" />
+          Minha Performance
+        </h2>
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+          <div className="rounded-md border border-border bg-background p-4 text-center">
+            <p className="text-2xl font-bold text-foreground">{stats.totalSeguros}</p>
+            <p className="text-xs text-muted-foreground">Seguros vendidos</p>
           </div>
-        </main>
+          <div className="rounded-md border border-border bg-background p-4 text-center">
+            <p className="text-2xl font-bold text-foreground">{formatCurrency(stats.totalCredito)}</p>
+            <p className="text-xs text-muted-foreground">Crédito gerado</p>
+          </div>
+          <div className="rounded-md border border-border bg-background p-4 text-center">
+            <p className="text-2xl font-bold text-foreground">{formatCurrency(stats.totalRecuperacao)}</p>
+            <p className="text-xs text-muted-foreground">Recuperação realizada</p>
+          </div>
+        </div>
       </div>
     </div>
   );
