@@ -56,9 +56,18 @@ export const Route = createRootRoute({
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            try {
+              var t = localStorage.getItem('banritools-theme');
+              if (t === 'light') document.documentElement.classList.add('light');
+              else document.documentElement.classList.add('dark');
+            } catch(e) { document.documentElement.classList.add('dark'); }
+          })();
+        `}} />
       </head>
       <body>
         {children}
