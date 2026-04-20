@@ -197,8 +197,8 @@ function HistoricoPage() {
                 const totalRecup = Number(r.recuperacao_estagio_2 ?? 0) + Number(r.recuperacao_estagio_3 ?? 0);
                 const totalPJ = (r.pj_conta_empresarial ?? 0) + (r.pj_maquina_vero ?? 0);
                 return (
-                  <>
-                    <tr key={r.id} className="border-b border-border last:border-0">
+                  <FragmentRow key={r.id}>
+                    <tr className="border-b border-border last:border-0">
                       <td className="px-3 py-3 text-foreground">{new Date(r.report_date + "T00:00:00").toLocaleDateString("pt-BR")}</td>
                       <td className="px-3 py-3 text-foreground">{totalSeguros}</td>
                       <td className="px-3 py-3 text-foreground">{fmtBRL(r.consignado_volume)}</td>
