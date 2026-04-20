@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
+// Personal dashboard — focused on user's own production + agency ranking summary.
+// Admin-wide overview lives at /admin.
 import { StatCard } from "@/components/StatCard";
 import { GamificationWidgets } from "@/components/GamificationWidgets";
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -77,11 +79,19 @@ const lineChartConfig: ChartConfig = {
 };
 
 function DashboardPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, userRole } = useAuth();
+  const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [monthOffset, setMonthOffset] = useState(0);
 
   const monthRange = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
+
+  // Admins land on /admin by default
+  useEffect(() => {
+    if (userRole === "admin") {
+      navigate({ to: "/admin" });
+    }
+  }, [userRole, navigate]);
 
   const fetchReports = useCallback(() => {
     if (!user) return;
