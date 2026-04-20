@@ -143,7 +143,7 @@ function DashboardPage() {
       0
     );
     const volumeFinanceiro = reports.reduce(
-      (s, r) => s + Number(r.consignado_volume ?? 0) + Number(r.credito_fidelidade_volume ?? 0), 0
+      (s, r) => s + Number(r.consignado_volume ?? 0), 0
     );
     const totalRecuperacao = reports.reduce(
       (s, r) => s + Number(r.recuperacao_estagio_2 ?? 0) + Number(r.recuperacao_estagio_3 ?? 0), 0
@@ -153,13 +153,12 @@ function DashboardPage() {
     );
     const totalCredito = volumeFinanceiro;
     const consignadoTotal = reports.reduce((s, r) => s + Number(r.consignado_volume ?? 0), 0);
-    const fidelidadeTotal = reports.reduce((s, r) => s + Number(r.credito_fidelidade_volume ?? 0), 0);
     const recup2Total = reports.reduce((s, r) => s + Number(r.recuperacao_estagio_2 ?? 0), 0);
     const recup3Total = reports.reduce((s, r) => s + Number(r.recuperacao_estagio_3 ?? 0), 0);
 
     return {
       totalUnits, volumeFinanceiro, totalRecuperacao, diasRegistrados: reports.length,
-      totalSeguros, totalCredito, consignadoTotal, fidelidadeTotal, recup2Total, recup3Total,
+      totalSeguros, totalCredito, consignadoTotal, recup2Total, recup3Total,
     };
   }, [reports]);
 
