@@ -286,7 +286,14 @@ function AdminDashboardPage() {
           </h1>
           <p className="text-sm text-muted-foreground">{monthRange.label} • Visão completa da agência</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportDialog
+            title={`Relatório bruto — ${monthRange.label}`}
+            filenameBase="banritools-relatorios"
+            columns={rawColumns}
+            rows={rawRows}
+            triggerLabel="Exportar Relatórios"
+          />
           <Link
             to="/admin/users"
             className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
