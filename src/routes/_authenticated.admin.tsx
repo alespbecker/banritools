@@ -207,6 +207,46 @@ function AdminDashboardPage() {
     return profiles.filter((p) => !activeIds.has(p.id));
   }, [profiles, perUser]);
 
+  // Apply search + advanced filters
+  const filteredPerUser = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const minU = minUnits ? Number(minUnits) : null;
+    const minV = minVolume ? Number(minVolume) : null;
+    const minP = minPoints ? Number(minPoints) : null;
+    return perUser.filter((u) => {
+      const p = profiles.find((x) => x.id === u.user_id);
+      const name = (p?.name ?? "").toLowerCase();
+      const email = (p?.email ?? "").toLowerCase();
+      if (q && !name.includes(q) && !email.includes(q)) return false;
+      if (minU != null && u.units < minU) return false;
+      if (minV != null && u.volume < minV) return false;
+      if (productFilter === "seguros" && u.seguros <= 0) return false;
+      if (productFilter === "credito" && u.volume <= 0) return false;
+      if (productFilter === "recuperacao" && u.recuperado <= 0) return false;
+      if (productFilter === "pj") {
+        const hasPj = reports.some((r) => r.user_id === u.user_id && ((r.pj_conta_empresarial ?? 0) + (r.pj_maquina_vero ?? 0)) > 0);
+        if (!hasPj) return false;
+      }
+      if (minP != null) {
+        const pts = ranking.find((r) => r.user_id === u.user_id)?.points ?? 0;
+        if (pts < minP) return false;
+      }
+      return true;
+    });
+  }, [perUser, profiles, reports, ranking, search, minUnits, minVolume, minPoints, productFilter]);
+
+  // Inactive list, filtered by name search
+  const filteredInactives = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return inactives;
+    return inactives.filter((p) =>
+      (p.name ?? "").toLowerCase().includes(q) || (p.email ?? "").toLowerCase().includes(q)
+    );
+  }, [inactives, search]);
+
+  const showInactivesAsRows = statusFilter === "inactive";
+  const visibleUsers = showInactivesAsRows ? [] : filteredPerUser;
+
   const rankingChart = useMemo(() => {
     return ranking.slice(0, 10).map((r) => ({
       name: profileMap.get(r.user_id)?.name?.split(" ")[0] ?? "—",
