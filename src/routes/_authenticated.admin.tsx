@@ -192,6 +192,85 @@ function AdminDashboardPage() {
     }));
   }, [ranking, profileMap]);
 
+  // ==== Export: aggregated per-user rows ====
+  type ExportRow = {
+    name: string;
+    email: string;
+    units: number;
+    seguros: number;
+    volume: number;
+    recuperado: number;
+    dias: number;
+    points: number;
+    position: number | "";
+  };
+  const rankMap = useMemo(() => {
+    const m = new Map<string, { points: number; position: number }>();
+    for (const r of ranking) m.set(r.user_id, { points: r.points, position: r.position });
+    return m;
+  }, [ranking]);
+
+  const exportRows: ExportRow[] = useMemo(() => {
+    return perUser.map((u) => {
+      const p = profileMap.get(u.user_id);
+      const rk = rankMap.get(u.user_id);
+      return {
+        name: p?.name ?? "Sem nome",
+        email: p?.email ?? "",
+        units: u.units,
+        seguros: u.seguros,
+        volume: u.volume,
+        recuperado: u.recuperado,
+        dias: u.dias.size,
+        points: rk?.points ?? 0,
+        position: rk?.position ?? "",
+      };
+    });
+  }, [perUser, profileMap, rankMap]);
+
+  const exportColumns: ExportColumn<ExportRow>[] = useMemo(() => [
+    { key: "position", label: "Posição", accessor: (r) => r.position, defaultChecked: true },
+    { key: "name", label: "Colaborador", accessor: (r) => r.name, defaultChecked: true },
+    { key: "email", label: "Email", accessor: (r) => r.email, defaultChecked: false },
+    { key: "units", label: "Unidades", accessor: (r) => r.units, defaultChecked: true },
+    { key: "seguros", label: "Seguros (qtd)", accessor: (r) => r.seguros, defaultChecked: true },
+    { key: "volume", label: "Vol. Crédito (R$)", accessor: (r) => r.volume.toFixed(2), defaultChecked: true },
+    { key: "recuperado", label: "Recuperação (R$)", accessor: (r) => r.recuperado.toFixed(2), defaultChecked: true },
+    { key: "dias", label: "Dias Ativos", accessor: (r) => r.dias, defaultChecked: true },
+    { key: "points", label: "Pontos do mês", accessor: (r) => r.points, defaultChecked: true },
+  ], []);
+
+  // ==== Export: raw daily reports ====
+  type RawRow = AgencyReport & { name: string; email: string };
+  const rawRows: RawRow[] = useMemo(
+    () => reports.map((r) => ({
+      ...r,
+      name: profileMap.get(r.user_id)?.name ?? "Sem nome",
+      email: profileMap.get(r.user_id)?.email ?? "",
+    })),
+    [reports, profileMap]
+  );
+  const num = (v: number | null | undefined) => Number(v ?? 0);
+  const rawColumns: ExportColumn<RawRow>[] = useMemo(() => [
+    { key: "report_date", label: "Data", accessor: (r) => r.report_date, defaultChecked: true },
+    { key: "name", label: "Colaborador", accessor: (r) => r.name, defaultChecked: true },
+    { key: "email", label: "Email", accessor: (r) => r.email, defaultChecked: false },
+    { key: "seguro_vida", label: "Seguro Vida (qtd)", accessor: (r) => num(r.seguro_vida), defaultChecked: true },
+    { key: "seguro_vida_valor", label: "Seguro Vida (R$)", accessor: (r) => num(r.seguro_vida_valor).toFixed(2), defaultChecked: true },
+    { key: "seguro_ap_smart", label: "AP Smart (qtd)", accessor: (r) => num(r.seguro_ap_smart), defaultChecked: true },
+    { key: "seguro_ap_smart_valor", label: "AP Smart (R$)", accessor: (r) => num(r.seguro_ap_smart_valor).toFixed(2), defaultChecked: true },
+    { key: "capitalizacao", label: "Capitalização (qtd)", accessor: (r) => num(r.capitalizacao), defaultChecked: true },
+    { key: "capitalizacao_valor", label: "Capitalização (R$)", accessor: (r) => num(r.capitalizacao_valor).toFixed(2), defaultChecked: true },
+    { key: "credito_minuto_aumento", label: "Crédito Minuto", accessor: (r) => num(r.credito_minuto_aumento), defaultChecked: true },
+    { key: "consignado_volume", label: "Consignado (R$)", accessor: (r) => num(r.consignado_volume).toFixed(2), defaultChecked: true },
+    { key: "credito_fidelidade_volume", label: "Crédito Fidelidade (R$)", accessor: (r) => num(r.credito_fidelidade_volume).toFixed(2), defaultChecked: true },
+    { key: "recuperacao_estagio_2", label: "Recuperação E2 (R$)", accessor: (r) => num(r.recuperacao_estagio_2).toFixed(2), defaultChecked: true },
+    { key: "recuperacao_estagio_3", label: "Recuperação E3 (R$)", accessor: (r) => num(r.recuperacao_estagio_3).toFixed(2), defaultChecked: true },
+    { key: "pj_conta_empresarial", label: "PJ Conta Empresarial", accessor: (r) => num(r.pj_conta_empresarial), defaultChecked: true },
+    { key: "pj_maquina_vero", label: "PJ Máquina Vero", accessor: (r) => num(r.pj_maquina_vero), defaultChecked: true },
+  ], []);
+
+
   if (isLoading || (userRole && userRole !== "admin")) {
     return <div className="flex h-64 items-center justify-center text-muted-foreground">Verificando permissão...</div>;
   }
