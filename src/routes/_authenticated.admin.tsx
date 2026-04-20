@@ -312,14 +312,17 @@ function AdminDashboardPage() {
 
   // ==== Export: raw daily reports ====
   type RawRow = AgencyReport & { name: string; email: string };
-  const rawRows: RawRow[] = useMemo(
-    () => reports.map((r) => ({
+  const rawRows: RawRow[] = useMemo(() => {
+    const allowedIds = new Set(filteredPerUser.map((u) => u.user_id));
+    const filtered = activeFilterCount > 0 && !showInactivesAsRows
+      ? reports.filter((r) => allowedIds.has(r.user_id))
+      : reports;
+    return filtered.map((r) => ({
       ...r,
       name: profileMap.get(r.user_id)?.name ?? "Sem nome",
       email: profileMap.get(r.user_id)?.email ?? "",
-    })),
-    [reports, profileMap]
-  );
+    }));
+  }, [reports, profileMap, filteredPerUser, activeFilterCount, showInactivesAsRows]);
   const num = (v: number | null | undefined) => Number(v ?? 0);
   const rawColumns: ExportColumn<RawRow>[] = useMemo(() => [
     { key: "report_date", label: "Data", accessor: (r) => r.report_date, defaultChecked: true },
