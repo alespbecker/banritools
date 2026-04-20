@@ -193,8 +193,8 @@ function DashboardPage() {
       {/* Header + Month Filter */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">{monthRange.label}</p>
+          <h1 className="text-xl font-bold text-foreground">Meu Dashboard</h1>
+          <p className="text-sm text-muted-foreground">{monthRange.label} • Sua produção pessoal</p>
         </div>
         <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
           <SelectTrigger className="w-48">

@@ -2,19 +2,20 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, History, Trophy, Users,
   Wrench, Settings, LogOut, ChevronLeft, ChevronRight,
-  Sun, Moon,
+  Sun, Moon, Shield,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
-  { label: "Registrar Produção", to: "/registrar-producao", icon: FileText },
-  { label: "Histórico", to: "/historico", icon: History },
-  { label: "Ranking", to: "/ranking", icon: Trophy },
-  { label: "Contatos", to: "/contacts", icon: Users },
-  { label: "Ferramentas", to: "/tools", icon: Wrench },
-  { label: "Configurações", to: "/settings", icon: Settings },
+  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, adminOnly: false },
+  { label: "Admin", to: "/admin", icon: Shield, adminOnly: true },
+  { label: "Registrar Produção", to: "/registrar-producao", icon: FileText, adminOnly: false },
+  { label: "Histórico", to: "/historico", icon: History, adminOnly: false },
+  { label: "Ranking", to: "/ranking", icon: Trophy, adminOnly: false },
+  { label: "Contatos", to: "/contacts", icon: Users, adminOnly: false },
+  { label: "Ferramentas", to: "/tools", icon: Wrench, adminOnly: false },
+  { label: "Configurações", to: "/settings", icon: Settings, adminOnly: false },
 ] as const;
 
 interface DashboardSidebarProps {
@@ -23,9 +24,10 @@ interface DashboardSidebarProps {
   onToggleTheme?: () => void;
   onNavigate?: () => void;
   forceExpanded?: boolean;
+  userRole?: "admin" | "user" | null;
 }
 
-export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, forceExpanded }: DashboardSidebarProps) {
+export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, forceExpanded, userRole }: DashboardSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
 
