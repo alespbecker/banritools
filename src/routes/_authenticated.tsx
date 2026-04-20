@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { Topbar } from "@/components/Topbar";
+import { RegisterFAB } from "@/components/RegisterFAB";
 import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -70,6 +71,8 @@ function AuthenticatedLayout() {
           <Outlet />
         </main>
       </div>
+
+      <RegisterFAB />
     </div>
   );
 }
