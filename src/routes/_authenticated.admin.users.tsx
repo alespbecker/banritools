@@ -34,6 +34,8 @@ function AdminUsersPage() {
   const [roles, setRoles] = useState<Map<string, "admin" | "user">>(new Map());
   const [agencies, setAgencies] = useState<AgencyRow[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState("");
 
   useEffect(() => {
     if (!isLoading && userRole && userRole !== "admin") {
@@ -104,7 +106,22 @@ function AdminUsersPage() {
     }
   };
 
-  if (isLoading || (userRole && userRole !== "admin")) {
+  const startEditName = (p: ProfileRow) => {
+    setEditingNameId(p.id);
+    setNameDraft(p.name ?? "");
+  };
+
+  const saveName = async (targetId: string) => {
+    setSavingId(targetId);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ name: nameDraft.trim() })
+      .eq("id", targetId);
+    setSavingId(null);
+    setEditingNameId(null);
+    if (error) toast.error("Erro ao atualizar nome");
+    else { toast.success("Nome atualizado"); fetchAll(); }
+  };
     return <div className="flex h-64 items-center justify-center text-muted-foreground">Verificando permissão...</div>;
   }
 
