@@ -3,10 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/registrar-producao")({
   head: () => ({
@@ -28,12 +26,22 @@ type FormData = {
   capitalizacao_valor: number;
   credito_minuto_aumento: number;
   consignado_volume: number;
-  credito_fidelidade_volume: number;
   recuperacao_estagio_2: number;
   recuperacao_estagio_3: number;
   pj_conta_empresarial: number;
   pj_maquina_vero: number;
 };
+
+type NumericField = Exclude<keyof FormData, "report_date">;
+
+const NUMERIC_FIELDS: NumericField[] = [
+  "seguro_vida", "seguro_vida_valor",
+  "seguro_ap_smart", "seguro_ap_smart_valor",
+  "capitalizacao", "capitalizacao_valor",
+  "credito_minuto_aumento", "consignado_volume",
+  "recuperacao_estagio_2", "recuperacao_estagio_3",
+  "pj_conta_empresarial", "pj_maquina_vero",
+];
 
 const createDefaultForm = (): FormData => ({
   report_date: new Date().toISOString().split("T")[0],
@@ -41,13 +49,13 @@ const createDefaultForm = (): FormData => ({
   seguro_ap_smart: 0, seguro_ap_smart_valor: 0,
   capitalizacao: 0, capitalizacao_valor: 0,
   credito_minuto_aumento: 0, consignado_volume: 0,
-  credito_fidelidade_volume: 0, recuperacao_estagio_2: 0,
-  recuperacao_estagio_3: 0, pj_conta_empresarial: 0, pj_maquina_vero: 0,
+  recuperacao_estagio_2: 0, recuperacao_estagio_3: 0,
+  pj_conta_empresarial: 0, pj_maquina_vero: 0,
 });
 
-const currencyFields = new Set([
+const currencyFields = new Set<string>([
   "seguro_vida_valor", "seguro_ap_smart_valor", "capitalizacao_valor",
-  "consignado_volume", "credito_fidelidade_volume",
+  "consignado_volume",
   "recuperacao_estagio_2", "recuperacao_estagio_3",
 ]);
 
@@ -67,9 +75,7 @@ function RegistrarProducaoPage() {
   const [form, setForm] = useState<FormData>(createDefaultForm);
   const [currencyDisplay, setCurrencyDisplay] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
-  const [duplicateId, setDuplicateId] = useState<string | null>(null);
-  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"save" | "saveAndNew">("save");
+  const [savingField, setSavingField] = useState<string | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleChange = useCallback((field: string, value: string) => {
@@ -87,74 +93,134 @@ function RegistrarProducaoPage() {
   }, []);
 
   const handleCurrencyBlur = useCallback((field: string) => {
-    const val = (form as any)[field] as number;
+    const val = (form as unknown as Record<string, number>)[field];
     setCurrencyDisplay((prev) => ({ ...prev, [field]: formatBRL(val) }));
   }, [form]);
 
   const handleCurrencyFocus = useCallback((field: string) => {
-    const val = (form as any)[field] as number;
+    const val = (form as unknown as Record<string, number>)[field];
     setCurrencyDisplay((prev) => ({ ...prev, [field]: val === 0 ? "" : String(val) }));
   }, [form]);
 
-  const isFormEmpty = (): boolean => {
-    const numericKeys = Object.keys(form).filter((k) => k !== "report_date") as (keyof FormData)[];
-    return numericKeys.every((k) => form[k] === 0);
+  /**
+   * Persist a partial set of numeric fields to today's report by SUMMING them
+   * into the existing row (or creating it if absent). This allows multiple
+   * submissions per day to accumulate.
+   */
+  const upsertSum = async (partial: Partial<Record<NumericField, number>>, reportDate: string) => {
+    if (!user) return;
+    const { data: existing, error: selErr } = await supabase
+      .from("daily_reports")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("report_date", reportDate)
+      .maybeSingle();
+
+    if (selErr) throw selErr;
+
+    if (existing) {
+      const merged: Record<string, number> = {};
+      const row = existing as unknown as Record<string, number | null>;
+      for (const k of NUMERIC_FIELDS) {
+        const cur = Number(row[k] ?? 0);
+        const add = Number(partial[k] ?? 0);
+        if (add > 0) merged[k] = cur + add;
+      }
+      if (Object.keys(merged).length === 0) return;
+      const { error } = await supabase
+        .from("daily_reports")
+        .update(merged as never)
+        .eq("id", (existing as { id: string }).id);
+      if (error) throw error;
+    } else {
+      const insertPayload: Record<string, unknown> = {
+        user_id: user.id,
+        agency_id: profile?.agency_id ?? null,
+        report_date: reportDate,
+      };
+      for (const k of NUMERIC_FIELDS) insertPayload[k] = Number(partial[k] ?? 0);
+      const { error } = await supabase.from("daily_reports").insert(insertPayload as never);
+      if (error) throw error;
+    }
+
+    // notify other tabs/widgets to refresh aggregates
+    window.dispatchEvent(new Event("banritools:sync"));
   };
 
-  const saveReport = async (action: "save" | "saveAndNew") => {
+  const collectAllPartial = (): Partial<Record<NumericField, number>> => {
+    const out: Partial<Record<NumericField, number>> = {};
+    for (const k of NUMERIC_FIELDS) {
+      const v = form[k];
+      if (v && v > 0) out[k] = v;
+    }
+    return out;
+  };
+
+  const isFormEmpty = (): boolean => NUMERIC_FIELDS.every((k) => form[k] === 0);
+
+  const resetFields = (keys: NumericField[]) => {
+    setForm((prev) => {
+      const next = { ...prev };
+      for (const k of keys) next[k] = 0;
+      return next;
+    });
+    setCurrencyDisplay((prev) => {
+      const next = { ...prev };
+      for (const k of keys) delete next[k];
+      return next;
+    });
+  };
+
+  const handleSaveAll = async (action: "save" | "saveAndNew") => {
     if (!user) return;
     if (isFormEmpty()) { toast.warning("Nenhuma produção informada"); return; }
     setSaving(true);
     try {
-      const { data: existing } = await supabase.from("daily_reports").select("id")
-        .eq("user_id", user.id).eq("report_date", form.report_date).maybeSingle();
-      if (existing) {
-        setDuplicateId(existing.id); setPendingAction(action);
-        setShowDuplicateDialog(true); setSaving(false); return;
+      await upsertSum(collectAllPartial(), form.report_date);
+      toast.success("Produção registrada (somada ao dia)");
+      if (action === "save") {
+        navigate({ to: "/dashboard" });
+      } else {
+        setForm(createDefaultForm());
+        setCurrencyDisplay({});
       }
-      await insertReport(action);
     } catch (err) {
       console.error("Erro ao salvar produção:", err);
       toast.error("Erro ao salvar produção. Tente novamente.");
+    } finally {
       setSaving(false);
     }
   };
 
-  const insertReport = async (action: "save" | "saveAndNew") => {
+  /**
+   * Send only fields belonging to a specific product row. Clears those
+   * fields on success.
+   */
+  const handleSendOnly = async (fieldKey: string, keys: NumericField[]) => {
     if (!user) return;
-    setSaving(true);
+    const partial: Partial<Record<NumericField, number>> = {};
+    for (const k of keys) {
+      const v = form[k];
+      if (v && v > 0) partial[k] = v;
+    }
+    if (Object.keys(partial).length === 0) {
+      toast.warning("Preencha pelo menos um valor antes de enviar");
+      return;
+    }
+    setSavingField(fieldKey);
     try {
-      const { report_date, ...fields } = form;
-      const { error } = await supabase.from("daily_reports").insert({
-        user_id: user.id, agency_id: profile?.agency_id ?? null, report_date, ...fields,
-      });
-      if (error) throw error;
-      toast.success("Produção registrada com sucesso");
-      if (action === "save") { navigate({ to: "/dashboard" }); }
-      else { setForm(createDefaultForm()); setCurrencyDisplay({}); }
+      await upsertSum(partial, form.report_date);
+      toast.success("Lançamento enviado e somado ao dia");
+      resetFields(keys);
     } catch (err) {
-      console.error("Erro ao salvar produção:", err);
-      toast.error("Erro ao salvar produção. Tente novamente.");
-    } finally { setSaving(false); }
+      console.error("Erro ao enviar lançamento:", err);
+      toast.error("Erro ao enviar. Tente novamente.");
+    } finally {
+      setSavingField(null);
+    }
   };
 
-  const updateReport = async () => {
-    if (!user || !duplicateId) return;
-    setSaving(true); setShowDuplicateDialog(false);
-    try {
-      const { report_date, ...fields } = form;
-      const { error } = await supabase.from("daily_reports").update({ ...fields }).eq("id", duplicateId);
-      if (error) throw error;
-      toast.success("Produção atualizada com sucesso");
-      if (pendingAction === "save") { navigate({ to: "/dashboard" }); }
-      else { setForm(createDefaultForm()); setCurrencyDisplay({}); }
-    } catch (err) {
-      console.error("Erro ao atualizar produção:", err);
-      toast.error("Erro ao salvar produção. Tente novamente.");
-    } finally { setSaving(false); setDuplicateId(null); }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); saveReport("save"); };
+  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); handleSaveAll("save"); };
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
     if (e.key === "Enter") { e.preventDefault(); inputRefs.current[index + 1]?.focus(); }
   };
@@ -174,7 +240,6 @@ function RegistrarProducaoPage() {
       fields: [
         { key: "credito_minuto_aumento", label: "Crédito Minuto / Aumento" },
         { key: "consignado_volume", label: "Consignado (Volume R$)" },
-        { key: "credito_fidelidade_volume", label: "Crédito Fidelidade (Volume R$)" },
       ],
     },
     {
@@ -197,8 +262,9 @@ function RegistrarProducaoPage() {
   const renderInput = (key: string, label: string) => {
     const isCurrency = currencyFields.has(key);
     const currentIndex = fieldIndex++;
+    const value = (form as unknown as Record<string, number>)[key];
     return (
-      <div key={key}>
+      <div key={key} className="flex-1 min-w-0">
         <label className="mb-1 block text-xs font-medium text-muted-foreground">{label}</label>
         <div className="relative">
           {isCurrency && <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>}
@@ -208,7 +274,7 @@ function RegistrarProducaoPage() {
             inputMode={isCurrency ? "decimal" : "numeric"}
             min={isCurrency ? undefined : "0"}
             step={isCurrency ? undefined : "1"}
-            value={isCurrency ? (currencyDisplay[key] ?? formatBRL((form as any)[key])) : (form as any)[key]}
+            value={isCurrency ? (currencyDisplay[key] ?? formatBRL(value)) : value}
             onChange={(e) => handleChange(key, e.target.value)}
             onBlur={isCurrency ? () => handleCurrencyBlur(key) : undefined}
             onFocus={isCurrency ? () => handleCurrencyFocus(key) : undefined}
@@ -220,11 +286,40 @@ function RegistrarProducaoPage() {
     );
   };
 
+  const renderProductRow = (field: FieldDef) => {
+    const keys: NumericField[] = [field.key as NumericField, ...(field.subFields?.map((s) => s.key as NumericField) ?? [])];
+    const busy = savingField === field.key;
+    return (
+      <div key={field.key} className="rounded-md border border-border/50 bg-background/50 p-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex flex-1 flex-col gap-3 sm:flex-row">
+            {renderInput(field.key, field.label)}
+            {field.subFields?.map((sf) => renderInput(sf.key, sf.label))}
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={saving || busy}
+            onClick={() => handleSendOnly(field.key, keys)}
+            className="gap-1.5 sm:self-end"
+            title="Enviar apenas este produto"
+          >
+            <Send className="h-3.5 w-3.5" />
+            {busy ? "Enviando..." : "Enviar"}
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <div className="mb-6">
         <h1 className="text-xl font-bold text-foreground">Registrar Produção</h1>
-        <p className="text-sm text-muted-foreground">Registre sua produção do dia</p>
+        <p className="text-sm text-muted-foreground">
+          Vários lançamentos no mesmo dia são somados automaticamente. Use "Enviar" ao lado de cada produto para registrar apenas aquela venda.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
@@ -238,23 +333,7 @@ function RegistrarProducaoPage() {
           <div key={group.title} className="rounded-lg border border-border bg-card p-4 sm:p-5">
             <h3 className="mb-4 text-sm font-semibold text-card-foreground">{group.title}</h3>
             <div className="space-y-4">
-              {group.fields.map((field) => {
-                if (field.subFields) {
-                  return (
-                    <div key={field.key} className="rounded-md border border-border/50 bg-background/50 p-3">
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {renderInput(field.key, field.label)}
-                        {field.subFields.map((sf) => renderInput(sf.key, sf.label))}
-                      </div>
-                    </div>
-                  );
-                }
-                return (
-                  <div key={field.key} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {renderInput(field.key, field.label)}
-                  </div>
-                );
-              })}
+              {group.fields.map((field) => renderProductRow(field))}
             </div>
           </div>
         ))}
@@ -262,27 +341,14 @@ function RegistrarProducaoPage() {
         <div className="flex flex-col gap-3 sm:flex-row">
           <button type="submit" disabled={saving}
             className="h-10 rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50">
-            {saving ? "Salvando..." : "Salvar Produção"}
+            {saving ? "Salvando..." : "Salvar Tudo"}
           </button>
-          <button type="button" disabled={saving} onClick={() => saveReport("saveAndNew")}
+          <button type="button" disabled={saving} onClick={() => handleSaveAll("saveAndNew")}
             className="h-10 rounded-md border border-input bg-background px-6 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50">
             Salvar e Registrar Outro Dia
           </button>
         </div>
       </form>
-
-      <AlertDialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Registro duplicado</AlertDialogTitle>
-            <AlertDialogDescription>Você já registrou produção para este dia. Deseja atualizar?</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={saving}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction disabled={saving} onClick={updateReport}>Atualizar registro existente</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
