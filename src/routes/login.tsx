@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -15,7 +15,8 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { signIn, signUp, isAuthenticated } = useAuth();
+  const { signIn, signUp, isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -25,14 +26,23 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
 
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate({ to: "/dashboard", replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate]);
+
   if (isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="text-center">
-          <p className="text-foreground">Você já está logado.</p>
-          <Link to="/dashboard" className="mt-2 inline-block text-sm text-primary hover:underline">
-            Ir para o Dashboard
-          </Link>
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="w-full max-w-sm space-y-4">
+          <Skeleton className="h-8 w-2/3 mx-auto" />
+          <Skeleton className="h-4 w-1/2 mx-auto" />
+          <div className="space-y-3 pt-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
         </div>
       </div>
     );
