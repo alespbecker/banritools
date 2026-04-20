@@ -57,7 +57,7 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
       </div>
 
       <nav className="flex-1 space-y-1 p-2">
-        {navItems.map((item) => {
+        {navItems.filter((i) => !i.adminOnly || userRole === "admin").map((item) => {
           const isActive = location.pathname === item.to;
           return (
             <Link
