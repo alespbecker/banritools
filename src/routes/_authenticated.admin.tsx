@@ -345,7 +345,16 @@ function AdminDashboardPage() {
 
       {/* Detailed per-user table */}
       <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
-        <h2 className="mb-4 text-lg font-semibold text-card-foreground">Performance por Colaborador</h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-card-foreground">Performance por Colaborador</h2>
+          <ExportDialog
+            title={`Performance por colaborador — ${monthRange.label}`}
+            filenameBase="banritools-performance"
+            columns={exportColumns}
+            rows={exportRows}
+            triggerLabel="Exportar tabela"
+          />
+        </div>
         {perUser.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhuma produção registrada no período.</p>
         ) : (
