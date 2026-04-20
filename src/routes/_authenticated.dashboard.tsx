@@ -264,9 +264,8 @@ function DashboardPage() {
       {/* Financial Volume */}
       <div>
         <h2 className="mb-4 text-lg font-semibold text-foreground">Volume Financeiro</h2>
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
           <StatCard title="Consignado" value={formatCurrency(stats.consignadoTotal)} icon={CreditCard} />
-          <StatCard title="Créd. Fidelidade" value={formatCurrency(stats.fidelidadeTotal)} icon={CreditCard} />
           <StatCard title="Recup. Est. 2" value={formatCurrency(stats.recup2Total)} icon={TrendingUp} />
           <StatCard title="Recup. Est. 3" value={formatCurrency(stats.recup3Total)} icon={TrendingUp} />
         </div>
