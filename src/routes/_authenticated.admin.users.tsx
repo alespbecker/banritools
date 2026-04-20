@@ -147,12 +147,45 @@ function AdminUsersPage() {
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                           {p.name?.[0]?.toUpperCase() ?? "U"}
                         </div>
-                        <div>
-                          <div className="text-foreground flex items-center gap-2">
-                            {p.name ?? "Sem nome"}
-                            {isMe && <span className="text-xs text-muted-foreground">(você)</span>}
-                            {isAdmin && <Shield className="h-3.5 w-3.5 text-primary" />}
-                          </div>
+                        <div className="min-w-0 flex-1">
+                          {editingNameId === p.id ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                value={nameDraft}
+                                onChange={(e) => setNameDraft(e.target.value)}
+                                className="h-7 w-44 rounded-md border border-input bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => saveName(p.id)}
+                                disabled={isSaving}
+                                className="rounded p-1 text-success hover:bg-success/10"
+                                title="Salvar"
+                              >
+                                <Check className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => setEditingNameId(null)}
+                                className="rounded p-1 text-muted-foreground hover:bg-muted"
+                                title="Cancelar"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="text-foreground flex items-center gap-2">
+                              <span className="truncate">{p.name ?? "Sem nome"}</span>
+                              {isMe && <span className="text-xs text-muted-foreground">(você)</span>}
+                              {isAdmin && <Shield className="h-3.5 w-3.5 text-primary" />}
+                              <button
+                                onClick={() => startEditName(p)}
+                                className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                title="Editar nome"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          )}
                           <div className="text-xs text-muted-foreground">{p.email}</div>
                         </div>
                       </div>
