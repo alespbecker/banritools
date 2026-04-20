@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, TrendingUp, DollarSign, BarChart3, Calendar, Award, Shield,
+  Search, SlidersHorizontal, X,
 } from "lucide-react";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -13,6 +14,10 @@ import type { ChartConfig } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ExportDialog, type ExportColumn } from "@/components/ExportDialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -73,6 +78,23 @@ function AdminDashboardPage() {
   const [ranking, setRanking] = useState<{ user_id: string; points: number; position: number }[]>([]);
   const [monthOffset, setMonthOffset] = useState(0);
   const monthRange = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
+
+  // ===== Search & advanced filters =====
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [productFilter, setProductFilter] = useState<"all" | "seguros" | "credito" | "recuperacao" | "pj">("all");
+  const [minUnits, setMinUnits] = useState<string>("");
+  const [minVolume, setMinVolume] = useState<string>("");
+  const [minPoints, setMinPoints] = useState<string>("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const clearFilters = () => {
+    setSearch(""); setStatusFilter("all"); setProductFilter("all");
+    setMinUnits(""); setMinVolume(""); setMinPoints("");
+  };
+  const activeFilterCount =
+    (search ? 1 : 0) + (statusFilter !== "all" ? 1 : 0) + (productFilter !== "all" ? 1 : 0) +
+    (minUnits ? 1 : 0) + (minVolume ? 1 : 0) + (minPoints ? 1 : 0);
 
   // Guard: only admins
   useEffect(() => {
@@ -185,6 +207,46 @@ function AdminDashboardPage() {
     return profiles.filter((p) => !activeIds.has(p.id));
   }, [profiles, perUser]);
 
+  // Apply search + advanced filters
+  const filteredPerUser = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const minU = minUnits ? Number(minUnits) : null;
+    const minV = minVolume ? Number(minVolume) : null;
+    const minP = minPoints ? Number(minPoints) : null;
+    return perUser.filter((u) => {
+      const p = profiles.find((x) => x.id === u.user_id);
+      const name = (p?.name ?? "").toLowerCase();
+      const email = (p?.email ?? "").toLowerCase();
+      if (q && !name.includes(q) && !email.includes(q)) return false;
+      if (minU != null && u.units < minU) return false;
+      if (minV != null && u.volume < minV) return false;
+      if (productFilter === "seguros" && u.seguros <= 0) return false;
+      if (productFilter === "credito" && u.volume <= 0) return false;
+      if (productFilter === "recuperacao" && u.recuperado <= 0) return false;
+      if (productFilter === "pj") {
+        const hasPj = reports.some((r) => r.user_id === u.user_id && ((r.pj_conta_empresarial ?? 0) + (r.pj_maquina_vero ?? 0)) > 0);
+        if (!hasPj) return false;
+      }
+      if (minP != null) {
+        const pts = ranking.find((r) => r.user_id === u.user_id)?.points ?? 0;
+        if (pts < minP) return false;
+      }
+      return true;
+    });
+  }, [perUser, profiles, reports, ranking, search, minUnits, minVolume, minPoints, productFilter]);
+
+  // Inactive list, filtered by name search
+  const filteredInactives = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return inactives;
+    return inactives.filter((p) =>
+      (p.name ?? "").toLowerCase().includes(q) || (p.email ?? "").toLowerCase().includes(q)
+    );
+  }, [inactives, search]);
+
+  const showInactivesAsRows = statusFilter === "inactive";
+  const visibleUsers = showInactivesAsRows ? [] : filteredPerUser;
+
   const rankingChart = useMemo(() => {
     return ranking.slice(0, 10).map((r) => ({
       name: profileMap.get(r.user_id)?.name?.split(" ")[0] ?? "—",
@@ -211,7 +273,15 @@ function AdminDashboardPage() {
   }, [ranking]);
 
   const exportRows: ExportRow[] = useMemo(() => {
-    return perUser.map((u) => {
+    if (showInactivesAsRows) {
+      return filteredInactives.map((p) => ({
+        name: p.name ?? "Sem nome",
+        email: p.email ?? "",
+        units: 0, seguros: 0, volume: 0, recuperado: 0, dias: 0,
+        points: 0, position: "" as const,
+      }));
+    }
+    return filteredPerUser.map((u) => {
       const p = profileMap.get(u.user_id);
       const rk = rankMap.get(u.user_id);
       return {
@@ -226,7 +296,7 @@ function AdminDashboardPage() {
         position: rk?.position ?? "",
       };
     });
-  }, [perUser, profileMap, rankMap]);
+  }, [filteredPerUser, filteredInactives, showInactivesAsRows, profileMap, rankMap]);
 
   const exportColumns: ExportColumn<ExportRow>[] = useMemo(() => [
     { key: "position", label: "Posição", accessor: (r) => r.position, defaultChecked: true },
@@ -242,14 +312,17 @@ function AdminDashboardPage() {
 
   // ==== Export: raw daily reports ====
   type RawRow = AgencyReport & { name: string; email: string };
-  const rawRows: RawRow[] = useMemo(
-    () => reports.map((r) => ({
+  const rawRows: RawRow[] = useMemo(() => {
+    const allowedIds = new Set(filteredPerUser.map((u) => u.user_id));
+    const filtered = activeFilterCount > 0 && !showInactivesAsRows
+      ? reports.filter((r) => allowedIds.has(r.user_id))
+      : reports;
+    return filtered.map((r) => ({
       ...r,
       name: profileMap.get(r.user_id)?.name ?? "Sem nome",
       email: profileMap.get(r.user_id)?.email ?? "",
-    })),
-    [reports, profileMap]
-  );
+    }));
+  }, [reports, profileMap, filteredPerUser, activeFilterCount, showInactivesAsRows]);
   const num = (v: number | null | undefined) => Number(v ?? 0);
   const rawColumns: ExportColumn<RawRow>[] = useMemo(() => [
     { key: "report_date", label: "Data", accessor: (r) => r.report_date, defaultChecked: true },
@@ -320,6 +393,102 @@ function AdminDashboardPage() {
         <StatCard title="Recuperação" value={fmtBRL(stats.recuperado)} icon={TrendingUp} description="Est. 2 + 3" />
       </div>
 
+      {/* Search & Advanced filters */}
+      <div className="rounded-lg border border-border bg-card p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome ou email do colaborador..."
+              className="pl-9"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-accent"
+                aria-label="Limpar busca"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filtros avançados
+                {activeFilterCount > 0 && (
+                  <span className="rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80" align="end">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold">Filtros</h4>
+                  <button type="button" onClick={clearFilters} className="text-xs text-primary hover:underline">
+                    Limpar
+                  </button>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Status</Label>
+                  <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="active">Ativos no período</SelectItem>
+                      <SelectItem value="inactive">Inativos (sem produção)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Tipo de produto</Label>
+                  <Select value={productFilter} onValueChange={(v) => setProductFilter(v as typeof productFilter)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="seguros">Vendeu Seguros</SelectItem>
+                      <SelectItem value="credito">Crédito (consignado/fidelidade)</SelectItem>
+                      <SelectItem value="recuperacao">Recuperação (E2/E3)</SelectItem>
+                      <SelectItem value="pj">Produtos PJ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Mín. Unidades</Label>
+                    <Input type="number" min="0" value={minUnits} onChange={(e) => setMinUnits(e.target.value)} placeholder="0" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Mín. Pontos</Label>
+                    <Input type="number" min="0" value={minPoints} onChange={(e) => setMinPoints(e.target.value)} placeholder="0" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Mín. Volume Crédito (R$)</Label>
+                  <Input type="number" min="0" value={minVolume} onChange={(e) => setMinVolume(e.target.value)} placeholder="0" />
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+          {activeFilterCount > 0 && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
+              <X className="h-3.5 w-3.5" /> Limpar
+            </Button>
+          )}
+        </div>
+        {activeFilterCount > 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Exibindo {showInactivesAsRows ? filteredInactives.length : visibleUsers.length} de {perUser.length + inactives.length} colaboradores
+          </p>
+        )}
+      </div>
+
       {/* Top performers chart */}
       <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-card-foreground">
@@ -355,8 +524,10 @@ function AdminDashboardPage() {
             triggerLabel="Exportar tabela"
           />
         </div>
-        {perUser.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma produção registrada no período.</p>
+        {(showInactivesAsRows ? filteredInactives.length === 0 : visibleUsers.length === 0) ? (
+          <p className="text-sm text-muted-foreground">
+            {activeFilterCount > 0 ? "Nenhum colaborador corresponde aos filtros aplicados." : "Nenhuma produção registrada no período."}
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -371,22 +542,36 @@ function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {perUser.map((u) => {
-                  const prof = profileMap.get(u.user_id);
-                  return (
-                    <tr key={u.user_id} className="border-b border-border/50">
-                      <td className="py-2.5 pr-3">
-                        <div className="text-foreground">{prof?.name ?? "Sem nome"}</div>
-                        <div className="text-xs text-muted-foreground">{prof?.email}</div>
-                      </td>
-                      <td className="py-2.5 pr-3 text-right text-foreground">{u.units}</td>
-                      <td className="py-2.5 pr-3 text-right text-foreground">{u.seguros}</td>
-                      <td className="py-2.5 pr-3 text-right text-foreground">{fmtBRL(u.volume)}</td>
-                      <td className="py-2.5 pr-3 text-right text-foreground">{fmtBRL(u.recuperado)}</td>
-                      <td className="py-2.5 text-right text-foreground">{u.dias.size}</td>
-                    </tr>
-                  );
-                })}
+                {showInactivesAsRows
+                  ? filteredInactives.map((p) => (
+                      <tr key={p.id} className="border-b border-border/50 opacity-70">
+                        <td className="py-2.5 pr-3">
+                          <div className="text-foreground">{p.name ?? "Sem nome"}</div>
+                          <div className="text-xs text-muted-foreground">{p.email}</div>
+                        </td>
+                        <td className="py-2.5 pr-3 text-right text-muted-foreground">0</td>
+                        <td className="py-2.5 pr-3 text-right text-muted-foreground">0</td>
+                        <td className="py-2.5 pr-3 text-right text-muted-foreground">{fmtBRL(0)}</td>
+                        <td className="py-2.5 pr-3 text-right text-muted-foreground">{fmtBRL(0)}</td>
+                        <td className="py-2.5 text-right text-muted-foreground">0</td>
+                      </tr>
+                    ))
+                  : visibleUsers.map((u) => {
+                      const prof = profileMap.get(u.user_id);
+                      return (
+                        <tr key={u.user_id} className="border-b border-border/50">
+                          <td className="py-2.5 pr-3">
+                            <div className="text-foreground">{prof?.name ?? "Sem nome"}</div>
+                            <div className="text-xs text-muted-foreground">{prof?.email}</div>
+                          </td>
+                          <td className="py-2.5 pr-3 text-right text-foreground">{u.units}</td>
+                          <td className="py-2.5 pr-3 text-right text-foreground">{u.seguros}</td>
+                          <td className="py-2.5 pr-3 text-right text-foreground">{fmtBRL(u.volume)}</td>
+                          <td className="py-2.5 pr-3 text-right text-foreground">{fmtBRL(u.recuperado)}</td>
+                          <td className="py-2.5 text-right text-foreground">{u.dias.size}</td>
+                        </tr>
+                      );
+                    })}
               </tbody>
             </table>
           </div>
