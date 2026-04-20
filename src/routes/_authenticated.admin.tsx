@@ -79,6 +79,23 @@ function AdminDashboardPage() {
   const [monthOffset, setMonthOffset] = useState(0);
   const monthRange = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
 
+  // ===== Search & advanced filters =====
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [productFilter, setProductFilter] = useState<"all" | "seguros" | "credito" | "recuperacao" | "pj">("all");
+  const [minUnits, setMinUnits] = useState<string>("");
+  const [minVolume, setMinVolume] = useState<string>("");
+  const [minPoints, setMinPoints] = useState<string>("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const clearFilters = () => {
+    setSearch(""); setStatusFilter("all"); setProductFilter("all");
+    setMinUnits(""); setMinVolume(""); setMinPoints("");
+  };
+  const activeFilterCount =
+    (search ? 1 : 0) + (statusFilter !== "all" ? 1 : 0) + (productFilter !== "all" ? 1 : 0) +
+    (minUnits ? 1 : 0) + (minVolume ? 1 : 0) + (minPoints ? 1 : 0);
+
   // Guard: only admins
   useEffect(() => {
     if (!isLoading && userRole && userRole !== "admin") {
