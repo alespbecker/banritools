@@ -111,7 +111,7 @@ function RegistrarProducaoPage() {
     if (!user) return;
     const { data: existing, error: selErr } = await supabase
       .from("daily_reports")
-      .select("id, " + NUMERIC_FIELDS.join(", "))
+      .select("*")
       .eq("user_id", user.id)
       .eq("report_date", reportDate)
       .maybeSingle();
@@ -129,8 +129,8 @@ function RegistrarProducaoPage() {
       if (Object.keys(merged).length === 0) return;
       const { error } = await supabase
         .from("daily_reports")
-        .update(merged)
-        .eq("id", existing.id as string);
+        .update(merged as never)
+        .eq("id", (existing as { id: string }).id);
       if (error) throw error;
     } else {
       const insertPayload: Record<string, unknown> = {
@@ -139,7 +139,7 @@ function RegistrarProducaoPage() {
         report_date: reportDate,
       };
       for (const k of NUMERIC_FIELDS) insertPayload[k] = Number(partial[k] ?? 0);
-      const { error } = await supabase.from("daily_reports").insert(insertPayload);
+      const { error } = await supabase.from("daily_reports").insert(insertPayload as never);
       if (error) throw error;
     }
 
