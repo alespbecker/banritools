@@ -122,6 +122,8 @@ function AdminUsersPage() {
     if (error) toast.error("Erro ao atualizar nome");
     else { toast.success("Nome atualizado"); fetchAll(); }
   };
+
+  if (isLoading || (userRole && userRole !== "admin")) {
     return <div className="flex h-64 items-center justify-center text-muted-foreground">Verificando permissão...</div>;
   }
 
