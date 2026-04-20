@@ -121,10 +121,12 @@ function HistoricoPage() {
   const saveEdit = async () => {
     if (!editingId) return;
     setSaving(true);
-    const payload: Record<string, unknown> = {};
+    const payload: Record<string, number> = {};
     for (const f of NUMERIC_FIELDS) {
-      payload[f] = (draft as Record<string, unknown>)[f] ?? 0;
+      const v = (draft as Record<string, unknown>)[f];
+      payload[f] = typeof v === "number" ? v : 0;
     }
+    // @ts-expect-error dynamic field set is validated above
     const { error } = await supabase.from("daily_reports").update(payload).eq("id", editingId);
     setSaving(false);
     if (error) {
