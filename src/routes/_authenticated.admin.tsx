@@ -273,7 +273,15 @@ function AdminDashboardPage() {
   }, [ranking]);
 
   const exportRows: ExportRow[] = useMemo(() => {
-    return perUser.map((u) => {
+    if (showInactivesAsRows) {
+      return filteredInactives.map((p) => ({
+        name: p.name ?? "Sem nome",
+        email: p.email ?? "",
+        units: 0, seguros: 0, volume: 0, recuperado: 0, dias: 0,
+        points: 0, position: "" as const,
+      }));
+    }
+    return filteredPerUser.map((u) => {
       const p = profileMap.get(u.user_id);
       const rk = rankMap.get(u.user_id);
       return {
@@ -288,7 +296,7 @@ function AdminDashboardPage() {
         position: rk?.position ?? "",
       };
     });
-  }, [perUser, profileMap, rankMap]);
+  }, [filteredPerUser, filteredInactives, showInactivesAsRows, profileMap, rankMap]);
 
   const exportColumns: ExportColumn<ExportRow>[] = useMemo(() => [
     { key: "position", label: "Posição", accessor: (r) => r.position, defaultChecked: true },
