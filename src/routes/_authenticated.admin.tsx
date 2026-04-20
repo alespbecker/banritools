@@ -12,6 +12,7 @@ import {
 import type { ChartConfig } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ExportDialog, type ExportColumn } from "@/components/ExportDialog";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
