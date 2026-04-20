@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { StatCard } from "@/components/StatCard";
 import { useEffect, useMemo, useState, useCallback } from "react";
@@ -206,15 +206,23 @@ function AdminDashboardPage() {
           </h1>
           <p className="text-sm text-muted-foreground">{monthRange.label} • Visão completa da agência</p>
         </div>
-        <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
-          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="0">Mês Atual</SelectItem>
-            <SelectItem value="-1">Mês Anterior</SelectItem>
-            <SelectItem value="-2">{getMonthRange(-2).label}</SelectItem>
-            <SelectItem value="-3">{getMonthRange(-3).label}</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/admin/users"
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
+          >
+            Gerenciar Usuários
+          </Link>
+          <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
+            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">Mês Atual</SelectItem>
+              <SelectItem value="-1">Mês Anterior</SelectItem>
+              <SelectItem value="-2">{getMonthRange(-2).label}</SelectItem>
+              <SelectItem value="-3">{getMonthRange(-3).label}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Agency KPIs */}

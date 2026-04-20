@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, adminOnly: false },
   { label: "Admin", to: "/admin", icon: Shield, adminOnly: true },
+  { label: "Usuários", to: "/admin/users", icon: Users, adminOnly: true },
   { label: "Registrar Produção", to: "/registrar-producao", icon: FileText, adminOnly: false },
   { label: "Histórico", to: "/historico", icon: History, adminOnly: false },
   { label: "Ranking", to: "/ranking", icon: Trophy, adminOnly: false },

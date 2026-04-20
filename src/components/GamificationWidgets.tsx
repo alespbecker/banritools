@@ -58,20 +58,16 @@ export function GamificationWidgets({ userId, agencyId, monthStart }: Gamificati
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [insights, setInsights] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (!userId) return;
-
-    // Fetch user points
+  const fetchUserPoints = () => {
     supabase
       .from("user_points")
       .select("total_points, level")
       .eq("user_id", userId)
       .maybeSingle()
-      .then(({ data }) => {
-        setUserPoints(data ?? { total_points: 0, level: 1 });
-      });
+      .then(({ data }) => setUserPoints(data ?? { total_points: 0, level: 1 }));
+  };
 
-    // Fetch all badges + user badges
+  const fetchBadges = () => {
     Promise.all([
       supabase.from("badges").select("*"),
       supabase.from("user_badges").select("badge_id, unlocked_at").eq("user_id", userId),
@@ -79,10 +75,9 @@ export function GamificationWidgets({ userId, agencyId, monthStart }: Gamificati
       setAllBadges((badgesRes.data as Badge[]) ?? []);
       setUnlockedBadges((userBadgesRes.data as UserBadge[]) ?? []);
     });
-  }, [userId]);
+  };
 
-  // Fetch ranking
-  useEffect(() => {
+  const fetchRanking = () => {
     if (!agencyId) return;
     supabase
       .from("ranking_monthly")
@@ -91,10 +86,40 @@ export function GamificationWidgets({ userId, agencyId, monthStart }: Gamificati
       .eq("month", monthStart)
       .order("position")
       .limit(10)
-      .then(({ data }) => {
-        setRanking((data as unknown as RankingEntry[]) ?? []);
-      });
+      .then(({ data }) => setRanking((data as unknown as RankingEntry[]) ?? []));
+  };
+
+  useEffect(() => {
+    if (!userId) return;
+    fetchUserPoints();
+    fetchBadges();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  useEffect(() => {
+    fetchRanking();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agencyId, monthStart]);
+
+  // Realtime subscriptions for live gamification updates
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel(`gamification-${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_points", filter: `user_id=eq.${userId}` }, fetchUserPoints)
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_badges", filter: `user_id=eq.${userId}` }, fetchBadges)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ranking_monthly" }, fetchRanking)
+      .subscribe();
+
+    const handler = () => { fetchUserPoints(); fetchBadges(); fetchRanking(); };
+    window.addEventListener("banritools:sync", handler);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("banritools:sync", handler);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, agencyId, monthStart]);
 
   // Generate insights
   useEffect(() => {
