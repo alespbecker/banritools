@@ -524,8 +524,10 @@ function AdminDashboardPage() {
             triggerLabel="Exportar tabela"
           />
         </div>
-        {perUser.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma produção registrada no período.</p>
+        {(showInactivesAsRows ? filteredInactives.length === 0 : visibleUsers.length === 0) ? (
+          <p className="text-sm text-muted-foreground">
+            {activeFilterCount > 0 ? "Nenhum colaborador corresponde aos filtros aplicados." : "Nenhuma produção registrada no período."}
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -540,22 +542,36 @@ function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {perUser.map((u) => {
-                  const prof = profileMap.get(u.user_id);
-                  return (
-                    <tr key={u.user_id} className="border-b border-border/50">
-                      <td className="py-2.5 pr-3">
-                        <div className="text-foreground">{prof?.name ?? "Sem nome"}</div>
-                        <div className="text-xs text-muted-foreground">{prof?.email}</div>
-                      </td>
-                      <td className="py-2.5 pr-3 text-right text-foreground">{u.units}</td>
-                      <td className="py-2.5 pr-3 text-right text-foreground">{u.seguros}</td>
-                      <td className="py-2.5 pr-3 text-right text-foreground">{fmtBRL(u.volume)}</td>
-                      <td className="py-2.5 pr-3 text-right text-foreground">{fmtBRL(u.recuperado)}</td>
-                      <td className="py-2.5 text-right text-foreground">{u.dias.size}</td>
-                    </tr>
-                  );
-                })}
+                {showInactivesAsRows
+                  ? filteredInactives.map((p) => (
+                      <tr key={p.id} className="border-b border-border/50 opacity-70">
+                        <td className="py-2.5 pr-3">
+                          <div className="text-foreground">{p.name ?? "Sem nome"}</div>
+                          <div className="text-xs text-muted-foreground">{p.email}</div>
+                        </td>
+                        <td className="py-2.5 pr-3 text-right text-muted-foreground">0</td>
+                        <td className="py-2.5 pr-3 text-right text-muted-foreground">0</td>
+                        <td className="py-2.5 pr-3 text-right text-muted-foreground">{fmtBRL(0)}</td>
+                        <td className="py-2.5 pr-3 text-right text-muted-foreground">{fmtBRL(0)}</td>
+                        <td className="py-2.5 text-right text-muted-foreground">0</td>
+                      </tr>
+                    ))
+                  : visibleUsers.map((u) => {
+                      const prof = profileMap.get(u.user_id);
+                      return (
+                        <tr key={u.user_id} className="border-b border-border/50">
+                          <td className="py-2.5 pr-3">
+                            <div className="text-foreground">{prof?.name ?? "Sem nome"}</div>
+                            <div className="text-xs text-muted-foreground">{prof?.email}</div>
+                          </td>
+                          <td className="py-2.5 pr-3 text-right text-foreground">{u.units}</td>
+                          <td className="py-2.5 pr-3 text-right text-foreground">{u.seguros}</td>
+                          <td className="py-2.5 pr-3 text-right text-foreground">{fmtBRL(u.volume)}</td>
+                          <td className="py-2.5 pr-3 text-right text-foreground">{fmtBRL(u.recuperado)}</td>
+                          <td className="py-2.5 text-right text-foreground">{u.dias.size}</td>
+                        </tr>
+                      );
+                    })}
               </tbody>
             </table>
           </div>
