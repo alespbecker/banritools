@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
+// Personal dashboard — focused on user's own production + agency ranking summary.
+// Admin-wide overview lives at /admin.
 import { StatCard } from "@/components/StatCard";
 import { GamificationWidgets } from "@/components/GamificationWidgets";
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -77,11 +79,19 @@ const lineChartConfig: ChartConfig = {
 };
 
 function DashboardPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, userRole } = useAuth();
+  const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [monthOffset, setMonthOffset] = useState(0);
 
   const monthRange = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
+
+  // Admins land on /admin by default
+  useEffect(() => {
+    if (userRole === "admin") {
+      navigate({ to: "/admin" });
+    }
+  }, [userRole, navigate]);
 
   const fetchReports = useCallback(() => {
     if (!user) return;
@@ -183,8 +193,8 @@ function DashboardPage() {
       {/* Header + Month Filter */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">{monthRange.label}</p>
+          <h1 className="text-xl font-bold text-foreground">Meu Dashboard</h1>
+          <p className="text-sm text-muted-foreground">{monthRange.label} • Sua produção pessoal</p>
         </div>
         <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
           <SelectTrigger className="w-48">

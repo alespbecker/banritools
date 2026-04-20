@@ -39,7 +39,7 @@ function AuthenticatedLayout() {
   return (
     <div className="flex h-[100dvh] bg-background">
       {/* Desktop sidebar */}
-      {!isMobile && <DashboardSidebar onSignOut={signOut} theme={theme} onToggleTheme={toggleTheme} />}
+      {!isMobile && <DashboardSidebar onSignOut={signOut} theme={theme} onToggleTheme={toggleTheme} userRole={userRole} />}
 
       {/* Mobile sidebar overlay */}
       {isMobile && (
@@ -54,6 +54,7 @@ function AuthenticatedLayout() {
               onToggleTheme={toggleTheme}
               onNavigate={() => setSidebarOpen(false)}
               forceExpanded
+              userRole={userRole}
             />
           </SheetContent>
         </Sheet>
