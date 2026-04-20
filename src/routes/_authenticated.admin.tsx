@@ -40,7 +40,7 @@ type AgencyReport = {
   capitalizacao_valor: number | null;
   credito_minuto_aumento: number | null;
   consignado_volume: number | null;
-  credito_fidelidade_volume: number | null;
+  
   recuperacao_estagio_2: number | null;
   recuperacao_estagio_3: number | null;
   pj_conta_empresarial: number | null;
@@ -110,7 +110,7 @@ function AdminDashboardPage() {
 
     supabase
       .from("daily_reports")
-      .select("user_id, report_date, seguro_vida, seguro_ap_smart, capitalizacao, seguro_vida_valor, seguro_ap_smart_valor, capitalizacao_valor, credito_minuto_aumento, consignado_volume, credito_fidelidade_volume, recuperacao_estagio_2, recuperacao_estagio_3, pj_conta_empresarial, pj_maquina_vero")
+      .select("user_id, report_date, seguro_vida, seguro_ap_smart, capitalizacao, seguro_vida_valor, seguro_ap_smart_valor, capitalizacao_valor, credito_minuto_aumento, consignado_volume, recuperacao_estagio_2, recuperacao_estagio_3, pj_conta_empresarial, pj_maquina_vero")
       .eq("agency_id", agencyId)
       .gte("report_date", monthRange.start)
       .lte("report_date", monthRange.end)
@@ -164,7 +164,7 @@ function AdminDashboardPage() {
         (r.credito_minuto_aumento ?? 0) + (r.pj_conta_empresarial ?? 0) + (r.pj_maquina_vero ?? 0), 0
     );
     const volFinanceiro = reports.reduce(
-      (s, r) => s + Number(r.consignado_volume ?? 0) + Number(r.credito_fidelidade_volume ?? 0), 0
+      (s, r) => s + Number(r.consignado_volume ?? 0), 0
     );
     const recuperado = reports.reduce(
       (s, r) => s + Number(r.recuperacao_estagio_2 ?? 0) + Number(r.recuperacao_estagio_3 ?? 0), 0
@@ -192,7 +192,7 @@ function AdminDashboardPage() {
       };
       cur.units += (r.seguro_vida ?? 0) + (r.seguro_ap_smart ?? 0) + (r.capitalizacao ?? 0) +
         (r.credito_minuto_aumento ?? 0) + (r.pj_conta_empresarial ?? 0) + (r.pj_maquina_vero ?? 0);
-      cur.volume += Number(r.consignado_volume ?? 0) + Number(r.credito_fidelidade_volume ?? 0);
+      cur.volume += Number(r.consignado_volume ?? 0);
       cur.recuperado += Number(r.recuperacao_estagio_2 ?? 0) + Number(r.recuperacao_estagio_3 ?? 0);
       cur.seguros += (r.seguro_vida ?? 0) + (r.seguro_ap_smart ?? 0) + (r.capitalizacao ?? 0);
       cur.dias.add(r.report_date);
@@ -336,7 +336,7 @@ function AdminDashboardPage() {
     { key: "capitalizacao_valor", label: "Capitalização (R$)", accessor: (r) => num(r.capitalizacao_valor).toFixed(2), defaultChecked: true },
     { key: "credito_minuto_aumento", label: "Crédito Minuto", accessor: (r) => num(r.credito_minuto_aumento), defaultChecked: true },
     { key: "consignado_volume", label: "Consignado (R$)", accessor: (r) => num(r.consignado_volume).toFixed(2), defaultChecked: true },
-    { key: "credito_fidelidade_volume", label: "Crédito Fidelidade (R$)", accessor: (r) => num(r.credito_fidelidade_volume).toFixed(2), defaultChecked: true },
+    
     { key: "recuperacao_estagio_2", label: "Recuperação E2 (R$)", accessor: (r) => num(r.recuperacao_estagio_2).toFixed(2), defaultChecked: true },
     { key: "recuperacao_estagio_3", label: "Recuperação E3 (R$)", accessor: (r) => num(r.recuperacao_estagio_3).toFixed(2), defaultChecked: true },
     { key: "pj_conta_empresarial", label: "PJ Conta Empresarial", accessor: (r) => num(r.pj_conta_empresarial), defaultChecked: true },

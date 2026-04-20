@@ -73,7 +73,7 @@ function HistoricoPage() {
                 <tr key={r.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3 text-foreground">{new Date(r.report_date).toLocaleDateString("pt-BR")}</td>
                   <td className="px-4 py-3 text-foreground">{(r.seguro_vida ?? 0) + (r.seguro_ap_smart ?? 0) + (r.capitalizacao ?? 0)}</td>
-                  <td className="px-4 py-3 text-foreground">{(Number(r.consignado_volume ?? 0) + Number(r.credito_fidelidade_volume ?? 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
+                  <td className="px-4 py-3 text-foreground">{Number(r.consignado_volume ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
                   <td className="px-4 py-3 text-foreground">{(Number(r.recuperacao_estagio_2 ?? 0) + Number(r.recuperacao_estagio_3 ?? 0)).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</td>
                   <td className="px-4 py-3 text-foreground">{(r.pj_conta_empresarial ?? 0) + (r.pj_maquina_vero ?? 0)}</td>
                 </tr>
