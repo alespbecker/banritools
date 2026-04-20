@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Save, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -197,7 +197,7 @@ function HistoricoPage() {
                 const totalRecup = Number(r.recuperacao_estagio_2 ?? 0) + Number(r.recuperacao_estagio_3 ?? 0);
                 const totalPJ = (r.pj_conta_empresarial ?? 0) + (r.pj_maquina_vero ?? 0);
                 return (
-                  <FragmentRow key={r.id}>
+                  <Fragment key={r.id}>
                     <tr className="border-b border-border last:border-0">
                       <td className="px-3 py-3 text-foreground">{new Date(r.report_date + "T00:00:00").toLocaleDateString("pt-BR")}</td>
                       <td className="px-3 py-3 text-foreground">{totalSeguros}</td>
@@ -264,7 +264,7 @@ function HistoricoPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })
             )}
