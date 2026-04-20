@@ -393,6 +393,102 @@ function AdminDashboardPage() {
         <StatCard title="Recuperação" value={fmtBRL(stats.recuperado)} icon={TrendingUp} description="Est. 2 + 3" />
       </div>
 
+      {/* Search & Advanced filters */}
+      <div className="rounded-lg border border-border bg-card p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nome ou email do colaborador..."
+              className="pl-9"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-accent"
+                aria-label="Limpar busca"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filtros avançados
+                {activeFilterCount > 0 && (
+                  <span className="rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80" align="end">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold">Filtros</h4>
+                  <button type="button" onClick={clearFilters} className="text-xs text-primary hover:underline">
+                    Limpar
+                  </button>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Status</Label>
+                  <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="active">Ativos no período</SelectItem>
+                      <SelectItem value="inactive">Inativos (sem produção)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Tipo de produto</Label>
+                  <Select value={productFilter} onValueChange={(v) => setProductFilter(v as typeof productFilter)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="seguros">Vendeu Seguros</SelectItem>
+                      <SelectItem value="credito">Crédito (consignado/fidelidade)</SelectItem>
+                      <SelectItem value="recuperacao">Recuperação (E2/E3)</SelectItem>
+                      <SelectItem value="pj">Produtos PJ</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Mín. Unidades</Label>
+                    <Input type="number" min="0" value={minUnits} onChange={(e) => setMinUnits(e.target.value)} placeholder="0" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Mín. Pontos</Label>
+                    <Input type="number" min="0" value={minPoints} onChange={(e) => setMinPoints(e.target.value)} placeholder="0" />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Mín. Volume Crédito (R$)</Label>
+                  <Input type="number" min="0" value={minVolume} onChange={(e) => setMinVolume(e.target.value)} placeholder="0" />
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+          {activeFilterCount > 0 && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
+              <X className="h-3.5 w-3.5" /> Limpar
+            </Button>
+          )}
+        </div>
+        {activeFilterCount > 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Exibindo {showInactivesAsRows ? filteredInactives.length : visibleUsers.length} de {perUser.length + inactives.length} colaboradores
+          </p>
+        )}
+      </div>
+
       {/* Top performers chart */}
       <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-card-foreground">
