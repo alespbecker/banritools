@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Save, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { PageSkeleton, TableSkeleton } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/_authenticated/historico")({
   head: () => ({
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/_authenticated/historico")({
     ],
   }),
   component: HistoricoPage,
+  pendingComponent: () => <PageSkeleton kpis={0} rows={8} />,
 });
 
 type ReportRow = {
@@ -65,6 +67,7 @@ const CURRENCY_FIELDS = new Set([
 function HistoricoPage() {
   const { user, userRole } = useAuth();
   const [reports, setReports] = useState<ReportRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -81,7 +84,10 @@ function HistoricoPage() {
     }
     if (dateFrom) query = query.gte("report_date", dateFrom);
     if (dateTo) query = query.lte("report_date", dateTo);
-    query.then(({ data }) => setReports((data as ReportRow[]) ?? []));
+    query.then(({ data }) => {
+      setReports((data as ReportRow[]) ?? []);
+      setLoading(false);
+    });
   }, [user, userRole, dateFrom, dateTo]);
 
   useEffect(() => { fetchReports(); }, [fetchReports]);
@@ -156,25 +162,32 @@ function HistoricoPage() {
     Number(n ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
 
   return (
-    <>
+    <div className="animate-fade-in-up">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-foreground">Histórico</h1>
         <p className="text-sm text-muted-foreground">
-          Visualize e edite seus lançamentos. Clique em <Pencil className="inline h-3 w-3" /> para alterar quantidades e valores.
+          Visualize e edite seus lançamentos. Clique em <Pencil className="inline h-3 w-3" aria-hidden="true" /> para alterar quantidades e valores.
         </p>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-3">
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">De</label>
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+          <label htmlFor="date-from" className="mb-1 block text-xs text-muted-foreground">De</label>
+          <input id="date-from" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+            aria-label="Filtrar histórico a partir desta data"
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Até</label>
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+          <label htmlFor="date-to" className="mb-1 block text-xs text-muted-foreground">Até</label>
+          <input id="date-to" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+            aria-label="Filtrar histórico até esta data"
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
         </div>
       </div>
 
+      {loading ? (
+        <TableSkeleton rows={6} cols={6} />
+      ) : (
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
