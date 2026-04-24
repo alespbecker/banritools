@@ -8,7 +8,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   TrendingUp, DollarSign, BarChart3, Calendar,
-  CreditCard, Award,
+  CreditCard, User,
 } from "lucide-react";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -19,9 +19,8 @@ import {
   LineChart, Line,
 } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 
-import { PageSkeleton } from "@/components/PageSkeleton";
+import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -169,134 +168,128 @@ function DashboardPage() {
     }));
   }, [reports]);
 
+  // Mostra skeleton de página inteira na primeira carga.
+  // Trocas de mês fazem refetch sem trocar para skeleton (UX mais leve).
+  const initialLoading = loading && reports.length === 0;
+
   return (
-    <div className="space-y-7">
-      {/* Header + Month Filter */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Meu Dashboard</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {monthRange.label} • Sua produção pessoal
-          </p>
-        </div>
-        <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
-          <SelectTrigger
-            className="w-48"
-            aria-label="Selecionar mês de referência do dashboard"
-            title="Trocar o período exibido"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="0">Mês Atual</SelectItem>
-            <SelectItem value="-1">Mês Anterior</SelectItem>
-            <SelectItem value="-2">{getMonthRange(-2).label}</SelectItem>
-            <SelectItem value="-3">{getMonthRange(-3).label}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Top Summary KPIs */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <StatCard loading={loading} tone="primary" title="Produção Total" value={stats.totalUnits} icon={BarChart3} description="Unidades" hint="Soma de todas as unidades vendidas no período" />
-        <StatCard loading={loading} tone="success" title="Vol. Financeiro" value={formatCurrency(stats.volumeFinanceiro)} icon={DollarSign} description="Consignado" hint="Volume total de crédito gerado" />
-        <StatCard loading={loading} tone="teal"    title="Total Recuperado" value={formatCurrency(stats.totalRecuperacao)} icon={TrendingUp} description="Est. 2 + Est. 3" hint="Valores recuperados nos estágios 2 e 3" />
-        <StatCard loading={loading} tone="violet"  title="Dias Registrados" value={stats.diasRegistrados} icon={Calendar} description="Com produção" hint="Quantos dias do mês tiveram lançamentos" />
-      </div>
-
-      {/* Gamification */}
-      {user && (
-        <GamificationWidgets
-          userId={user.id}
-          agencyId={profile?.agency_id ?? null}
-          monthStart={monthRange.start}
-        />
-      )}
-
-      {/* Product Performance Bar Chart */}
-      <section
-        className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-5 sm:p-6"
-        aria-label="Distribuição de produtos vendidos no período"
-      >
-        <h2 className="mb-4 text-lg font-semibold text-card-foreground">Produtos Vendidos</h2>
-        {loading ? (
-          <Skeleton className="h-72 w-full" />
-        ) : reports.length === 0 ? (
-          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-            Nenhum dado para o período
+    <DataGate
+      loading={initialLoading}
+      skeleton={<PageSkeleton kpis={4} rows={6} />}
+    >
+      <div className="space-y-7">
+        {/* Header + Month Filter */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="mb-1 flex items-center gap-2">
+              <span
+                className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary"
+                title="Esta visão mostra apenas a sua produção pessoal"
+              >
+                <User className="h-3 w-3" aria-hidden="true" />
+                Pessoal
+              </span>
+              <p className="text-xs text-muted-foreground">{monthRange.label}</p>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Olá{profile?.name ? `, ${profile.name.split(" ")[0]}` : ""} 👋
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Aqui está o resumo da sua produção no período.
+            </p>
           </div>
-        ) : (
-          <ChartContainer config={barChartConfig} className="h-72 w-full">
-            <BarChart data={productBarData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-              <XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis fontSize={11} tickLine={false} axisLine={false} />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar dataKey="total" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ChartContainer>
+          <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
+            <SelectTrigger
+              className="w-48"
+              aria-label="Selecionar mês de referência do dashboard"
+              title="Trocar o período exibido"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">Mês Atual</SelectItem>
+              <SelectItem value="-1">Mês Anterior</SelectItem>
+              <SelectItem value="-2">{getMonthRange(-2).label}</SelectItem>
+              <SelectItem value="-3">{getMonthRange(-3).label}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Top Summary KPIs — visão geral */}
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+          <StatCard tone="primary" title="Produção Total" value={stats.totalUnits} icon={BarChart3} description="Unidades" hint="Soma de todas as unidades vendidas no período" />
+          <StatCard tone="success" title="Vol. Financeiro" value={formatCurrency(stats.volumeFinanceiro)} icon={DollarSign} description="Consignado" hint="Volume total de crédito gerado" />
+          <StatCard tone="teal"    title="Total Recuperado" value={formatCurrency(stats.totalRecuperacao)} icon={TrendingUp} description="Est. 2 + Est. 3" hint="Valores recuperados nos estágios 2 e 3" />
+          <StatCard tone="violet"  title="Dias Registrados" value={stats.diasRegistrados} icon={Calendar} description="Com produção" hint="Quantos dias do mês tiveram lançamentos" />
+        </div>
+
+        {/* Gamification — pontos, nível, badges */}
+        {user && (
+          <GamificationWidgets
+            userId={user.id}
+            agencyId={profile?.agency_id ?? null}
+            monthStart={monthRange.start}
+          />
         )}
-      </section>
 
-      {/* Line Chart */}
-      <section
-        className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-5 sm:p-6"
-        aria-label="Produção total ao longo do mês"
-      >
-        <h2 className="mb-4 text-lg font-semibold text-card-foreground">Produção ao Longo do Mês</h2>
-        {loading ? (
-          <Skeleton className="h-72 w-full" />
-        ) : lineData.length === 0 ? (
-          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-            Nenhum dado para o período
+        {/* Recuperação detalhada — desdobra o KPI Total Recuperado */}
+        <section aria-label="Recuperação detalhada por estágio">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Recuperação detalhada
+          </h2>
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+            <StatCard tone="primary"     title="Consignado"    value={formatCurrency(stats.consignadoTotal)} icon={CreditCard} hint="Volume total de crédito consignado" />
+            <StatCard tone="warning"     title="Recup. Est. 2" value={formatCurrency(stats.recup2Total)}     icon={TrendingUp} hint="Recuperação no estágio 2" />
+            <StatCard tone="destructive" title="Recup. Est. 3" value={formatCurrency(stats.recup3Total)}     icon={TrendingUp} hint="Recuperação no estágio 3" />
           </div>
-        ) : (
-          <ChartContainer config={lineChartConfig} className="h-72 w-full">
-            <LineChart data={lineData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-              <XAxis dataKey="date" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis fontSize={11} tickLine={false} axisLine={false} />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Line type="monotone" dataKey="total" stroke="var(--primary)" strokeWidth={2.5} dot={{ r: 3 }} />
-            </LineChart>
-          </ChartContainer>
-        )}
-      </section>
+        </section>
 
-      {/* Financial Volume */}
-      <section aria-label="Volume financeiro detalhado">
-        <h2 className="mb-4 text-lg font-semibold text-foreground">Volume Financeiro</h2>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-          <StatCard loading={loading} tone="primary" title="Consignado" value={formatCurrency(stats.consignadoTotal)} icon={CreditCard} hint="Volume total de crédito consignado" />
-          <StatCard loading={loading} tone="warning" title="Recup. Est. 2" value={formatCurrency(stats.recup2Total)} icon={TrendingUp} hint="Recuperação no estágio 2" />
-          <StatCard loading={loading} tone="destructive" title="Recup. Est. 3" value={formatCurrency(stats.recup3Total)} icon={TrendingUp} hint="Recuperação no estágio 3" />
-        </div>
-      </section>
+        {/* Product Performance Bar Chart */}
+        <section
+          className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-5 sm:p-6"
+          aria-label="Distribuição de produtos vendidos no período"
+        >
+          <h2 className="mb-4 text-lg font-semibold text-card-foreground">Produtos Vendidos</h2>
+          {reports.length === 0 ? (
+            <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+              Nenhum dado para o período
+            </div>
+          ) : (
+            <ChartContainer config={barChartConfig} className="h-72 w-full">
+              <BarChart data={productBarData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
+                <XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis fontSize={11} tickLine={false} axisLine={false} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="total" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
+          )}
+        </section>
 
-      {/* Performance Summary */}
-      <section
-        className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-5 sm:p-6"
-        aria-label="Resumo de performance pessoal"
-      >
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-card-foreground">
-          <Award className="h-5 w-5 text-primary" aria-hidden="true" />
-          Minha Performance
-        </h2>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-          <div className="rounded-lg border border-border bg-background p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{stats.totalSeguros}</p>
-            <p className="text-xs text-muted-foreground">Seguros vendidos</p>
-          </div>
-          <div className="rounded-lg border border-border bg-background p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{formatCurrency(stats.totalCredito)}</p>
-            <p className="text-xs text-muted-foreground">Crédito gerado</p>
-          </div>
-          <div className="rounded-lg border border-border bg-background p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{formatCurrency(stats.totalRecuperacao)}</p>
-            <p className="text-xs text-muted-foreground">Recuperação realizada</p>
-          </div>
-        </div>
-      </section>
-    </div>
+        {/* Line Chart */}
+        <section
+          className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-5 sm:p-6"
+          aria-label="Produção total ao longo do mês"
+        >
+          <h2 className="mb-4 text-lg font-semibold text-card-foreground">Produção ao Longo do Mês</h2>
+          {lineData.length === 0 ? (
+            <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+              Nenhum dado para o período
+            </div>
+          ) : (
+            <ChartContainer config={lineChartConfig} className="h-72 w-full">
+              <LineChart data={lineData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
+                <XAxis dataKey="date" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis fontSize={11} tickLine={false} axisLine={false} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="total" stroke="var(--primary)" strokeWidth={2.5} dot={{ r: 3 }} />
+              </LineChart>
+            </ChartContainer>
+          )}
+        </section>
+      </div>
+    </DataGate>
   );
 }
