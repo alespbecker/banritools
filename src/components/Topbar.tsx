@@ -34,6 +34,8 @@ export function Topbar({ userName, userRole, onMenuClick }: TopbarProps) {
           <button
             onClick={onMenuClick}
             className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            title="Abrir menu de navegação"
+            aria-label="Abrir menu de navegação"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -45,11 +47,16 @@ export function Topbar({ userName, userRole, onMenuClick }: TopbarProps) {
           onClick={handleSync}
           disabled={syncing}
           className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
-          title="Sincronizar dados"
+          title="Recarregar todos os dados desta tela"
+          aria-label="Sincronizar dados"
         >
           <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
         </button>
-        <button className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+        <button
+          className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          title="Notificações (em breve)"
+          aria-label="Abrir notificações"
+        >
           <Bell className="h-4 w-4" />
         </button>
         <div className="flex items-center gap-3">
