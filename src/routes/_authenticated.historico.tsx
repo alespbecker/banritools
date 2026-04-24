@@ -284,6 +284,7 @@ function HistoricoPage() {
           </tbody>
         </table>
       </div>
-    </>
+      )}
+    </div>
   );
 }
