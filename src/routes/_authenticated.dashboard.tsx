@@ -8,7 +8,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   TrendingUp, DollarSign, BarChart3, Calendar,
-  CreditCard, Award,
+  CreditCard, User,
 } from "lucide-react";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -19,9 +19,8 @@ import {
   LineChart, Line,
 } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 
-import { PageSkeleton } from "@/components/PageSkeleton";
+import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
