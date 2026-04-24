@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Trophy, Medal, Award, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageSkeleton, TableSkeleton } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/_authenticated/ranking")({
   head: () => ({
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/_authenticated/ranking")({
     ],
   }),
   component: RankingPage,
+  pendingComponent: () => <PageSkeleton kpis={3} rows={6} />,
 });
 
 type RankingRow = {
@@ -102,20 +104,23 @@ function RankingPage() {
   };
 
   return (
-    <>
+    <div className="animate-fade-in-up">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-bold text-foreground">
-            <Trophy className="h-5 w-5 text-warning" />
+            <Trophy className="h-5 w-5 text-warning" aria-hidden="true" />
             Ranking Mensal
           </h1>
           <p className="text-sm text-muted-foreground">Classificação de produção da sua agência</p>
         </div>
         <div>
-          <label className="mb-1 block text-xs text-muted-foreground">Mês</label>
+          <label htmlFor="ranking-month" className="mb-1 block text-xs text-muted-foreground">Mês</label>
           <select
+            id="ranking-month"
             value={month}
             onChange={(e) => setMonth(e.target.value)}
+            aria-label="Selecionar mês para visualizar o ranking"
+            title="Trocar o mês exibido no ranking"
             className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           >
             {months.map((m) => (
@@ -172,6 +177,9 @@ function RankingPage() {
       )}
 
       {/* Tabela completa */}
+      {loading ? (
+        <TableSkeleton rows={5} cols={3} />
+      ) : (
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
@@ -182,9 +190,7 @@ function RankingPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr><td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">Carregando...</td></tr>
-            ) : rest.length === 0 && top.length === 0 ? (
+            {rest.length === 0 && top.length === 0 ? (
               <tr><td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">Sem dados de ranking para este mês</td></tr>
             ) : (
               rows.map((r, idx) => {
@@ -205,6 +211,7 @@ function RankingPage() {
           </tbody>
         </table>
       </div>
-    </>
+      )}
+    </div>
   );
 }

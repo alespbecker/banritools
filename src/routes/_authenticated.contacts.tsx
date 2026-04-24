@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { PageSkeleton, TableSkeleton } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/_authenticated/contacts")({
   head: () => ({
@@ -12,6 +13,7 @@ export const Route = createFileRoute("/_authenticated/contacts")({
     ],
   }),
   component: ContactsPage,
+  pendingComponent: () => <PageSkeleton kpis={0} rows={6} />,
 });
 
 interface Contact {
@@ -27,6 +29,7 @@ interface Contact {
 function ContactsPage() {
   const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
   const [form, setForm] = useState({ name: "", phone: "", product_interest: "", status: "novo", next_follow_up: "", notes: "" });
@@ -35,6 +38,7 @@ function ContactsPage() {
     if (!user) return;
     const { data } = await supabase.from("contacts").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
     setContacts(data ?? []);
+    setLoading(false);
   }, [user]);
 
   useEffect(() => { loadContacts(); }, [loadContacts]);

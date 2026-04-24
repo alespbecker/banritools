@@ -222,14 +222,16 @@ function HistoricoPage() {
                           <button
                             onClick={() => isEditing ? cancelEdit() : startEdit(r)}
                             className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                            title={isEditing ? "Cancelar" : "Editar"}
+                            title={isEditing ? "Cancelar edição deste lançamento" : "Editar este lançamento"}
+                            aria-label={isEditing ? "Cancelar edição deste lançamento" : "Editar este lançamento"}
                           >
                             {isEditing ? <X className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
                           </button>
                           <button
                             onClick={() => deleteRow(r.id)}
                             className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                            title="Excluir"
+                            title="Excluir este lançamento permanentemente"
+                            aria-label="Excluir este lançamento permanentemente"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
