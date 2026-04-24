@@ -314,7 +314,7 @@ function RegistrarProducaoPage() {
   };
 
   return (
-    <>
+    <div className="animate-fade-in-up">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-foreground">Registrar Produção</h1>
         <p className="text-sm text-muted-foreground">
@@ -324,13 +324,15 @@ function RegistrarProducaoPage() {
 
       <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-foreground">Data</label>
-          <input type="date" value={form.report_date} onChange={(e) => handleChange("report_date", e.target.value)}
+          <label htmlFor="report-date" className="mb-1.5 block text-sm font-medium text-foreground">Data</label>
+          <input id="report-date" type="date" value={form.report_date} onChange={(e) => handleChange("report_date", e.target.value)}
+            aria-label="Data do registro de produção"
+            title="Data dos lançamentos que serão somados"
             className="h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
         </div>
 
         {fieldGroups.map((group) => (
-          <div key={group.title} className="rounded-lg border border-border bg-card p-4 sm:p-5">
+          <div key={group.title} className="rounded-lg border border-border bg-card p-4 sm:p-5 animate-fade-in-up">
             <h3 className="mb-4 text-sm font-semibold text-card-foreground">{group.title}</h3>
             <div className="space-y-4">
               {group.fields.map((field) => renderProductRow(field))}
@@ -340,15 +342,19 @@ function RegistrarProducaoPage() {
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <button type="submit" disabled={saving}
+            title="Salvar todos os produtos preenchidos e voltar ao dashboard"
+            aria-label="Salvar tudo e ir ao dashboard"
             className="h-10 rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50">
             {saving ? "Salvando..." : "Salvar Tudo"}
           </button>
           <button type="button" disabled={saving} onClick={() => handleSaveAll("saveAndNew")}
+            title="Salvar e limpar formulário para registrar outro dia"
+            aria-label="Salvar e registrar outro dia"
             className="h-10 rounded-md border border-input bg-background px-6 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-50">
             Salvar e Registrar Outro Dia
           </button>
         </div>
       </form>
-    </>
+    </div>
   );
 }
