@@ -378,19 +378,37 @@ function AdminDashboardPage() {
   ], []);
 
   if (isLoading || (userRole && userRole !== "admin")) {
-    return <div className="flex h-64 items-center justify-center text-muted-foreground">Verificando permissão...</div>;
+    return <PageSkeleton kpis={4} rows={6} />;
   }
 
+  const initialLoading = loading && reports.length === 0 && profiles.length === 0;
+
   return (
+    <DataGate
+      loading={initialLoading}
+      skeleton={<PageSkeleton kpis={4} rows={8} />}
+    >
     <div className="space-y-7">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
+          <div className="mb-1 flex items-center gap-2">
+            <span
+              className="inline-flex items-center gap-1 rounded-full border border-[var(--brand-violet)]/40 bg-[var(--brand-violet)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--brand-violet)]"
+              title="Esta visão consolida a produção de toda a agência"
+            >
+              <Users2 className="h-3 w-3" aria-hidden="true" />
+              Time
+            </span>
+            <p className="text-xs text-muted-foreground">{monthRange.label}</p>
+          </div>
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
             <Shield className="h-6 w-6 text-primary" aria-hidden="true" />
             Painel da Agência
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">{monthRange.label} • Visão consolidada do time</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Visão consolidada do time, ranking e gestão de usuários.
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ExportDialog
