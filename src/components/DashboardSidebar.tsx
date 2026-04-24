@@ -8,15 +8,14 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, adminOnly: false },
-  { label: "Admin", to: "/admin", icon: Shield, adminOnly: true },
-  { label: "Usuários", to: "/admin/users", icon: Users, adminOnly: true },
-  { label: "Registrar Produção", to: "/registrar-producao", icon: FileText, adminOnly: false },
-  { label: "Histórico", to: "/historico", icon: History, adminOnly: false },
-  { label: "Ranking", to: "/ranking", icon: Trophy, adminOnly: false },
-  { label: "Contatos", to: "/contacts", icon: Users, adminOnly: false },
-  { label: "Ferramentas", to: "/tools", icon: Wrench, adminOnly: false },
-  { label: "Configurações", to: "/settings", icon: Settings, adminOnly: false },
+  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, adminOnly: false, hint: "Sua produção pessoal e gamificação" },
+  { label: "Painel da Agência", to: "/admin", icon: Shield, adminOnly: true, hint: "Visão consolidada do time + gestão de usuários" },
+  { label: "Registrar Produção", to: "/registrar-producao", icon: FileText, adminOnly: false, hint: "Lançar vendas e produtos do dia" },
+  { label: "Histórico", to: "/historico", icon: History, adminOnly: false, hint: "Ver e editar lançamentos passados" },
+  { label: "Ranking", to: "/ranking", icon: Trophy, adminOnly: false, hint: "Classificação mensal da agência" },
+  { label: "Contatos", to: "/contacts", icon: Users, adminOnly: false, hint: "Gerenciar contatos e follow-ups" },
+  { label: "Ferramentas", to: "/tools", icon: Wrench, adminOnly: false, hint: "Acessar ferramentas auxiliares" },
+  { label: "Configurações", to: "/settings", icon: Settings, adminOnly: false, hint: "Editar perfil e preferências" },
 ] as const;
 
 interface DashboardSidebarProps {
@@ -51,6 +50,8 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="rounded-md p-1 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            title={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+            aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>
@@ -65,6 +66,8 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
               key={item.to}
               to={item.to}
               onClick={onNavigate}
+              title={item.hint}
+              aria-label={`${item.label} — ${item.hint}`}
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 isActive
@@ -83,6 +86,8 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
         {onToggleTheme && (
           <button
             onClick={onToggleTheme}
+            title={theme === "dark" ? "Mudar para modo claro" : "Mudar para modo escuro"}
+            aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
             className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             {theme === "dark" ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
@@ -91,6 +96,8 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
         )}
         <button
           onClick={onSignOut}
+          title="Encerrar a sessão e voltar ao login"
+          aria-label="Sair da conta"
           className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         >
           <LogOut className="h-4 w-4 shrink-0" />
