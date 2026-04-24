@@ -208,31 +208,94 @@
 }
 
 /* =========================================================
-   Microanimations
+   Microanimations — suaves, com easing Banrisul
    ========================================================= */
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
+  0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.85; }
+}
 
-.animate-fade-in-up { animation: fade-in-up 0.4s ease-out both; }
-.stagger-1 { animation-delay: 60ms; }
+/* Easing curva Banrisul — suave, com leve antecipação */
+:root {
+  --ease-banri: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.animate-fade-in-up { animation: fade-in-up 520ms var(--ease-banri) both; }
+.animate-fade-in    { animation: fade-in 380ms var(--ease-banri) both; }
+.animate-fade-out   { animation: fade-out 240ms var(--ease-banri) both; }
+
+.stagger-1 { animation-delay:  60ms; }
 .stagger-2 { animation-delay: 120ms; }
 .stagger-3 { animation-delay: 180ms; }
 .stagger-4 { animation-delay: 240ms; }
 .stagger-5 { animation-delay: 300ms; }
 .stagger-6 { animation-delay: 360ms; }
+.stagger-7 { animation-delay: 420ms; }
+.stagger-8 { animation-delay: 480ms; }
 
-/* Subtle elevated card hover */
+/* Skeleton com shimmer suave */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--foreground) 6%, transparent);
+  animation: pulse-soft 2.4s ease-in-out infinite;
+}
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in oklab, var(--foreground) 4%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.2s linear infinite;
+}
+
+/* Card hover — sombra sutil com cor da marca */
 .card-hover {
-  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  transition:
+    transform 240ms var(--ease-banri),
+    box-shadow 240ms var(--ease-banri),
+    border-color 240ms var(--ease-banri);
 }
 .card-hover:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   border-color: color-mix(in oklab, var(--primary) 40%, var(--border));
-  box-shadow: 0 8px 24px -12px color-mix(in oklab, var(--primary) 35%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in oklab, var(--primary) 8%, transparent) inset,
+    0 12px 32px -16px color-mix(in oklab, var(--primary) 38%, transparent);
+}
+
+/* Crossfade entre skeleton e conteúdo */
+.fade-swap-enter { animation: fade-in 420ms var(--ease-banri) both; }
+.fade-swap-exit  { animation: fade-out 220ms var(--ease-banri) both; }
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-fade-in,
+  .animate-fade-out,
+  .fade-swap-enter,
+  .fade-swap-exit { animation: none !important; }
+  .skeleton-shimmer::after { animation: none !important; }
+  .card-hover { transition: none !important; }
 }
