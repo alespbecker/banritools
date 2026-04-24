@@ -824,5 +824,6 @@ function AdminDashboardPage() {
         </aside>
       )}
     </div>
+    </DataGate>
   );
 }
