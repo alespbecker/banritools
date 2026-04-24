@@ -21,6 +21,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { PageSkeleton } from "@/components/PageSkeleton";
+
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
@@ -29,6 +31,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
     ],
   }),
   component: DashboardPage,
+  pendingComponent: () => <PageSkeleton kpis={4} rows={6} />,
 });
 
 type Report = {

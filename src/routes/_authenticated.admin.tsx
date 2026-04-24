@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
     ],
   }),
   component: AdminDashboardPage,
+  pendingComponent: () => <PageSkeleton kpis={4} rows={8} />,
 });
 
 type AgencyReport = {
