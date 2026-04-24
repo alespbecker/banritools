@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { PageSkeleton, TableSkeleton } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/_authenticated/contacts")({
   head: () => ({
@@ -12,6 +13,7 @@ export const Route = createFileRoute("/_authenticated/contacts")({
     ],
   }),
   component: ContactsPage,
+  pendingComponent: () => <PageSkeleton kpis={0} rows={6} />,
 });
 
 interface Contact {
@@ -27,6 +29,7 @@ interface Contact {
 function ContactsPage() {
   const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
   const [form, setForm] = useState({ name: "", phone: "", product_interest: "", status: "novo", next_follow_up: "", notes: "" });
@@ -35,6 +38,7 @@ function ContactsPage() {
     if (!user) return;
     const { data } = await supabase.from("contacts").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
     setContacts(data ?? []);
+    setLoading(false);
   }, [user]);
 
   useEffect(() => { loadContacts(); }, [loadContacts]);
@@ -65,7 +69,7 @@ function ContactsPage() {
   };
 
   return (
-    <>
+    <div className="animate-fade-in-up">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-foreground">Contatos</h1>
@@ -74,33 +78,38 @@ function ContactsPage() {
         <button
           onClick={() => { setShowForm(!showForm); setEditing(null); setForm({ name: "", phone: "", product_interest: "", status: "novo", next_follow_up: "", notes: "" }); }}
           className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          title={showForm ? "Fechar formulário de novo contato" : "Abrir formulário para criar um novo contato"}
+          aria-label={showForm ? "Fechar formulário de novo contato" : "Criar novo contato"}
         >
-          <Plus className="h-4 w-4" /> Novo
+          <Plus className="h-4 w-4" aria-hidden="true" /> Novo
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSave} className="mb-6 max-w-lg space-y-3 rounded-lg border border-border bg-card p-5">
+        <form onSubmit={handleSave} className="mb-6 max-w-lg space-y-3 rounded-lg border border-border bg-card p-5 animate-fade-in-up">
           <h3 className="text-sm font-semibold text-card-foreground">{editing ? "Editar Contato" : "Novo Contato"}</h3>
-          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required placeholder="Nome" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
-          <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Telefone" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
-          <input value={form.product_interest} onChange={(e) => setForm({ ...form, product_interest: e.target.value })} placeholder="Produto de interesse" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
-          <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring">
+          <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required placeholder="Nome" aria-label="Nome do contato" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+          <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Telefone" aria-label="Telefone do contato" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+          <input value={form.product_interest} onChange={(e) => setForm({ ...form, product_interest: e.target.value })} placeholder="Produto de interesse" aria-label="Produto de interesse" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+          <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} aria-label="Status do contato" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring">
             <option value="novo">Novo</option>
             <option value="em_contato">Em Contato</option>
             <option value="negociando">Negociando</option>
             <option value="fechado">Fechado</option>
             <option value="perdido">Perdido</option>
           </select>
-          <input type="date" value={form.next_follow_up} onChange={(e) => setForm({ ...form, next_follow_up: e.target.value })} className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
-          <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Notas" rows={2} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+          <input type="date" value={form.next_follow_up} onChange={(e) => setForm({ ...form, next_follow_up: e.target.value })} aria-label="Próximo follow-up" className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+          <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Notas" rows={2} aria-label="Notas sobre o contato" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
           <div className="flex gap-2">
-            <button type="submit" className="h-9 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">Salvar</button>
-            <button type="button" onClick={() => { setShowForm(false); setEditing(null); }} className="h-9 rounded-md border border-input bg-background px-4 text-sm text-foreground hover:bg-accent">Cancelar</button>
+            <button type="submit" title="Salvar contato e atualizar lista" className="h-9 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">Salvar</button>
+            <button type="button" onClick={() => { setShowForm(false); setEditing(null); }} title="Descartar e fechar formulário" className="h-9 rounded-md border border-input bg-background px-4 text-sm text-foreground hover:bg-accent">Cancelar</button>
           </div>
         </form>
       )}
 
+      {loading ? (
+        <TableSkeleton rows={5} cols={6} />
+      ) : (
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
@@ -126,8 +135,8 @@ function ContactsPage() {
                   <td className="px-4 py-3 text-foreground">{c.next_follow_up ? new Date(c.next_follow_up).toLocaleDateString("pt-BR") : "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
-                      <button onClick={() => handleEdit(c)} className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>
-                      <button onClick={() => handleDelete(c.id)} className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => handleEdit(c)} title={`Editar contato de ${c.name}`} aria-label={`Editar contato de ${c.name}`} className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>
+                      <button onClick={() => handleDelete(c.id)} title={`Excluir contato de ${c.name}`} aria-label={`Excluir contato de ${c.name}`} className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
                     </div>
                   </td>
                 </tr>
@@ -136,6 +145,7 @@ function ContactsPage() {
           </tbody>
         </table>
       </div>
-    </>
+      )}
+    </div>
   );
 }

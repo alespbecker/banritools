@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Trophy, TrendingUp, Award, Building2, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
+import { PageSkeleton } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
     ],
   }),
   component: SettingsPage,
+  pendingComponent: () => <PageSkeleton kpis={4} rows={3} />,
 });
 
 type Stats = {
@@ -77,7 +79,7 @@ function SettingsPage() {
   };
 
   return (
-    <>
+    <div className="animate-fade-in-up">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-foreground">Configurações</h1>
         <p className="text-sm text-muted-foreground">Gerencie seu perfil e veja seu resumo</p>
@@ -85,57 +87,69 @@ function SettingsPage() {
 
       {/* Resumo */}
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="rounded-lg border border-border bg-card p-4">
+        <div className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-4" title="Pontos acumulados em todos os lançamentos">
           <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-            <TrendingUp className="h-4 w-4" /> Pontos
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10">
+              <TrendingUp className="h-4 w-4 text-primary" aria-hidden="true" />
+            </span>
+            Pontos
           </div>
           <p className="mt-2 text-2xl font-bold text-foreground">{stats.total_points.toLocaleString("pt-BR")}</p>
         </div>
-        <div className="rounded-lg border border-border bg-card p-4">
+        <div className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-4" title="Seu nível atual no sistema de gamificação">
           <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-            <Award className="h-4 w-4" /> Nível
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--brand-violet)]/12">
+              <Award className="h-4 w-4 text-[var(--brand-violet)]" aria-hidden="true" />
+            </span>
+            Nível
           </div>
           <p className="mt-2 text-2xl font-bold text-primary">Lv {stats.level}</p>
         </div>
-        <div className="rounded-lg border border-border bg-card p-4">
+        <div className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-4" title="Total de relatórios diários enviados">
           <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-            <BarChart3 className="h-4 w-4" /> Lançamentos
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--brand-teal)]/12">
+              <BarChart3 className="h-4 w-4 text-[var(--brand-teal)]" aria-hidden="true" />
+            </span>
+            Lançamentos
           </div>
           <p className="mt-2 text-2xl font-bold text-foreground">{stats.reports_count}</p>
         </div>
-        <div className="rounded-lg border border-border bg-card p-4">
+        <div className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-4" title="Quantidade total de seguros vendidos">
           <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
-            <Trophy className="h-4 w-4" /> Seguros vendidos
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-warning/15">
+              <Trophy className="h-4 w-4 text-warning" aria-hidden="true" />
+            </span>
+            Seguros
           </div>
           <p className="mt-2 text-2xl font-bold text-foreground">{stats.total_seguros}</p>
         </div>
       </div>
 
-      <form onSubmit={handleSave} className="max-w-md space-y-4 rounded-lg border border-border bg-card p-5">
+      <form onSubmit={handleSave} className="max-w-md space-y-4 rounded-lg border border-border bg-card p-5 animate-fade-in-up">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-card-foreground">Nome</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+          <label htmlFor="profile-name" className="mb-1.5 block text-sm font-medium text-card-foreground">Nome</label>
+          <input id="profile-name" value={name} onChange={(e) => setName(e.target.value)} aria-label="Seu nome de exibição" className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-card-foreground">Email</label>
-          <input value={user?.email ?? ""} disabled className="h-10 w-full rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground" />
+          <label htmlFor="profile-email" className="mb-1.5 block text-sm font-medium text-card-foreground">Email</label>
+          <input id="profile-email" value={user?.email ?? ""} disabled aria-label="Email da conta (não editável)" className="h-10 w-full rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground" />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-card-foreground">Perfil</label>
-            <input value={userRole ?? "user"} disabled className="h-10 w-full rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground capitalize" />
+            <label htmlFor="profile-role" className="mb-1.5 block text-sm font-medium text-card-foreground">Perfil</label>
+            <input id="profile-role" value={userRole ?? "user"} disabled aria-label="Função do perfil" className="h-10 w-full rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground capitalize" />
           </div>
           <div>
-            <label className="mb-1.5 flex items-center gap-1 text-sm font-medium text-card-foreground">
-              <Building2 className="h-3.5 w-3.5" /> Agência
+            <label htmlFor="profile-agency" className="mb-1.5 flex items-center gap-1 text-sm font-medium text-card-foreground">
+              <Building2 className="h-3.5 w-3.5" aria-hidden="true" /> Agência
             </label>
-            <input value={stats.agency_name ?? "Sem agência"} disabled className="h-10 w-full rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground" />
+            <input id="profile-agency" value={stats.agency_name ?? "Sem agência"} disabled aria-label="Agência associada" className="h-10 w-full rounded-md border border-input bg-muted px-3 text-sm text-muted-foreground" />
           </div>
         </div>
-        <button type="submit" disabled={saving} className="h-10 rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+        <button type="submit" disabled={saving} title="Salvar alterações no perfil" aria-label="Salvar perfil" className="h-10 rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
           {saving ? "Salvando..." : "Salvar"}
         </button>
       </form>
-    </>
+    </div>
   );
 }
