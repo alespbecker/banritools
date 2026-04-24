@@ -1,11 +1,11 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { StatCard } from "@/components/StatCard";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, TrendingUp, DollarSign, BarChart3, Calendar, Award, Shield,
-  Search, SlidersHorizontal, X,
+  Search, SlidersHorizontal, X, Pencil, Check,
 } from "lucide-react";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -18,6 +18,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -40,14 +43,14 @@ type AgencyReport = {
   capitalizacao_valor: number | null;
   credito_minuto_aumento: number | null;
   consignado_volume: number | null;
-  
   recuperacao_estagio_2: number | null;
   recuperacao_estagio_3: number | null;
   pj_conta_empresarial: number | null;
   pj_maquina_vero: number | null;
 };
 
-type ProfileLite = { id: string; name: string | null; email: string | null };
+type ProfileLite = { id: string; name: string | null; email: string | null; agency_id: string | null };
+type AgencyRow = { id: string; name: string };
 
 function fmtBRL(v: number) {
   return `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -71,15 +74,21 @@ const chartConfig: ChartConfig = {
 };
 
 function AdminDashboardPage() {
-  const { userRole, profile, isLoading } = useAuth();
+  const { userRole, profile, user, isLoading } = useAuth();
   const navigate = useNavigate();
   const [reports, setReports] = useState<AgencyReport[]>([]);
   const [profiles, setProfiles] = useState<ProfileLite[]>([]);
+  const [roles, setRoles] = useState<Map<string, "admin" | "user">>(new Map());
+  const [agencies, setAgencies] = useState<AgencyRow[]>([]);
   const [ranking, setRanking] = useState<{ user_id: string; points: number; position: number }[]>([]);
   const [monthOffset, setMonthOffset] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState("");
   const monthRange = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
 
-  // ===== Search & advanced filters =====
+  // Search & advanced filters
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [productFilter, setProductFilter] = useState<"all" | "seguros" | "credito" | "recuperacao" | "pj">("all");
@@ -105,51 +114,51 @@ function AdminDashboardPage() {
 
   const agencyId = profile?.agency_id ?? null;
 
-  const fetchAll = useCallback(() => {
+  const fetchAll = useCallback(async () => {
     if (!agencyId) return;
-
-    supabase
-      .from("daily_reports")
-      .select("user_id, report_date, seguro_vida, seguro_ap_smart, capitalizacao, seguro_vida_valor, seguro_ap_smart_valor, capitalizacao_valor, credito_minuto_aumento, consignado_volume, recuperacao_estagio_2, recuperacao_estagio_3, pj_conta_empresarial, pj_maquina_vero")
-      .eq("agency_id", agencyId)
-      .gte("report_date", monthRange.start)
-      .lte("report_date", monthRange.end)
-      .then(({ data }) => setReports((data as AgencyReport[]) ?? []));
-
-    supabase
-      .from("profiles")
-      .select("id, name, email")
-      .eq("agency_id", agencyId)
-      .then(({ data }) => setProfiles((data as ProfileLite[]) ?? []));
-
-    supabase
-      .from("ranking_monthly")
-      .select("user_id, points, position")
-      .eq("agency_id", agencyId)
-      .eq("month", monthRange.monthFirst)
-      .order("position")
-      .then(({ data }) => setRanking((data as { user_id: string; points: number; position: number }[]) ?? []));
+    setLoading(true);
+    // Fire all queries in parallel — much faster than sequential awaits.
+    const [reportsRes, profilesRes, rolesRes, agenciesRes, rankingRes] = await Promise.all([
+      supabase
+        .from("daily_reports")
+        .select("user_id, report_date, seguro_vida, seguro_ap_smart, capitalizacao, seguro_vida_valor, seguro_ap_smart_valor, capitalizacao_valor, credito_minuto_aumento, consignado_volume, recuperacao_estagio_2, recuperacao_estagio_3, pj_conta_empresarial, pj_maquina_vero")
+        .eq("agency_id", agencyId)
+        .gte("report_date", monthRange.start)
+        .lte("report_date", monthRange.end),
+      supabase.from("profiles").select("id, name, email, agency_id").eq("agency_id", agencyId).order("name"),
+      supabase.from("user_roles").select("user_id, role"),
+      supabase.from("agencies").select("id, name").order("name"),
+      supabase.from("ranking_monthly").select("user_id, points, position").eq("agency_id", agencyId).eq("month", monthRange.monthFirst).order("position"),
+    ]);
+    setReports((reportsRes.data as AgencyReport[]) ?? []);
+    setProfiles((profilesRes.data as ProfileLite[]) ?? []);
+    const m = new Map<string, "admin" | "user">();
+    for (const r of (rolesRes.data as { user_id: string; role: "admin" | "user" }[]) ?? []) m.set(r.user_id, r.role);
+    setRoles(m);
+    setAgencies((agenciesRes.data as AgencyRow[]) ?? []);
+    setRanking((rankingRes.data as { user_id: string; points: number; position: number }[]) ?? []);
+    setLoading(false);
   }, [agencyId, monthRange.start, monthRange.end, monthRange.monthFirst]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // Realtime sync
+  // Realtime sync (single channel for everything we care about)
   useEffect(() => {
     if (!agencyId) return;
     const channel = supabase
       .channel("admin-dashboard")
       .on("postgres_changes", { event: "*", schema: "public", table: "daily_reports" }, () => fetchAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "ranking_monthly" }, () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => fetchAll())
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [agencyId, fetchAll]);
-
-  // Manual sync event
-  useEffect(() => {
     const handler = () => fetchAll();
     window.addEventListener("banritools:sync", handler);
-    return () => window.removeEventListener("banritools:sync", handler);
-  }, [fetchAll]);
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("banritools:sync", handler);
+    };
+  }, [agencyId, fetchAll]);
 
   const profileMap = useMemo(() => {
     const m = new Map<string, ProfileLite>();
@@ -201,13 +210,12 @@ function AdminDashboardPage() {
     return Array.from(map.values()).sort((a, b) => b.units - a.units);
   }, [reports]);
 
-  // Inactive members (no reports in period)
   const inactives = useMemo(() => {
     const activeIds = new Set(perUser.map((u) => u.user_id));
     return profiles.filter((p) => !activeIds.has(p.id));
   }, [profiles, perUser]);
 
-  // Apply search + advanced filters
+  // Filters
   const filteredPerUser = useMemo(() => {
     const q = search.trim().toLowerCase();
     const minU = minUnits ? Number(minUnits) : null;
@@ -235,7 +243,6 @@ function AdminDashboardPage() {
     });
   }, [perUser, profiles, reports, ranking, search, minUnits, minVolume, minPoints, productFilter]);
 
-  // Inactive list, filtered by name search
   const filteredInactives = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return inactives;
@@ -254,17 +261,49 @@ function AdminDashboardPage() {
     }));
   }, [ranking, profileMap]);
 
-  // ==== Export: aggregated per-user rows ====
+  // ====== User management actions ======
+  const handleToggleRole = async (targetId: string, makeAdmin: boolean) => {
+    if (targetId === user?.id) {
+      toast.error("Você não pode alterar sua própria função.");
+      return;
+    }
+    setSavingId(targetId);
+    const newRole: "admin" | "user" = makeAdmin ? "admin" : "user";
+    setRoles((prev) => new Map(prev).set(targetId, newRole));
+    const { error } = await supabase.rpc("admin_set_user_role", {
+      _target_user_id: targetId, _new_role: newRole,
+    });
+    setSavingId(null);
+    if (error) { toast.error(error.message); fetchAll(); }
+    else toast.success(`Usuário agora é ${newRole === "admin" ? "Administrador" : "Usuário"}.`);
+  };
+
+  const handleAgencyChange = async (targetId: string, newAgency: string) => {
+    setSavingId(targetId);
+    const { error } = await supabase.from("profiles").update({ agency_id: newAgency }).eq("id", targetId);
+    setSavingId(null);
+    if (error) toast.error("Erro ao atualizar agência");
+    else { toast.success("Agência atualizada"); fetchAll(); }
+  };
+
+  const startEditName = (p: ProfileLite) => {
+    setEditingNameId(p.id);
+    setNameDraft(p.name ?? "");
+  };
+
+  const saveName = async (targetId: string) => {
+    setSavingId(targetId);
+    const { error } = await supabase.from("profiles").update({ name: nameDraft.trim() }).eq("id", targetId);
+    setSavingId(null);
+    setEditingNameId(null);
+    if (error) toast.error("Erro ao atualizar nome");
+    else { toast.success("Nome atualizado"); fetchAll(); }
+  };
+
+  // ==== Export ====
   type ExportRow = {
-    name: string;
-    email: string;
-    units: number;
-    seguros: number;
-    volume: number;
-    recuperado: number;
-    dias: number;
-    points: number;
-    position: number | "";
+    name: string; email: string; units: number; seguros: number;
+    volume: number; recuperado: number; dias: number; points: number; position: number | "";
   };
   const rankMap = useMemo(() => {
     const m = new Map<string, { points: number; position: number }>();
@@ -275,8 +314,7 @@ function AdminDashboardPage() {
   const exportRows: ExportRow[] = useMemo(() => {
     if (showInactivesAsRows) {
       return filteredInactives.map((p) => ({
-        name: p.name ?? "Sem nome",
-        email: p.email ?? "",
+        name: p.name ?? "Sem nome", email: p.email ?? "",
         units: 0, seguros: 0, volume: 0, recuperado: 0, dias: 0,
         points: 0, position: "" as const,
       }));
@@ -285,15 +323,10 @@ function AdminDashboardPage() {
       const p = profileMap.get(u.user_id);
       const rk = rankMap.get(u.user_id);
       return {
-        name: p?.name ?? "Sem nome",
-        email: p?.email ?? "",
-        units: u.units,
-        seguros: u.seguros,
-        volume: u.volume,
-        recuperado: u.recuperado,
-        dias: u.dias.size,
-        points: rk?.points ?? 0,
-        position: rk?.position ?? "",
+        name: p?.name ?? "Sem nome", email: p?.email ?? "",
+        units: u.units, seguros: u.seguros, volume: u.volume,
+        recuperado: u.recuperado, dias: u.dias.size,
+        points: rk?.points ?? 0, position: rk?.position ?? "",
       };
     });
   }, [filteredPerUser, filteredInactives, showInactivesAsRows, profileMap, rankMap]);
@@ -310,7 +343,6 @@ function AdminDashboardPage() {
     { key: "points", label: "Pontos do mês", accessor: (r) => r.points, defaultChecked: true },
   ], []);
 
-  // ==== Export: raw daily reports ====
   type RawRow = AgencyReport & { name: string; email: string };
   const rawRows: RawRow[] = useMemo(() => {
     const allowedIds = new Set(filteredPerUser.map((u) => u.user_id));
@@ -336,28 +368,26 @@ function AdminDashboardPage() {
     { key: "capitalizacao_valor", label: "Capitalização (R$)", accessor: (r) => num(r.capitalizacao_valor).toFixed(2), defaultChecked: true },
     { key: "credito_minuto_aumento", label: "Crédito Minuto", accessor: (r) => num(r.credito_minuto_aumento), defaultChecked: true },
     { key: "consignado_volume", label: "Consignado (R$)", accessor: (r) => num(r.consignado_volume).toFixed(2), defaultChecked: true },
-    
     { key: "recuperacao_estagio_2", label: "Recuperação E2 (R$)", accessor: (r) => num(r.recuperacao_estagio_2).toFixed(2), defaultChecked: true },
     { key: "recuperacao_estagio_3", label: "Recuperação E3 (R$)", accessor: (r) => num(r.recuperacao_estagio_3).toFixed(2), defaultChecked: true },
     { key: "pj_conta_empresarial", label: "PJ Conta Empresarial", accessor: (r) => num(r.pj_conta_empresarial), defaultChecked: true },
     { key: "pj_maquina_vero", label: "PJ Máquina Vero", accessor: (r) => num(r.pj_maquina_vero), defaultChecked: true },
   ], []);
 
-
   if (isLoading || (userRole && userRole !== "admin")) {
     return <div className="flex h-64 items-center justify-center text-muted-foreground">Verificando permissão...</div>;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="flex items-center gap-2 text-xl font-bold text-foreground">
-            <Shield className="h-5 w-5 text-primary" />
-            Painel Administrativo
+          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
+            <Shield className="h-6 w-6 text-primary" aria-hidden="true" />
+            Painel da Agência
           </h1>
-          <p className="text-sm text-muted-foreground">{monthRange.label} • Visão completa da agência</p>
+          <p className="mt-1 text-sm text-muted-foreground">{monthRange.label} • Visão consolidada do time</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ExportDialog
@@ -367,14 +397,14 @@ function AdminDashboardPage() {
             rows={rawRows}
             triggerLabel="Exportar Relatórios"
           />
-          <Link
-            to="/admin/users"
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground hover:bg-accent transition-colors"
-          >
-            Gerenciar Usuários
-          </Link>
           <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger
+              className="w-44"
+              aria-label="Selecionar mês de referência do painel"
+              title="Trocar o período exibido"
+            >
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="0">Mês Atual</SelectItem>
               <SelectItem value="-1">Mês Anterior</SelectItem>
@@ -387,29 +417,59 @@ function AdminDashboardPage() {
 
       {/* Agency KPIs */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Colaboradores Ativos" value={`${stats.activeUsers}/${profiles.length}`} icon={Users} description="Com produção" />
-        <StatCard title="Produção Total" value={stats.totalUnits} icon={BarChart3} description="Unidades agência" />
-        <StatCard title="Vol. Financeiro" value={fmtBRL(stats.volFinanceiro)} icon={DollarSign} description="Toda agência" />
-        <StatCard title="Recuperação" value={fmtBRL(stats.recuperado)} icon={TrendingUp} description="Est. 2 + 3" />
+        <StatCard loading={loading} tone="primary" title="Colaboradores Ativos" value={`${stats.activeUsers}/${profiles.length}`} icon={Users} description="Com produção" hint="Quantos do time tiveram lançamentos no período" />
+        <StatCard loading={loading} tone="violet"  title="Produção Total"       value={stats.totalUnits} icon={BarChart3} description="Unidades agência" hint="Soma de unidades vendidas pelo time" />
+        <StatCard loading={loading} tone="success" title="Vol. Financeiro"      value={fmtBRL(stats.volFinanceiro)} icon={DollarSign} description="Toda agência" hint="Crédito gerado pela agência" />
+        <StatCard loading={loading} tone="teal"    title="Recuperação"          value={fmtBRL(stats.recuperado)} icon={TrendingUp} description="Est. 2 + 3" hint="Total recuperado em estágios 2 e 3" />
       </div>
 
+      {/* Top performers chart */}
+      <section
+        className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-5 sm:p-6"
+        aria-label="Top 10 colaboradores por pontuação no mês"
+      >
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-card-foreground">
+          <Award className="h-5 w-5 text-primary" aria-hidden="true" />
+          Top 10 — Pontuação do Mês
+        </h2>
+        {loading ? (
+          <Skeleton className="h-72 w-full" />
+        ) : rankingChart.length === 0 ? (
+          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+            Sem dados de ranking para o período
+          </div>
+        ) : (
+          <ChartContainer config={chartConfig} className="h-72 w-full">
+            <BarChart data={rankingChart}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
+              <XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis fontSize={11} tickLine={false} axisLine={false} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="total" fill="var(--primary)" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ChartContainer>
+        )}
+      </section>
+
       {/* Search & Advanced filters */}
-      <div className="rounded-lg border border-border bg-card p-4">
+      <section className="rounded-xl border border-border bg-card p-4" aria-label="Filtros e busca de colaboradores">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nome ou email do colaborador..."
               className="pl-9"
+              aria-label="Buscar colaborador por nome ou email"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch("")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-accent"
-                aria-label="Limpar busca"
+                aria-label="Limpar campo de busca"
+                title="Limpar busca"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -417,7 +477,13 @@ function AdminDashboardPage() {
           </div>
           <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                aria-label="Abrir filtros avançados"
+                title="Filtros avançados (status, tipo de produto, mínimos)"
+              >
                 <SlidersHorizontal className="h-4 w-4" />
                 Filtros avançados
                 {activeFilterCount > 0 && (
@@ -431,14 +497,19 @@ function AdminDashboardPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-semibold">Filtros</h4>
-                  <button type="button" onClick={clearFilters} className="text-xs text-primary hover:underline">
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="text-xs text-primary hover:underline"
+                    title="Remove todos os filtros aplicados"
+                  >
                     Limpar
                   </button>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Status</Label>
                   <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Filtrar por status do colaborador"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
                       <SelectItem value="active">Ativos no período</SelectItem>
@@ -449,11 +520,11 @@ function AdminDashboardPage() {
                 <div className="space-y-1.5">
                   <Label className="text-xs">Tipo de produto</Label>
                   <Select value={productFilter} onValueChange={(v) => setProductFilter(v as typeof productFilter)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Filtrar por tipo de produto vendido"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
                       <SelectItem value="seguros">Vendeu Seguros</SelectItem>
-                      <SelectItem value="credito">Crédito (consignado/fidelidade)</SelectItem>
+                      <SelectItem value="credito">Crédito (consignado)</SelectItem>
                       <SelectItem value="recuperacao">Recuperação (E2/E3)</SelectItem>
                       <SelectItem value="pj">Produtos PJ</SelectItem>
                     </SelectContent>
@@ -462,22 +533,22 @@ function AdminDashboardPage() {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Mín. Unidades</Label>
-                    <Input type="number" min="0" value={minUnits} onChange={(e) => setMinUnits(e.target.value)} placeholder="0" />
+                    <Input type="number" min="0" value={minUnits} onChange={(e) => setMinUnits(e.target.value)} placeholder="0" aria-label="Filtrar por mínimo de unidades vendidas" />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Mín. Pontos</Label>
-                    <Input type="number" min="0" value={minPoints} onChange={(e) => setMinPoints(e.target.value)} placeholder="0" />
+                    <Input type="number" min="0" value={minPoints} onChange={(e) => setMinPoints(e.target.value)} placeholder="0" aria-label="Filtrar por mínimo de pontos no mês" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Mín. Volume Crédito (R$)</Label>
-                  <Input type="number" min="0" value={minVolume} onChange={(e) => setMinVolume(e.target.value)} placeholder="0" />
+                  <Input type="number" min="0" value={minVolume} onChange={(e) => setMinVolume(e.target.value)} placeholder="0" aria-label="Filtrar por mínimo de volume de crédito" />
                 </div>
               </div>
             </PopoverContent>
           </Popover>
           {activeFilterCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1">
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1" aria-label="Limpar todos os filtros" title="Remove todos os filtros aplicados">
               <X className="h-3.5 w-3.5" /> Limpar
             </Button>
           )}
@@ -487,33 +558,10 @@ function AdminDashboardPage() {
             Exibindo {showInactivesAsRows ? filteredInactives.length : visibleUsers.length} de {perUser.length + inactives.length} colaboradores
           </p>
         )}
-      </div>
+      </section>
 
-      {/* Top performers chart */}
-      <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-card-foreground">
-          <Award className="h-5 w-5 text-primary" />
-          Top 10 — Pontuação do Mês
-        </h2>
-        {rankingChart.length === 0 ? (
-          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-            Sem dados de ranking para o período
-          </div>
-        ) : (
-          <ChartContainer config={chartConfig} className="h-72 w-full">
-            <BarChart data={rankingChart}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border/30" />
-              <XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis fontSize={11} tickLine={false} axisLine={false} />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ChartContainer>
-        )}
-      </div>
-
-      {/* Detailed per-user table */}
-      <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
+      {/* Detailed per-user performance table */}
+      <section className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-5 sm:p-6" aria-label="Performance detalhada por colaborador">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold text-card-foreground">Performance por Colaborador</h2>
           <ExportDialog
@@ -524,7 +572,11 @@ function AdminDashboardPage() {
             triggerLabel="Exportar tabela"
           />
         </div>
-        {(showInactivesAsRows ? filteredInactives.length === 0 : visibleUsers.length === 0) ? (
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+          </div>
+        ) : (showInactivesAsRows ? filteredInactives.length === 0 : visibleUsers.length === 0) ? (
           <p className="text-sm text-muted-foreground">
             {activeFilterCount > 0 ? "Nenhum colaborador corresponde aos filtros aplicados." : "Nenhuma produção registrada no período."}
           </p>
@@ -559,7 +611,7 @@ function AdminDashboardPage() {
                   : visibleUsers.map((u) => {
                       const prof = profileMap.get(u.user_id);
                       return (
-                        <tr key={u.user_id} className="border-b border-border/50">
+                        <tr key={u.user_id} className="border-b border-border/50 transition-colors hover:bg-accent/30">
                           <td className="py-2.5 pr-3">
                             <div className="text-foreground">{prof?.name ?? "Sem nome"}</div>
                             <div className="text-xs text-muted-foreground">{prof?.email}</div>
@@ -576,23 +628,179 @@ function AdminDashboardPage() {
             </table>
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Inactive members */}
+      {/* ===== Gestão integrada de usuários ===== */}
+      <section className="card-hover animate-fade-in-up rounded-xl border border-border bg-card overflow-hidden" aria-label="Gestão de usuários da agência">
+        <header className="flex items-center justify-between gap-3 border-b border-border p-5">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-card-foreground">
+              <Users className="h-5 w-5 text-primary" aria-hidden="true" />
+              Equipe da Agência
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Edite nomes, agência e permissão de cada colaborador.
+            </p>
+          </div>
+          <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground" title="Total de usuários cadastrados">
+            {profiles.length} usuários
+          </span>
+        </header>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/30 text-left">
+                <th className="p-3 font-medium text-muted-foreground">Usuário</th>
+                <th className="p-3 font-medium text-muted-foreground">Agência</th>
+                <th className="p-3 font-medium text-muted-foreground text-center">Administrador</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && profiles.length === 0 && (
+                <>
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <tr key={i} className="border-b border-border/50">
+                      <td className="p-3"><Skeleton className="h-9 w-48" /></td>
+                      <td className="p-3"><Skeleton className="h-9 w-44" /></td>
+                      <td className="p-3 text-center"><Skeleton className="mx-auto h-6 w-10" /></td>
+                    </tr>
+                  ))}
+                </>
+              )}
+              {!loading && profiles.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="p-6 text-center text-muted-foreground">
+                    Nenhum usuário encontrado nesta agência.
+                  </td>
+                </tr>
+              )}
+              {profiles.map((p) => {
+                const isMe = p.id === user?.id;
+                const isAdmin = roles.get(p.id) === "admin";
+                const isSaving = savingId === p.id;
+                return (
+                  <tr key={p.id} className="border-b border-border/50 transition-colors hover:bg-accent/20">
+                    <td className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                          {p.name?.[0]?.toUpperCase() ?? "U"}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          {editingNameId === p.id ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                value={nameDraft}
+                                onChange={(e) => setNameDraft(e.target.value)}
+                                className="h-8 w-48 rounded-md border border-input bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                                autoFocus
+                                aria-label={`Novo nome para ${p.name ?? "usuário"}`}
+                              />
+                              <button
+                                onClick={() => saveName(p.id)}
+                                disabled={isSaving}
+                                className="rounded p-1 text-success hover:bg-success/10"
+                                title="Salvar nome"
+                                aria-label="Salvar novo nome do usuário"
+                              >
+                                <Check className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => setEditingNameId(null)}
+                                className="rounded p-1 text-muted-foreground hover:bg-muted"
+                                title="Cancelar edição"
+                                aria-label="Cancelar edição do nome"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-foreground">
+                              <span className="truncate font-medium">{p.name ?? "Sem nome"}</span>
+                              {isMe && <span className="text-xs text-muted-foreground">(você)</span>}
+                              {isAdmin && (
+                                <Shield
+                                  className="h-3.5 w-3.5 text-primary"
+                                  aria-label="Administrador"
+                                />
+                              )}
+                              <button
+                                onClick={() => startEditName(p)}
+                                className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                title="Editar nome do colaborador"
+                                aria-label={`Editar nome de ${p.name ?? "usuário"}`}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          )}
+                          <div className="text-xs text-muted-foreground truncate">{p.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <Select
+                        value={p.agency_id ?? ""}
+                        onValueChange={(v) => handleAgencyChange(p.id, v)}
+                        disabled={isSaving}
+                      >
+                        <SelectTrigger
+                          className="w-56"
+                          aria-label={`Agência atribuída a ${p.name ?? "usuário"}`}
+                          title="Trocar agência deste colaborador"
+                        >
+                          <SelectValue placeholder="Sem agência" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {agencies.map((a) => (
+                            <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="p-3 text-center">
+                      <Switch
+                        checked={isAdmin}
+                        disabled={isMe || isSaving}
+                        onCheckedChange={(v) => handleToggleRole(p.id, v)}
+                        aria-label={`${isAdmin ? "Remover" : "Conceder"} permissão de administrador para ${p.name ?? "usuário"}`}
+                        title={isMe ? "Você não pode alterar sua própria função" : isAdmin ? "Clique para rebaixar para usuário" : "Clique para promover a administrador"}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="border-t border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+          <p>Você não pode alterar a sua própria função. Pelo menos um administrador deve permanecer na agência.</p>
+        </div>
+      </section>
+
+      {/* Inactive members callout */}
       {inactives.length > 0 && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 sm:p-6">
+        <aside
+          className="animate-fade-in-up rounded-xl border border-warning/30 bg-warning/5 p-5"
+          aria-label={`${inactives.length} colaboradores sem produção no período`}
+        >
           <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-foreground">
-            <Calendar className="h-4 w-4 text-destructive" />
+            <Calendar className="h-4 w-4 text-warning" aria-hidden="true" />
             Sem produção no período ({inactives.length})
           </h2>
           <div className="flex flex-wrap gap-2">
             {inactives.map((p) => (
-              <span key={p.id} className="rounded-md border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground">
+              <span
+                key={p.id}
+                className="rounded-md border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground"
+                title={p.email ?? undefined}
+              >
                 {p.name ?? p.email ?? "Sem nome"}
               </span>
             ))}
           </div>
-        </div>
+        </aside>
       )}
     </div>
   );
