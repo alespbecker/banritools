@@ -1,24 +1,55 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 /**
- * Generic page-level skeleton used as `pendingComponent` for routes.
- * Shows a header bar + KPI grid + content placeholder so transitions
- * never flash empty.
+ * Generic page-level skeleton used as `pendingComponent` for routes,
+ * AND while a loaded page is fetching its initial data. Designed to
+ * mirror the silhouette of the real layout so the swap is invisible.
+ *
+ * Apparece com fade suave; some com fade-out quando os dados carregam
+ * (controlado pelo container pai via `hidden` prop).
  */
-export function PageSkeleton({ kpis = 4, rows = 6 }: { kpis?: number; rows?: number }) {
+export function PageSkeleton({
+  kpis = 4,
+  rows = 6,
+  showHeader = true,
+  hidden = false,
+}: {
+  kpis?: number;
+  rows?: number;
+  showHeader?: boolean;
+  hidden?: boolean;
+}) {
   return (
-    <div className="animate-fade-in-up space-y-6" aria-busy="true" aria-label="Carregando conteúdo">
-      <div className="space-y-2">
-        <Skeleton className="h-7 w-56" />
-        <Skeleton className="h-4 w-80" />
-      </div>
+    <div
+      className={cn(
+        "space-y-7",
+        hidden ? "fade-swap-exit pointer-events-none" : "animate-fade-in",
+      )}
+      aria-busy="true"
+      aria-live="polite"
+      aria-label="Carregando conteúdo"
+    >
+      {showHeader && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-7 w-56" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+          <Skeleton className="h-9 w-44" />
+        </div>
+      )}
 
       {kpis > 0 && (
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: kpis }).map((_, i) => (
-            <div key={i} className="rounded-xl border border-border bg-card p-5">
+            <div
+              key={i}
+              className="rounded-xl border border-border bg-card p-5"
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
               <div className="flex items-center justify-between">
-                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3.5 w-24" />
                 <Skeleton className="h-9 w-9 rounded-lg" />
               </div>
               <Skeleton className="mt-3 h-7 w-32" />
@@ -29,7 +60,7 @@ export function PageSkeleton({ kpis = 4, rows = 6 }: { kpis?: number; rows?: num
       )}
 
       <div className="rounded-xl border border-border bg-card p-5">
-        <Skeleton className="mb-4 h-5 w-40" />
+        <Skeleton className="mb-4 h-5 w-44" />
         <div className="space-y-3">
           {Array.from({ length: rows }).map((_, i) => (
             <Skeleton key={i} className="h-9 w-full" />
@@ -43,7 +74,7 @@ export function PageSkeleton({ kpis = 4, rows = 6 }: { kpis?: number; rows?: num
 /** Compact table skeleton */
 export function TableSkeleton({ rows = 6, cols = 5 }: { rows?: number; cols?: number }) {
   return (
-    <div className="animate-fade-in-up overflow-hidden rounded-lg border border-border" aria-busy="true">
+    <div className="animate-fade-in overflow-hidden rounded-lg border border-border" aria-busy="true">
       <div className="border-b border-border bg-muted/40 p-3">
         <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}>
           {Array.from({ length: cols }).map((_, i) => <Skeleton key={i} className="h-4 w-20" />)}
@@ -60,4 +91,24 @@ export function TableSkeleton({ rows = 6, cols = 5 }: { rows?: number; cols?: nu
       </div>
     </div>
   );
+}
+
+/**
+ * Wrapper que faz o crossfade automático entre skeleton e conteúdo.
+ * Use assim:
+ *   <DataGate loading={loading} skeleton={<PageSkeleton />}>
+ *     <SuaPagina />
+ *   </DataGate>
+ */
+export function DataGate({
+  loading,
+  skeleton,
+  children,
+}: {
+  loading: boolean;
+  skeleton: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  if (loading) return <>{skeleton}</>;
+  return <div className="animate-fade-in-up">{children}</div>;
 }
