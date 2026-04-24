@@ -303,9 +303,10 @@ function RegistrarProducaoPage() {
             disabled={saving || busy}
             onClick={() => handleSendOnly(field.key, keys)}
             className="gap-1.5 sm:self-end"
-            title="Enviar apenas este produto"
+            title={`Enviar apenas o produto "${field.label}" para o dia selecionado`}
+            aria-label={`Enviar apenas ${field.label}`}
           >
-            <Send className="h-3.5 w-3.5" />
+            <Send className="h-3.5 w-3.5" aria-hidden="true" />
             {busy ? "Enviando..." : "Enviar"}
           </Button>
         </div>
