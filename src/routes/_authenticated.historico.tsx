@@ -287,5 +287,6 @@ function HistoricoPage() {
       </div>
       )}
     </div>
+    </DataGate>
   );
 }
