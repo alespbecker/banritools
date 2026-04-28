@@ -4,7 +4,7 @@ import { StatCard } from "@/components/StatCard";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Users, TrendingUp, DollarSign, BarChart3, Calendar, Award, Shield,
+  Users, Award, Shield, Trophy, Target, Activity, Gauge,
   Search, SlidersHorizontal, X, Pencil, Check,
 } from "lucide-react";
 import {
