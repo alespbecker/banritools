@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PageSkeleton } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -32,17 +32,13 @@ function LoginPage() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
+  // Já autenticado: mostra o esqueleto do dashboard enquanto o redirect acontece
+  // (ao invés de uma versão skeleton da própria tela de login).
   if (isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="w-full max-w-sm space-y-4">
-          <Skeleton className="h-8 w-2/3 mx-auto" />
-          <Skeleton className="h-4 w-1/2 mx-auto" />
-          <div className="space-y-3 pt-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
+      <div className="min-h-screen bg-background px-4 py-6 sm:px-8 sm:py-8">
+        <div className="mx-auto max-w-7xl">
+          <PageSkeleton kpis={4} rows={6} />
         </div>
       </div>
     );
