@@ -272,7 +272,7 @@ function DashboardPage() {
 
         {/* Line Chart */}
         <section
-          className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-5 sm:p-6"
+          className="card-hover rounded-xl border border-border bg-card p-5 sm:p-6"
           aria-label="Produção total ao longo do mês"
         >
           <h2 className="mb-4 text-lg font-semibold text-card-foreground">Produção ao Longo do Mês</h2>
