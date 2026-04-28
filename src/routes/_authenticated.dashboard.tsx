@@ -249,7 +249,7 @@ function DashboardPage() {
 
         {/* Product Performance Bar Chart */}
         <section
-          className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-5 sm:p-6"
+          className="card-hover rounded-xl border border-border bg-card p-5 sm:p-6"
           aria-label="Distribuição de produtos vendidos no período"
         >
           <h2 className="mb-4 text-lg font-semibold text-card-foreground">Produtos Vendidos</h2>
