@@ -209,7 +209,7 @@ function RankingPage() {
           </tbody>
         </table>
       </div>
-      )}
     </div>
+    </DataGate>
   );
 }
