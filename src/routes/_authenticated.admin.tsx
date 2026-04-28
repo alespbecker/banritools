@@ -492,7 +492,7 @@ function AdminDashboardPage() {
 
       {/* Top performers chart */}
       <section
-        className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-5 sm:p-6"
+        className="card-hover rounded-xl border border-border bg-card p-5 sm:p-6"
         aria-label="Top 10 colaboradores por pontuação no mês"
       >
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-card-foreground">
@@ -628,7 +628,7 @@ function AdminDashboardPage() {
       </section>
 
       {/* Detailed per-user performance table */}
-      <section className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-5 sm:p-6" aria-label="Performance detalhada por colaborador">
+      <section className="card-hover rounded-xl border border-border bg-card p-5 sm:p-6" aria-label="Performance detalhada por colaborador">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold text-card-foreground">Performance por Colaborador</h2>
           <ExportDialog
@@ -698,7 +698,7 @@ function AdminDashboardPage() {
       </section>
 
       {/* ===== Gestão integrada de usuários ===== */}
-      <section className="card-hover animate-fade-in-up rounded-xl border border-border bg-card overflow-hidden" aria-label="Gestão de usuários da agência">
+      <section className="card-hover rounded-xl border border-border bg-card overflow-hidden" aria-label="Gestão de usuários da agência">
         <header className="flex items-center justify-between gap-3 border-b border-border p-5">
           <div>
             <h2 className="flex items-center gap-2 text-lg font-semibold text-card-foreground">
@@ -849,7 +849,7 @@ function AdminDashboardPage() {
       {/* Inactive members callout */}
       {inactives.length > 0 && (
         <aside
-          className="animate-fade-in-up rounded-xl border border-warning/30 bg-warning/5 p-5"
+          className="rounded-xl border border-warning/30 bg-warning/5 p-5"
           aria-label={`${inactives.length} colaboradores sem produção no período`}
         >
           <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-foreground">
