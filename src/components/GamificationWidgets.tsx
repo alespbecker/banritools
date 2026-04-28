@@ -49,25 +49,28 @@ interface GamificationWidgetsProps {
   userId: string;
   agencyId: string | null;
   monthStart: string;
+  /** Chamado quando os dados iniciais estiverem carregados — permite ao pai
+   *  coordenar a transição para evitar pop-in de conteúdo. */
+  onReady?: () => void;
 }
 
-export function GamificationWidgets({ userId, agencyId, monthStart }: GamificationWidgetsProps) {
+export function GamificationWidgets({ userId, agencyId, monthStart, onReady }: GamificationWidgetsProps) {
   const [userPoints, setUserPoints] = useState<UserPointsData | null>(null);
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
   const [unlockedBadges, setUnlockedBadges] = useState<UserBadge[]>([]);
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [insights, setInsights] = useState<string[]>([]);
+  const readyFiredRef = useRef(false);
 
-  const fetchUserPoints = () => {
+  const fetchUserPoints = () =>
     supabase
       .from("user_points")
       .select("total_points, level")
       .eq("user_id", userId)
       .maybeSingle()
       .then(({ data }) => setUserPoints(data ?? { total_points: 0, level: 1 }));
-  };
 
-  const fetchBadges = () => {
+  const fetchBadges = () =>
     Promise.all([
       supabase.from("badges").select("*"),
       supabase.from("user_badges").select("badge_id, unlocked_at").eq("user_id", userId),
@@ -75,11 +78,10 @@ export function GamificationWidgets({ userId, agencyId, monthStart }: Gamificati
       setAllBadges((badgesRes.data as Badge[]) ?? []);
       setUnlockedBadges((userBadgesRes.data as UserBadge[]) ?? []);
     });
-  };
 
   const fetchRanking = () => {
-    if (!agencyId) return;
-    supabase
+    if (!agencyId) return Promise.resolve();
+    return supabase
       .from("ranking_monthly")
       .select("user_id, points, position, profiles:user_id(name)")
       .eq("agency_id", agencyId)
@@ -89,17 +91,20 @@ export function GamificationWidgets({ userId, agencyId, monthStart }: Gamificati
       .then(({ data }) => setRanking((data as unknown as RankingEntry[]) ?? []));
   };
 
+  // Carga inicial coordenada — só dispara onReady quando TUDO chegou.
   useEffect(() => {
     if (!userId) return;
-    fetchUserPoints();
-    fetchBadges();
+    let cancelled = false;
+    Promise.all([fetchUserPoints(), fetchBadges(), fetchRanking()]).finally(() => {
+      if (cancelled) return;
+      if (!readyFiredRef.current) {
+        readyFiredRef.current = true;
+        onReady?.();
+      }
+    });
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
-
-  useEffect(() => {
-    fetchRanking();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agencyId, monthStart]);
+  }, [userId, agencyId, monthStart]);
 
   // Realtime subscriptions for live gamification updates
   useEffect(() => {
