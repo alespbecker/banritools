@@ -104,7 +104,8 @@ function RankingPage() {
   };
 
   return (
-    <div className="animate-fade-in-up">
+    <DataGate loading={loading && rows.length === 0} skeleton={<PageSkeleton kpis={3} rows={6} />}>
+    <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-bold text-foreground">
