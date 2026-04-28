@@ -188,6 +188,19 @@ function AdminDashboardPage() {
     return { totalUnits, volFinanceiro, recuperado, segurosValor, activeUsers };
   }, [reports]);
 
+  // KPIs do TIME — diferentes do dashboard pessoal (que mostra totais individuais).
+  // Aqui focamos em dinâmica do grupo: engajamento, média, top performer e gap.
+  const teamStats = useMemo(() => {
+    const totalProfiles = profiles.length;
+    const engajamento = totalProfiles > 0 ? Math.round((stats.activeUsers / totalProfiles) * 100) : 0;
+    const mediaUnitsAtivo = stats.activeUsers > 0 ? Math.round(stats.totalUnits / stats.activeUsers) : 0;
+    const topPoints = ranking[0]?.points ?? 0;
+    const topName = ranking[0] ? (profileMap.get(ranking[0].user_id)?.name?.split(" ")[0] ?? "—") : "—";
+    const lastPoints = ranking.length > 1 ? ranking[ranking.length - 1].points : topPoints;
+    const gap = topPoints - lastPoints;
+    return { engajamento, mediaUnitsAtivo, topPoints, topName, gap, totalProfiles };
+  }, [profiles.length, stats.activeUsers, stats.totalUnits, ranking, profileMap]);
+
   // Per-user aggregation
   const perUser = useMemo(() => {
     const map = new Map<string, {
