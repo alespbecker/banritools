@@ -853,7 +853,7 @@ function AdminDashboardPage() {
           aria-label={`${inactives.length} colaboradores sem produção no período`}
         >
           <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-foreground">
-            <Calendar className="h-4 w-4 text-warning" aria-hidden="true" />
+            <Activity className="h-4 w-4 text-warning" aria-hidden="true" />
             Sem produção no período ({inactives.length})
           </h2>
           <div className="flex flex-wrap gap-2">
