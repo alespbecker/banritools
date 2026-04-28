@@ -186,9 +186,7 @@ function HistoricoPage() {
         </div>
       </div>
 
-      {loading ? (
-        <TableSkeleton rows={6} cols={6} />
-      ) : (
+      {(
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
