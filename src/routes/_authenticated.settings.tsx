@@ -154,5 +154,6 @@ function SettingsPage() {
         </button>
       </form>
     </div>
+    </DataGate>
   );
 }
