@@ -178,9 +178,6 @@ function RankingPage() {
       )}
 
       {/* Tabela completa */}
-      {loading ? (
-        <TableSkeleton rows={5} cols={3} />
-      ) : (
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
