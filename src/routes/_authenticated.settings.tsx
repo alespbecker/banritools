@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Trophy, TrendingUp, Award, Building2, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
-import { PageSkeleton } from "@/components/PageSkeleton";
+import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
