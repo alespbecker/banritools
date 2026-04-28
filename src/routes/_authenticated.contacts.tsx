@@ -69,7 +69,8 @@ function ContactsPage() {
   };
 
   return (
-    <div className="animate-fade-in-up">
+    <DataGate loading={loading && contacts.length === 0} skeleton={<PageSkeleton kpis={0} rows={6} />}>
+    <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-foreground">Contatos</h1>
