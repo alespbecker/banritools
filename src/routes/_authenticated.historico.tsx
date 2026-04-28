@@ -162,7 +162,8 @@ function HistoricoPage() {
     Number(n ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
 
   return (
-    <div className="animate-fade-in-up">
+    <DataGate loading={loading && reports.length === 0} skeleton={<PageSkeleton kpis={0} rows={8} />}>
+    <div>
       <div className="mb-6">
         <h1 className="text-xl font-bold text-foreground">Histórico</h1>
         <p className="text-sm text-muted-foreground">
