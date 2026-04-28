@@ -143,7 +143,7 @@ function ContactsPage() {
           </tbody>
         </table>
       </div>
-      )}
     </div>
+    </DataGate>
   );
 }
