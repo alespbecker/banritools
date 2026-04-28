@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { PageSkeleton, TableSkeleton } from "@/components/PageSkeleton";
+import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/_authenticated/contacts")({
   head: () => ({
