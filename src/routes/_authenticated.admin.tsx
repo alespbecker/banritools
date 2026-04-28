@@ -4,7 +4,7 @@ import { StatCard } from "@/components/StatCard";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Users, TrendingUp, DollarSign, BarChart3, Calendar, Award, Shield,
+  Users, Award, Shield, Trophy, Target, Activity, Gauge,
   Search, SlidersHorizontal, X, Pencil, Check,
 } from "lucide-react";
 import {
@@ -187,6 +187,19 @@ function AdminDashboardPage() {
     const activeUsers = new Set(reports.map((r) => r.user_id)).size;
     return { totalUnits, volFinanceiro, recuperado, segurosValor, activeUsers };
   }, [reports]);
+
+  // KPIs do TIME — diferentes do dashboard pessoal (que mostra totais individuais).
+  // Aqui focamos em dinâmica do grupo: engajamento, média, top performer e gap.
+  const teamStats = useMemo(() => {
+    const totalProfiles = profiles.length;
+    const engajamento = totalProfiles > 0 ? Math.round((stats.activeUsers / totalProfiles) * 100) : 0;
+    const mediaUnitsAtivo = stats.activeUsers > 0 ? Math.round(stats.totalUnits / stats.activeUsers) : 0;
+    const topPoints = ranking[0]?.points ?? 0;
+    const topName = ranking[0] ? (profileMap.get(ranking[0].user_id)?.name?.split(" ")[0] ?? "—") : "—";
+    const lastPoints = ranking.length > 1 ? ranking[ranking.length - 1].points : topPoints;
+    const gap = topPoints - lastPoints;
+    return { engajamento, mediaUnitsAtivo, topPoints, topName, gap, totalProfiles };
+  }, [profiles.length, stats.activeUsers, stats.totalUnits, ranking, profileMap]);
 
   // Per-user aggregation
   const perUser = useMemo(() => {
@@ -436,12 +449,45 @@ function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Agency KPIs */}
+      {/* Team KPIs — focados em DINÂMICA DO TIME (não duplicam o dashboard pessoal,
+           que mostra totais individuais como Produção Total / Vol. Financeiro / Recuperação). */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <StatCard loading={loading} tone="primary" title="Colaboradores Ativos" value={`${stats.activeUsers}/${profiles.length}`} icon={Users} description="Com produção" hint="Quantos do time tiveram lançamentos no período" />
-        <StatCard loading={loading} tone="violet"  title="Produção Total"       value={stats.totalUnits} icon={BarChart3} description="Unidades agência" hint="Soma de unidades vendidas pelo time" />
-        <StatCard loading={loading} tone="success" title="Vol. Financeiro"      value={fmtBRL(stats.volFinanceiro)} icon={DollarSign} description="Toda agência" hint="Crédito gerado pela agência" />
-        <StatCard loading={loading} tone="teal"    title="Recuperação"          value={fmtBRL(stats.recuperado)} icon={TrendingUp} description="Est. 2 + 3" hint="Total recuperado em estágios 2 e 3" />
+        <StatCard
+          loading={loading}
+          tone="primary"
+          title="Engajamento"
+          value={`${teamStats.engajamento}%`}
+          icon={Activity}
+          description={`${stats.activeUsers} de ${profiles.length} ativos`}
+          hint="Percentual do time que fez ao menos um lançamento no período"
+        />
+        <StatCard
+          loading={loading}
+          tone="success"
+          title="Média por Ativo"
+          value={teamStats.mediaUnitsAtivo}
+          icon={Gauge}
+          description="Unidades / colaborador ativo"
+          hint="Média de unidades vendidas por colaborador que produziu no período"
+        />
+        <StatCard
+          loading={loading}
+          tone="violet"
+          title="Top Performer"
+          value={teamStats.topName}
+          icon={Trophy}
+          description={`${teamStats.topPoints} pts no mês`}
+          hint="Colaborador com maior pontuação no ranking do mês"
+        />
+        <StatCard
+          loading={loading}
+          tone="teal"
+          title="Gap do Ranking"
+          value={teamStats.gap}
+          icon={Target}
+          description="Pontos entre 1º e último"
+          hint="Distância em pontos entre o primeiro e o último colocado do ranking"
+        />
       </div>
 
       {/* Top performers chart */}
@@ -807,7 +853,7 @@ function AdminDashboardPage() {
           aria-label={`${inactives.length} colaboradores sem produção no período`}
         >
           <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-foreground">
-            <Calendar className="h-4 w-4 text-warning" aria-hidden="true" />
+            <Activity className="h-4 w-4 text-warning" aria-hidden="true" />
             Sem produção no período ({inactives.length})
           </h2>
           <div className="flex flex-wrap gap-2">
