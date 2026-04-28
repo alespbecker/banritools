@@ -1,31 +1,25 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useEffect, useRef, useState } from "react";
 
 /**
- * Generic page-level skeleton used as `pendingComponent` for routes,
- * AND while a loaded page is fetching its initial data. Designed to
- * mirror the silhouette of the real layout so the swap is invisible.
+ * PageSkeleton — silhueta genérica usada como `pendingComponent` das rotas
+ * e dentro do `DataGate` enquanto a página carrega seus dados iniciais.
  *
- * Apparece com fade suave; some com fade-out quando os dados carregam
- * (controlado pelo container pai via `hidden` prop).
+ * O fade-in/out é coordenado pelo DataGate: aqui o componente apenas existe.
  */
 export function PageSkeleton({
   kpis = 4,
   rows = 6,
   showHeader = true,
-  hidden = false,
 }: {
   kpis?: number;
   rows?: number;
   showHeader?: boolean;
-  hidden?: boolean;
 }) {
   return (
     <div
-      className={cn(
-        "space-y-7",
-        hidden ? "fade-swap-exit pointer-events-none" : "animate-fade-in",
-      )}
+      className="space-y-7"
       aria-busy="true"
       aria-live="polite"
       aria-label="Carregando conteúdo"
@@ -46,7 +40,6 @@ export function PageSkeleton({
             <div
               key={i}
               className="rounded-xl border border-border bg-card p-5"
-              style={{ animationDelay: `${i * 60}ms` }}
             >
               <div className="flex items-center justify-between">
                 <Skeleton className="h-3.5 w-24" />
@@ -74,7 +67,7 @@ export function PageSkeleton({
 /** Compact table skeleton */
 export function TableSkeleton({ rows = 6, cols = 5 }: { rows?: number; cols?: number }) {
   return (
-    <div className="animate-fade-in overflow-hidden rounded-lg border border-border" aria-busy="true">
+    <div className="overflow-hidden rounded-lg border border-border" aria-busy="true">
       <div className="border-b border-border bg-muted/40 p-3">
         <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}>
           {Array.from({ length: cols }).map((_, i) => <Skeleton key={i} className="h-4 w-20" />)}
@@ -94,8 +87,18 @@ export function TableSkeleton({ rows = 6, cols = 5 }: { rows?: number; cols?: nu
 }
 
 /**
- * Wrapper que faz o crossfade automático entre skeleton e conteúdo.
- * Use assim:
+ * DataGate — orquestra a transição skeleton → conteúdo SEM flash.
+ *
+ * Garantias:
+ * 1. Skeleton fica visível por pelo menos `minShowMs` (default 280ms).
+ *    Evita "blink" quando os dados retornam quase instantaneamente.
+ * 2. O conteúdo só é montado APÓS o skeleton iniciar o fade-out.
+ *    Assim, sub-componentes que disparam fetches extras já mostram seus
+ *    próprios estados consistentes desde o primeiro frame visível.
+ * 3. Crossfade real: skeleton fade-out (220ms) e conteúdo fade-in (380ms)
+ *    com leve overlap, usando o easing da marca.
+ *
+ * Uso:
  *   <DataGate loading={loading} skeleton={<PageSkeleton />}>
  *     <SuaPagina />
  *   </DataGate>
@@ -104,11 +107,48 @@ export function DataGate({
   loading,
   skeleton,
   children,
+  minShowMs = 280,
 }: {
   loading: boolean;
   skeleton: React.ReactNode;
   children: React.ReactNode;
+  minShowMs?: number;
 }) {
-  if (loading) return <>{skeleton}</>;
-  return <div className="animate-fade-in-up">{children}</div>;
+  // 'skeleton' | 'fading' | 'content'
+  const [phase, setPhase] = useState<"skeleton" | "fading" | "content">(
+    loading ? "skeleton" : "content",
+  );
+  const mountedAt = useRef<number>(Date.now());
+
+  useEffect(() => {
+    if (loading) {
+      mountedAt.current = Date.now();
+      setPhase("skeleton");
+      return;
+    }
+
+    // Já deu loaded — respeitar tempo mínimo de exibição do skeleton
+    const elapsed = Date.now() - mountedAt.current;
+    const remaining = Math.max(0, minShowMs - elapsed);
+
+    const t1 = window.setTimeout(() => {
+      setPhase("fading");
+      // Após o fade-out começar, monta o conteúdo (que entra com seu próprio fade-in)
+      const t2 = window.setTimeout(() => setPhase("content"), 180);
+      // cleanup interno
+      return () => window.clearTimeout(t2);
+    }, remaining);
+
+    return () => window.clearTimeout(t1);
+  }, [loading, minShowMs]);
+
+  if (phase === "skeleton") {
+    return <div className="animate-fade-in">{skeleton}</div>;
+  }
+
+  if (phase === "fading") {
+    return <div className="fade-swap-exit pointer-events-none">{skeleton}</div>;
+  }
+
+  return <div className="animate-fade-in">{children}</div>;
 }

@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { PageSkeleton, TableSkeleton } from "@/components/PageSkeleton";
+import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/_authenticated/contacts")({
   head: () => ({
@@ -69,7 +69,8 @@ function ContactsPage() {
   };
 
   return (
-    <div className="animate-fade-in-up">
+    <DataGate loading={loading && contacts.length === 0} skeleton={<PageSkeleton kpis={0} rows={6} />}>
+    <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-foreground">Contatos</h1>
@@ -107,9 +108,6 @@ function ContactsPage() {
         </form>
       )}
 
-      {loading ? (
-        <TableSkeleton rows={5} cols={6} />
-      ) : (
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
@@ -145,7 +143,7 @@ function ContactsPage() {
           </tbody>
         </table>
       </div>
-      )}
     </div>
+    </DataGate>
   );
 }

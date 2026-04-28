@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Trophy, Medal, Award, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PageSkeleton, TableSkeleton } from "@/components/PageSkeleton";
+import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/_authenticated/ranking")({
   head: () => ({
@@ -104,7 +104,8 @@ function RankingPage() {
   };
 
   return (
-    <div className="animate-fade-in-up">
+    <DataGate loading={loading && rows.length === 0} skeleton={<PageSkeleton kpis={3} rows={6} />}>
+    <div>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-xl font-bold text-foreground">
@@ -177,9 +178,6 @@ function RankingPage() {
       )}
 
       {/* Tabela completa */}
-      {loading ? (
-        <TableSkeleton rows={5} cols={3} />
-      ) : (
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
@@ -211,7 +209,7 @@ function RankingPage() {
           </tbody>
         </table>
       </div>
-      )}
     </div>
+    </DataGate>
   );
 }

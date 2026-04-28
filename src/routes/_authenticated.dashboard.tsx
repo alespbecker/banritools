@@ -79,6 +79,7 @@ function DashboardPage() {
   const { user, profile } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const [gamificationReady, setGamificationReady] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
 
   const monthRange = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
@@ -168,9 +169,10 @@ function DashboardPage() {
     }));
   }, [reports]);
 
-  // Mostra skeleton de página inteira na primeira carga.
-  // Trocas de mês fazem refetch sem trocar para skeleton (UX mais leve).
-  const initialLoading = loading && reports.length === 0;
+  // Mostra skeleton de página inteira na primeira carga, esperando TANTO
+  // os reports quanto a gamificação — evita pop-in de cards/ranking depois
+  // do conteúdo principal já estar visível.
+  const initialLoading = (loading && reports.length === 0) || !gamificationReady;
 
   return (
     <DataGate
@@ -229,6 +231,7 @@ function DashboardPage() {
             userId={user.id}
             agencyId={profile?.agency_id ?? null}
             monthStart={monthRange.start}
+            onReady={() => setGamificationReady(true)}
           />
         )}
 
@@ -246,7 +249,7 @@ function DashboardPage() {
 
         {/* Product Performance Bar Chart */}
         <section
-          className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-5 sm:p-6"
+          className="card-hover rounded-xl border border-border bg-card p-5 sm:p-6"
           aria-label="Distribuição de produtos vendidos no período"
         >
           <h2 className="mb-4 text-lg font-semibold text-card-foreground">Produtos Vendidos</h2>
@@ -269,7 +272,7 @@ function DashboardPage() {
 
         {/* Line Chart */}
         <section
-          className="card-hover animate-fade-in-up rounded-xl border border-border bg-card p-5 sm:p-6"
+          className="card-hover rounded-xl border border-border bg-card p-5 sm:p-6"
           aria-label="Produção total ao longo do mês"
         >
           <h2 className="mb-4 text-lg font-semibold text-card-foreground">Produção ao Longo do Mês</h2>
