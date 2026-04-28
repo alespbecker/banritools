@@ -186,7 +186,6 @@ function HistoricoPage() {
         </div>
       </div>
 
-      {(
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
