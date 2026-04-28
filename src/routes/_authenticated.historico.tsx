@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Pencil, Save, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { PageSkeleton, TableSkeleton } from "@/components/PageSkeleton";
+import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/_authenticated/historico")({
   head: () => ({
