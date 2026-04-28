@@ -29,6 +29,7 @@ function SettingsPage() {
   const { user, profile, userRole } = useAuth();
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<Stats>({
     total_points: 0, level: 1, reports_count: 0, total_seguros: 0, agency_name: null,
   });
@@ -58,6 +59,7 @@ function SettingsPage() {
       total_seguros,
       agency_name: (agRes.data as { name?: string } | null)?.name ?? null,
     });
+    setLoading(false);
   }, [user, profile?.agency_id]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
