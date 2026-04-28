@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Trophy, Medal, Award, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { PageSkeleton, TableSkeleton } from "@/components/PageSkeleton";
+import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/_authenticated/ranking")({
   head: () => ({
