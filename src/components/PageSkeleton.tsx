@@ -107,7 +107,7 @@ export function DataGate({
   loading,
   skeleton,
   children,
-  minShowMs = 280,
+  minShowMs = 120,
 }: {
   loading: boolean;
   skeleton: React.ReactNode;
@@ -134,7 +134,7 @@ export function DataGate({
     const t1 = window.setTimeout(() => {
       setPhase("fading");
       // Após o fade-out começar, monta o conteúdo (que entra com seu próprio fade-in)
-      const t2 = window.setTimeout(() => setPhase("content"), 180);
+      const t2 = window.setTimeout(() => setPhase("content"), 100);
       // cleanup interno
       return () => window.clearTimeout(t2);
     }, remaining);

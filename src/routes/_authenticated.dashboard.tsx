@@ -83,12 +83,12 @@ function DashboardPage() {
 
   const monthRange = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
 
-  const fetchReports = useCallback(async () => {
+  const fetchReports = useCallback(async (showLoader = false) => {
     if (!user) return;
-    setLoading(true);
+    if (showLoader) setLoading(true);
     const { data } = await supabase
       .from("daily_reports")
-      .select("*")
+      .select("id, user_id, report_date, seguro_vida, seguro_ap_smart, capitalizacao, seguro_vida_valor, seguro_ap_smart_valor, capitalizacao_valor, credito_minuto_aumento, consignado_volume, recuperacao_estagio_2, recuperacao_estagio_3, pj_conta_empresarial, pj_maquina_vero")
       .eq("user_id", user.id)
       .gte("report_date", monthRange.start)
       .lte("report_date", monthRange.end)
@@ -97,7 +97,7 @@ function DashboardPage() {
     setLoading(false);
   }, [user, monthRange.start, monthRange.end]);
 
-  useEffect(() => { fetchReports(); }, [fetchReports]);
+  useEffect(() => { fetchReports(true); }, [fetchReports]);
 
   // Realtime + manual sync — agrupado num único listener
   useEffect(() => {
