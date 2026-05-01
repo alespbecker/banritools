@@ -79,7 +79,6 @@ function DashboardPage() {
   const { user, profile } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [gamificationReady, setGamificationReady] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
 
   const monthRange = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
