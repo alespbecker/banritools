@@ -117,24 +117,39 @@ function AdminDashboardPage() {
 
   const agencyId = profile?.agency_id ?? null;
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = useCallback(async (showLoader = false) => {
     if (!agencyId) return;
-    setLoading(true);
-    // Fire all queries in parallel — much faster than sequential awaits.
-    const [reportsRes, profilesRes, rolesRes, agenciesRes, rankingRes] = await Promise.all([
+    if (showLoader) setLoading(true);
+    // 1) Buscar profiles da agência primeiro (rápido) para poder filtrar user_roles
+    const profilesPromise = supabase
+      .from("profiles")
+      .select("id, name, email, agency_id")
+      .eq("agency_id", agencyId)
+      .order("name");
+
+    // Em paralelo, dispara o resto que não depende dos profiles
+    const [reportsRes, agenciesRes, rankingRes, profilesRes] = await Promise.all([
       supabase
         .from("daily_reports")
         .select("user_id, report_date, seguro_vida, seguro_ap_smart, capitalizacao, seguro_vida_valor, seguro_ap_smart_valor, capitalizacao_valor, credito_minuto_aumento, consignado_volume, recuperacao_estagio_2, recuperacao_estagio_3, pj_conta_empresarial, pj_maquina_vero")
         .eq("agency_id", agencyId)
         .gte("report_date", monthRange.start)
         .lte("report_date", monthRange.end),
-      supabase.from("profiles").select("id, name, email, agency_id").eq("agency_id", agencyId).order("name"),
-      supabase.from("user_roles").select("user_id, role"),
       supabase.from("agencies").select("id, name").order("name"),
       supabase.from("ranking_monthly").select("user_id, points, position").eq("agency_id", agencyId).eq("month", monthRange.monthFirst).order("position"),
+      profilesPromise,
     ]);
+
+    const profilesData = (profilesRes.data as ProfileLite[]) ?? [];
+    const profileIds = profilesData.map((p) => p.id);
+
+    // user_roles: filtrar apenas pelos usuários da agência (antes buscava o banco inteiro)
+    const rolesRes = profileIds.length > 0
+      ? await supabase.from("user_roles").select("user_id, role").in("user_id", profileIds)
+      : { data: [] as { user_id: string; role: "admin" | "user" }[] };
+
     setReports((reportsRes.data as AgencyReport[]) ?? []);
-    setProfiles((profilesRes.data as ProfileLite[]) ?? []);
+    setProfiles(profilesData);
     const m = new Map<string, "admin" | "user">();
     for (const r of (rolesRes.data as { user_id: string; role: "admin" | "user" }[]) ?? []) m.set(r.user_id, r.role);
     setRoles(m);
@@ -143,7 +158,7 @@ function AdminDashboardPage() {
     setLoading(false);
   }, [agencyId, monthRange.start, monthRange.end, monthRange.monthFirst]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => { fetchAll(true); }, [fetchAll]);
 
   // Realtime sync (single channel for everything we care about)
   useEffect(() => {
