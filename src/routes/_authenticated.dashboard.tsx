@@ -230,7 +230,6 @@ function DashboardPage() {
             userId={user.id}
             agencyId={profile?.agency_id ?? null}
             monthStart={monthRange.start}
-            onReady={() => setGamificationReady(true)}
           />
         )}
 
