@@ -168,10 +168,10 @@ function DashboardPage() {
     }));
   }, [reports]);
 
-  // Mostra skeleton de página inteira na primeira carga, esperando TANTO
-  // os reports quanto a gamificação — evita pop-in de cards/ranking depois
-  // do conteúdo principal já estar visível.
-  const initialLoading = (loading && reports.length === 0) || !gamificationReady;
+  // Mostra skeleton apenas até os reports da página carregarem.
+  // A gamificação tem seus próprios estados vazios e renderiza independente,
+  // evitando deadlock quando o widget ainda não foi montado.
+  const initialLoading = loading;
 
   return (
     <DataGate
