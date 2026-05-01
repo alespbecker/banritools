@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PageSkeleton } from "@/components/PageSkeleton";
 
 export const Route = createFileRoute("/_authenticated/registrar-producao")({
   head: () => ({
@@ -19,6 +20,7 @@ export const Route = createFileRoute("/_authenticated/registrar-producao")({
     ],
   }),
   component: RegistrarProducaoPage,
+  pendingComponent: () => <PageSkeleton kpis={0} rows={10} />,
 });
 
 type FormData = {
