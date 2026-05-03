@@ -34,7 +34,7 @@ interface DashboardSidebarProps {
   onToggleTheme?: () => void;
   onNavigate?: () => void;
   forceExpanded?: boolean;
-  userRole?: "admin" | "user" | null;
+  userRole?: AppRole | null;
 }
 
 export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, forceExpanded, userRole }: DashboardSidebarProps) {
@@ -42,6 +42,14 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
   const location = useLocation();
 
   const isExpanded = forceExpanded || !collapsed;
+  const isAdminLike = userRole === "admin" || userRole === "gerente";
+
+  // Considera ativo quando a rota atual começa com o destino do item.
+  // Para o "/" exato evitamos casar tudo; usamos comparação estrita.
+  const isRouteActive = (to: string) => {
+    if (to === "/") return location.pathname === "/";
+    return location.pathname === to || location.pathname.startsWith(to + "/");
+  };
 
   return (
     <aside
