@@ -22,7 +22,7 @@ export interface AuthState {
   session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  userRole: "admin" | "user" | null;
+  userRole: AppRole | null;
   profile: { id: string; name: string | null; email: string | null; agency_id: string | null } | null;
 }
 
