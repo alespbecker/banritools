@@ -65,9 +65,9 @@ export function HeroPerformance({
         aria-hidden
         className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/20 blur-3xl"
       />
-      <div className="relative grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-center">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <div className="relative grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-stretch">
+        <div className="flex flex-col gap-5">
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             <Sparkles className="h-3.5 w-3.5" />
             <span>Resumo de hoje</span>
           </div>
@@ -80,16 +80,18 @@ export function HeroPerformance({
             )}
           </div>
 
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">
+          <div className="space-y-1">
+            <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
               {primaryLabel}
             </span>
-            <span className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-              {primaryValue}
-            </span>
-            {primaryHint && (
-              <Badge variant="neutral" className="ml-1">{primaryHint}</Badge>
-            )}
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="text-5xl font-bold tracking-tight text-foreground tabular-nums sm:text-6xl">
+                {primaryValue}
+              </span>
+              {primaryHint && (
+                <Badge variant="info" className="self-center">{primaryHint}</Badge>
+              )}
+            </div>
           </div>
 
           {progress != null && (
@@ -109,19 +111,21 @@ export function HeroPerformance({
           <button
             type="button"
             onClick={nextAction.onClick}
+            aria-label={`Próxima melhor ação: ${nextAction.title}`}
             className={cn(
-              "card-hover group flex w-full flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all",
+              "card-hover group flex w-full flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               actionTone[tone],
             )}
           >
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+            <div className="flex w-full items-center justify-between text-[11px] font-semibold uppercase tracking-[0.08em]">
               <span>Próxima melhor ação</span>
+              <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
             </div>
             <div className="flex items-start gap-3">
               {NextIcon && (
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-background/40">
-                  <NextIcon className="h-4 w-4" aria-hidden="true" />
+                <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-background/50 ring-1 ring-inset ring-current/10">
+                  <NextIcon className="h-5 w-5" aria-hidden="true" />
                 </span>
               )}
               <div className="space-y-1">
@@ -135,7 +139,7 @@ export function HeroPerformance({
                 )}
               </div>
             </div>
-            <span className="ml-auto inline-flex items-center gap-1 text-sm font-medium">
+            <span className="mt-auto inline-flex items-center gap-1 self-end text-sm font-semibold">
               {nextAction.ctaLabel ?? "Abrir"}
               <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </span>
