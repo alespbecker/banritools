@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 import { Sparkles, ArrowLeft } from "lucide-react";
+import { logAudit } from "@/features/audit/log";
+import { EmptyState } from "@/components/states/EmptyState";
 import type { Product } from "@/features/production/types";
 
 export const Route = createFileRoute("/_authenticated/registrar-producao-v2")({
