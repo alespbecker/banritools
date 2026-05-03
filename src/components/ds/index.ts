@@ -6,3 +6,5 @@ export { ActionCard } from "./ActionCard";
 export { InfoCard } from "./InfoCard";
 export { AlertCard } from "./AlertCard";
 export { ProgressWithLabel } from "./ProgressWithLabel";
+export { HeroPerformance } from "./HeroPerformance";
+export { PriorityItem } from "./PriorityItem";

@@ -2,7 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Search, Plus, MessageSquare, AlertTriangle, CheckCircle2 } from "lucide-react";
+import {
+  Users, Search, Plus, MessageSquare, AlertTriangle,
+  CheckCircle2, Phone, Calendar,
+} from "lucide-react";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { ContactInteractionsDrawer } from "@/features/contacts/ContactInteractionsDrawer";
 import { Input } from "@/components/ui/input";
@@ -18,6 +21,7 @@ import {
 } from "@/components/ds";
 import { ErrorState } from "@/components/states/ErrorState";
 import { EmptyState } from "@/components/states/EmptyState";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/contacts-v3")({
   head: () => ({ meta: [{ title: "Contatos v3 — BanriTools" }] }),
@@ -43,13 +47,32 @@ const STATUS_TONE: Record<string, "success" | "warning" | "danger" | "neutral" |
   perdido: "danger",
 };
 
+const STATUS_LABEL: Record<string, string> = {
+  novo: "Novo",
+  contato: "Em contato",
+  negociando: "Negociando",
+  fechado: "Fechado",
+  perdido: "Perdido",
+};
+
+type FilterKey = "all" | "today" | "overdue" | "novo" | "contato" | "negociando" | "fechado";
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase())
+    .join("");
+}
+
 function Page() {
   const { user } = useAuth();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [filter, setFilter] = useState<FilterKey>("all");
   const [interactionsFor, setInteractionsFor] = useState<{ id: string; name: string } | null>(null);
 
   const load = useCallback(async () => {
@@ -70,33 +93,56 @@ function Page() {
   const isToday = (d: string | null) =>
     !!d && new Date(d).toDateString() === today.toDateString();
 
+  const counts = useMemo(() => {
+    const c = {
+      all: contacts.length,
+      today: 0, overdue: 0,
+      novo: 0, contato: 0, negociando: 0, fechado: 0,
+    };
+    contacts.forEach((x) => {
+      if (isToday(x.next_follow_up)) c.today++;
+      if (isOverdue(x.next_follow_up)) c.overdue++;
+      if (x.status === "novo") c.novo++;
+      if (x.status === "contato") c.contato++;
+      if (x.status === "negociando") c.negociando++;
+      if (x.status === "fechado") c.fechado++;
+    });
+    return c;
+  }, [contacts, today]);
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return contacts.filter((c) => {
-      if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      if (filter === "today" && !isToday(c.next_follow_up)) return false;
+      if (filter === "overdue" && !isOverdue(c.next_follow_up)) return false;
+      if (
+        (filter === "novo" || filter === "contato" || filter === "negociando" || filter === "fechado") &&
+        c.status !== filter
+      ) return false;
       if (!q) return true;
       return c.name.toLowerCase().includes(q) || (c.phone ?? "").toLowerCase().includes(q);
     });
-  }, [contacts, search, statusFilter]);
-
-  const stats = useMemo(() => {
-    const overdue = contacts.filter((c) => isOverdue(c.next_follow_up)).length;
-    const todayN = contacts.filter((c) => isToday(c.next_follow_up)).length;
-    const closed = contacts.filter((c) => c.status === "fechado").length;
-    return { total: contacts.length, overdue, todayN, closed };
-  }, [contacts, today]);
+  }, [contacts, search, filter, today]);
 
   if (loading) return <PageSkeleton kpis={3} rows={6} />;
   if (error) return <ErrorState message={error} onRetry={load} />;
 
-  const statuses = ["all", "novo", "contato", "negociando", "fechado", "perdido"];
+  const filters: { key: FilterKey; label: string; count: number; tone?: "danger" | "warning" }[] = [
+    { key: "all", label: "Todos", count: counts.all },
+    { key: "today", label: "Hoje", count: counts.today, tone: "warning" },
+    { key: "overdue", label: "Atrasados", count: counts.overdue, tone: "danger" },
+    { key: "novo", label: "Novos", count: counts.novo },
+    { key: "contato", label: "Em contato", count: counts.contato },
+    { key: "negociando", label: "Negociando", count: counts.negociando },
+    { key: "fechado", label: "Fechados", count: counts.fechado },
+  ];
 
   return (
     <PageContainer>
       <PageHeader
         icon={<Users className="h-5 w-5" />}
         title="Contatos"
-        description="CRM de relacionamento com clientes (v3)"
+        description="Sua fila de relacionamento comercial"
         actions={
           <>
             <Button asChild variant="ghost" size="sm">
@@ -112,51 +158,77 @@ function Page() {
       />
 
       <DashboardGrid cols={4}>
-        <KpiCard label="Total" value={stats.total} icon={Users} tone="primary" />
-        <KpiCard label="Follow-ups hoje" value={stats.todayN} icon={MessageSquare} tone="accent" />
-        <KpiCard label="Atrasados" value={stats.overdue} icon={AlertTriangle} tone="danger" />
-        <KpiCard label="Fechados" value={stats.closed} icon={CheckCircle2} tone="success" />
+        <KpiCard label="Total" value={counts.all} icon={Users} tone="primary" />
+        <KpiCard label="Follow-ups hoje" value={counts.today} icon={MessageSquare} tone="accent" />
+        <KpiCard label="Atrasados" value={counts.overdue} icon={AlertTriangle} tone="danger" />
+        <KpiCard label="Fechados" value={counts.fechado} icon={CheckCircle2} tone="success" />
       </DashboardGrid>
 
-      {stats.overdue > 0 && (
+      {counts.overdue > 0 && (
         <AlertCard
           tone="warning"
-          title={`${stats.overdue} follow-up(s) em atraso`}
-          description="Priorize os contatos vencidos para não perder oportunidades."
+          title={`${counts.overdue} follow-up${counts.overdue === 1 ? "" : "s"} em atraso`}
+          description="Priorize esses contatos para não perder oportunidades."
+          actions={
+            <Button size="sm" variant="outline" onClick={() => setFilter("overdue")}>
+              Ver atrasados
+            </Button>
+          }
         />
       )}
 
       <InfoCard
         title="Lista de contatos"
-        description={`${filtered.length} de ${contacts.length}`}
+        description={`${filtered.length} de ${counts.all}`}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-8 w-44 pl-7 text-sm"
-              />
-            </div>
-            <div className="hidden gap-1 md:flex">
-              {statuses.map((s) => (
-                <Button
-                  key={s}
-                  size="sm"
-                  variant={statusFilter === s ? "default" : "ghost"}
-                  className="h-7 px-2 text-xs"
-                  onClick={() => setStatusFilter(s)}
-                >
-                  {s === "all" ? "Todos" : s}
-                </Button>
-              ))}
-            </div>
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar nome ou telefone..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-8 w-56 pl-7 text-sm"
+            />
           </div>
         }
         bodyless
       >
+        {/* Filtros como chips com contagem */}
+        <div className="flex flex-wrap gap-1.5 border-b border-border px-5 py-3">
+          {filters.map((f) => {
+            const active = filter === f.key;
+            return (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setFilter(f.key)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                )}
+              >
+                <span>{f.label}</span>
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 text-[10px] tabular-nums",
+                    active
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : f.tone === "danger" && f.count > 0
+                        ? "bg-destructive/15 text-destructive"
+                        : f.tone === "warning" && f.count > 0
+                          ? "bg-warning/15 text-warning"
+                          : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {f.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         {filtered.length === 0 ? (
           <div className="p-6">
             <EmptyState
@@ -173,20 +245,38 @@ function Page() {
               return (
                 <li
                   key={c.id}
-                  className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-accent/30"
+                  className={cn(
+                    "flex items-center gap-3 px-5 py-3 transition-colors",
+                    overdue ? "bg-destructive/[0.03] hover:bg-destructive/10" : "hover:bg-accent/30",
+                  )}
                 >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-medium text-foreground">{c.name}</p>
-                      {c.status && <Badge variant={statusTone}>{c.status}</Badge>}
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                    {initials(c.name) || "?"}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="truncate text-sm font-semibold text-foreground">{c.name}</p>
+                      {c.status && (
+                        <Badge variant={statusTone}>{STATUS_LABEL[c.status] ?? c.status}</Badge>
+                      )}
                       {overdue && <Badge variant="danger">Atrasado</Badge>}
-                      {todayFlag && <Badge variant="warning">Hoje</Badge>}
+                      {todayFlag && !overdue && <Badge variant="warning">Hoje</Badge>}
                     </div>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {c.phone ?? "—"}
-                      {c.product_interest && ` · ${c.product_interest}`}
-                      {c.next_follow_up && ` · follow-up ${new Date(c.next_follow_up).toLocaleDateString("pt-BR")}`}
-                    </p>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                      {c.phone && (
+                        <span className="inline-flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {c.phone}
+                        </span>
+                      )}
+                      {c.product_interest && <span>{c.product_interest}</span>}
+                      {c.next_follow_up && (
+                        <span className="inline-flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(c.next_follow_up).toLocaleDateString("pt-BR")}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <Button
                     size="sm"
