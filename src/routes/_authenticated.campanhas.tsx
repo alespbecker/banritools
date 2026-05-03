@@ -122,7 +122,11 @@ function Page() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {items.length === 0 && <p className="text-center text-muted-foreground p-6 sm:col-span-2">Nenhuma campanha.</p>}
+        {items.length === 0 && (
+          <div className="sm:col-span-2">
+            <EmptyState title="Sem campanhas" description={canManage ? "Crie a primeira campanha para a sua agência." : "Aguarde o gestor cadastrar campanhas."} />
+          </div>
+        )}
         {items.map((c) => (
           <div key={c.id} className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-start justify-between">
