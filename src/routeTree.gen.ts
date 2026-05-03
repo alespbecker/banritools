@@ -15,12 +15,18 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedToolsRouteImport } from './routes/_authenticated.tools'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
+import { Route as AuthenticatedRegistrarProducaoV2RouteImport } from './routes/_authenticated.registrar-producao-v2'
 import { Route as AuthenticatedRegistrarProducaoRouteImport } from './routes/_authenticated.registrar-producao'
+import { Route as AuthenticatedRankingV2RouteImport } from './routes/_authenticated.ranking-v2'
 import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated.ranking'
+import { Route as AuthenticatedMetasRouteImport } from './routes/_authenticated.metas'
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated.historico'
+import { Route as AuthenticatedDashboardV2RouteImport } from './routes/_authenticated.dashboard-v2'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated.contacts'
+import { Route as AuthenticatedCampanhasRouteImport } from './routes/_authenticated.campanhas'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
+import { Route as AuthenticatedAdminProdutosRouteImport } from './routes/_authenticated.admin.produtos'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -51,15 +57,31 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedRegistrarProducaoV2Route =
+  AuthenticatedRegistrarProducaoV2RouteImport.update({
+    id: '/registrar-producao-v2',
+    path: '/registrar-producao-v2',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedRegistrarProducaoRoute =
   AuthenticatedRegistrarProducaoRouteImport.update({
     id: '/registrar-producao',
     path: '/registrar-producao',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedRankingV2Route = AuthenticatedRankingV2RouteImport.update({
+  id: '/ranking-v2',
+  path: '/ranking-v2',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedRankingRoute = AuthenticatedRankingRouteImport.update({
   id: '/ranking',
   path: '/ranking',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedMetasRoute = AuthenticatedMetasRouteImport.update({
+  id: '/metas',
+  path: '/metas',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
@@ -67,6 +89,12 @@ const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
   path: '/historico',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedDashboardV2Route =
+  AuthenticatedDashboardV2RouteImport.update({
+    id: '/dashboard-v2',
+    path: '/dashboard-v2',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -77,37 +105,60 @@ const AuthenticatedContactsRoute = AuthenticatedContactsRouteImport.update({
   path: '/contacts',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCampanhasRoute = AuthenticatedCampanhasRouteImport.update({
+  id: '/campanhas',
+  path: '/campanhas',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAdminProdutosRoute =
+  AuthenticatedAdminProdutosRouteImport.update({
+    id: '/produtos',
+    path: '/produtos',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin': typeof AuthenticatedAdminRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/campanhas': typeof AuthenticatedCampanhasRoute
   '/contacts': typeof AuthenticatedContactsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dashboard-v2': typeof AuthenticatedDashboardV2Route
   '/historico': typeof AuthenticatedHistoricoRoute
+  '/metas': typeof AuthenticatedMetasRoute
   '/ranking': typeof AuthenticatedRankingRoute
+  '/ranking-v2': typeof AuthenticatedRankingV2Route
   '/registrar-producao': typeof AuthenticatedRegistrarProducaoRoute
+  '/registrar-producao-v2': typeof AuthenticatedRegistrarProducaoV2Route
   '/settings': typeof AuthenticatedSettingsRoute
   '/tools': typeof AuthenticatedToolsRoute
+  '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin': typeof AuthenticatedAdminRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/campanhas': typeof AuthenticatedCampanhasRoute
   '/contacts': typeof AuthenticatedContactsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dashboard-v2': typeof AuthenticatedDashboardV2Route
   '/historico': typeof AuthenticatedHistoricoRoute
+  '/metas': typeof AuthenticatedMetasRoute
   '/ranking': typeof AuthenticatedRankingRoute
+  '/ranking-v2': typeof AuthenticatedRankingV2Route
   '/registrar-producao': typeof AuthenticatedRegistrarProducaoRoute
+  '/registrar-producao-v2': typeof AuthenticatedRegistrarProducaoV2Route
   '/settings': typeof AuthenticatedSettingsRoute
   '/tools': typeof AuthenticatedToolsRoute
+  '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -115,14 +166,20 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/campanhas': typeof AuthenticatedCampanhasRoute
   '/_authenticated/contacts': typeof AuthenticatedContactsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/dashboard-v2': typeof AuthenticatedDashboardV2Route
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
+  '/_authenticated/metas': typeof AuthenticatedMetasRoute
   '/_authenticated/ranking': typeof AuthenticatedRankingRoute
+  '/_authenticated/ranking-v2': typeof AuthenticatedRankingV2Route
   '/_authenticated/registrar-producao': typeof AuthenticatedRegistrarProducaoRoute
+  '/_authenticated/registrar-producao-v2': typeof AuthenticatedRegistrarProducaoV2Route
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tools': typeof AuthenticatedToolsRoute
+  '/_authenticated/admin/produtos': typeof AuthenticatedAdminProdutosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,26 +188,38 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/admin'
+    | '/campanhas'
     | '/contacts'
     | '/dashboard'
+    | '/dashboard-v2'
     | '/historico'
+    | '/metas'
     | '/ranking'
+    | '/ranking-v2'
     | '/registrar-producao'
+    | '/registrar-producao-v2'
     | '/settings'
     | '/tools'
+    | '/admin/produtos'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/reset-password'
     | '/admin'
+    | '/campanhas'
     | '/contacts'
     | '/dashboard'
+    | '/dashboard-v2'
     | '/historico'
+    | '/metas'
     | '/ranking'
+    | '/ranking-v2'
     | '/registrar-producao'
+    | '/registrar-producao-v2'
     | '/settings'
     | '/tools'
+    | '/admin/produtos'
   id:
     | '__root__'
     | '/'
@@ -158,13 +227,19 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/_authenticated/admin'
+    | '/_authenticated/campanhas'
     | '/_authenticated/contacts'
     | '/_authenticated/dashboard'
+    | '/_authenticated/dashboard-v2'
     | '/_authenticated/historico'
+    | '/_authenticated/metas'
     | '/_authenticated/ranking'
+    | '/_authenticated/ranking-v2'
     | '/_authenticated/registrar-producao'
+    | '/_authenticated/registrar-producao-v2'
     | '/_authenticated/settings'
     | '/_authenticated/tools'
+    | '/_authenticated/admin/produtos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -218,11 +293,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/registrar-producao-v2': {
+      id: '/_authenticated/registrar-producao-v2'
+      path: '/registrar-producao-v2'
+      fullPath: '/registrar-producao-v2'
+      preLoaderRoute: typeof AuthenticatedRegistrarProducaoV2RouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/registrar-producao': {
       id: '/_authenticated/registrar-producao'
       path: '/registrar-producao'
       fullPath: '/registrar-producao'
       preLoaderRoute: typeof AuthenticatedRegistrarProducaoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/ranking-v2': {
+      id: '/_authenticated/ranking-v2'
+      path: '/ranking-v2'
+      fullPath: '/ranking-v2'
+      preLoaderRoute: typeof AuthenticatedRankingV2RouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/ranking': {
@@ -232,11 +321,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRankingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/metas': {
+      id: '/_authenticated/metas'
+      path: '/metas'
+      fullPath: '/metas'
+      preLoaderRoute: typeof AuthenticatedMetasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/historico': {
       id: '/_authenticated/historico'
       path: '/historico'
       fullPath: '/historico'
       preLoaderRoute: typeof AuthenticatedHistoricoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dashboard-v2': {
+      id: '/_authenticated/dashboard-v2'
+      path: '/dashboard-v2'
+      fullPath: '/dashboard-v2'
+      preLoaderRoute: typeof AuthenticatedDashboardV2RouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -253,6 +356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContactsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/campanhas': {
+      id: '/_authenticated/campanhas'
+      path: '/campanhas'
+      fullPath: '/campanhas'
+      preLoaderRoute: typeof AuthenticatedCampanhasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -260,27 +370,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/produtos': {
+      id: '/_authenticated/admin/produtos'
+      path: '/produtos'
+      fullPath: '/admin/produtos'
+      preLoaderRoute: typeof AuthenticatedAdminProdutosRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminProdutosRoute: typeof AuthenticatedAdminProdutosRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminProdutosRoute: AuthenticatedAdminProdutosRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
 interface AuthenticatedRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedCampanhasRoute: typeof AuthenticatedCampanhasRoute
   AuthenticatedContactsRoute: typeof AuthenticatedContactsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDashboardV2Route: typeof AuthenticatedDashboardV2Route
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
+  AuthenticatedMetasRoute: typeof AuthenticatedMetasRoute
   AuthenticatedRankingRoute: typeof AuthenticatedRankingRoute
+  AuthenticatedRankingV2Route: typeof AuthenticatedRankingV2Route
   AuthenticatedRegistrarProducaoRoute: typeof AuthenticatedRegistrarProducaoRoute
+  AuthenticatedRegistrarProducaoV2Route: typeof AuthenticatedRegistrarProducaoV2Route
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedCampanhasRoute: AuthenticatedCampanhasRoute,
   AuthenticatedContactsRoute: AuthenticatedContactsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDashboardV2Route: AuthenticatedDashboardV2Route,
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
+  AuthenticatedMetasRoute: AuthenticatedMetasRoute,
   AuthenticatedRankingRoute: AuthenticatedRankingRoute,
+  AuthenticatedRankingV2Route: AuthenticatedRankingV2Route,
   AuthenticatedRegistrarProducaoRoute: AuthenticatedRegistrarProducaoRoute,
+  AuthenticatedRegistrarProducaoV2Route: AuthenticatedRegistrarProducaoV2Route,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedToolsRoute: AuthenticatedToolsRoute,
 }

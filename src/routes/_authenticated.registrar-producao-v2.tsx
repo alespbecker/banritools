@@ -32,7 +32,7 @@ function Page() {
   }, []);
 
   const upd = (id: string, key: "quantity" | "amount", v: number) => {
-    setValues((s) => ({ ...s, [id]: { quantity: 0, amount: 0, ...s[id], [key]: v } }));
+    setValues((s) => ({ ...s, [id]: { ...{ quantity: 0, amount: 0 }, ...s[id], [key]: v } }));
   };
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
