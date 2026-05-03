@@ -40,7 +40,7 @@ function Page() {
   const [progress, setProgress] = useState<Record<string, { qty: number; amt: number }>>({});
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const isAdminOrManager = userRole === "admin";
+  const isAdminOrManager = userRole === "admin" || userRole === "gerente";
 
   const today = new Date();
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
