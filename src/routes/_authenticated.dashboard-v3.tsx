@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +52,7 @@ interface GoalRow {
 
 function Page() {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [monthEntries, setMonthEntries] = useState<Entry[]>([]);
   const [contacts, setContacts] = useState<ContactRow[]>([]);
   const [goals, setGoals] = useState<GoalRow[]>([]);
