@@ -167,7 +167,9 @@ function Page() {
       )}
 
       <div className="space-y-3">
-        {goals.length === 0 && <p className="text-center text-muted-foreground p-6">Nenhuma meta cadastrada.</p>}
+        {goals.length === 0 && (
+          <EmptyState title="Nenhuma meta cadastrada" description={isAdminOrManager ? "Clique em \"Nova meta\" para começar." : "Aguarde o gestor cadastrar metas."} />
+        )}
         {goals.map((g) => {
           const p = progress[g.id] ?? { qty: 0, amt: 0 };
           const pctQty = g.target_quantity > 0 ? Math.min(100, (p.qty / g.target_quantity) * 100) : 0;
