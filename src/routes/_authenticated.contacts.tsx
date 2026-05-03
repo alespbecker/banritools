@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, MessageSquare, Search } from "lucide-react";
 import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
+import { ContactInteractionsDrawer } from "@/features/contacts/ContactInteractionsDrawer";
 
 export const Route = createFileRoute("/_authenticated/contacts")({
   head: () => ({
@@ -33,6 +34,20 @@ function ContactsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
   const [form, setForm] = useState({ name: "", phone: "", product_interest: "", status: "novo", next_follow_up: "", notes: "" });
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [interactionsFor, setInteractionsFor] = useState<{ id: string; name: string } | null>(null);
+
+  const filteredContacts = useMemo(() => {
+    const q = search.toLowerCase();
+    return contacts.filter((c) => {
+      if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      if (!q) return true;
+      return c.name.toLowerCase().includes(q) || (c.phone ?? "").toLowerCase().includes(q);
+    });
+  }, [contacts, search, statusFilter]);
+
+  const isOverdue = (d: string | null) => d && new Date(d) < new Date(new Date().toDateString());
 
   const loadContacts = useCallback(async () => {
     if (!user) return;
@@ -108,6 +123,18 @@ function ContactsPage() {
         </form>
       )}
 
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nome ou telefone" className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 text-sm" />
+        </div>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-sm">
+          <option value="all">Todos os status</option>
+          <option value="novo">Novo</option><option value="em_contato">Em Contato</option>
+          <option value="negociando">Negociando</option><option value="fechado">Fechado</option><option value="perdido">Perdido</option>
+        </select>
+      </div>
+
       <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full text-sm">
           <thead>
@@ -121,18 +148,26 @@ function ContactsPage() {
             </tr>
           </thead>
           <tbody>
-            {contacts.length === 0 ? (
+            {filteredContacts.length === 0 ? (
               <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">Nenhum contato encontrado</td></tr>
             ) : (
-              contacts.map((c) => (
+              filteredContacts.map((c) => (
                 <tr key={c.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3 text-foreground">{c.name}</td>
                   <td className="px-4 py-3 text-foreground">{c.phone ?? "—"}</td>
                   <td className="px-4 py-3 text-foreground">{c.product_interest ?? "—"}</td>
                   <td className="px-4 py-3"><span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-accent-foreground capitalize">{c.status?.replace("_", " ") ?? "—"}</span></td>
-                  <td className="px-4 py-3 text-foreground">{c.next_follow_up ? new Date(c.next_follow_up).toLocaleDateString("pt-BR") : "—"}</td>
+                  <td className="px-4 py-3">
+                    {c.next_follow_up ? (
+                      <span className={isOverdue(c.next_follow_up) ? "text-destructive font-medium" : "text-foreground"}>
+                        {new Date(c.next_follow_up).toLocaleDateString("pt-BR")}
+                        {isOverdue(c.next_follow_up) && " ⚠"}
+                      </span>
+                    ) : "—"}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
+                      <button onClick={() => setInteractionsFor({ id: c.id, name: c.name })} title="Ver interações" className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"><MessageSquare className="h-3.5 w-3.5" /></button>
                       <button onClick={() => handleEdit(c)} title={`Editar contato de ${c.name}`} aria-label={`Editar contato de ${c.name}`} className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>
                       <button onClick={() => handleDelete(c.id)} title={`Excluir contato de ${c.name}`} aria-label={`Excluir contato de ${c.name}`} className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
                     </div>
@@ -143,6 +178,13 @@ function ContactsPage() {
           </tbody>
         </table>
       </div>
+
+      <ContactInteractionsDrawer
+        contactId={interactionsFor?.id ?? null}
+        contactName={interactionsFor?.name ?? ""}
+        open={!!interactionsFor}
+        onOpenChange={(v) => !v && setInteractionsFor(null)}
+      />
     </div>
     </DataGate>
   );
