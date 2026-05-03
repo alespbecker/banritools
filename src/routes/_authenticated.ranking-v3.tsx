@@ -109,9 +109,9 @@ function Page() {
   const motivation = !myRow
     ? "Comece a registrar produção para entrar no ranking deste mês."
     : myIndex === 0
-      ? "Você está liderando! 🏆 Continue mantendo o ritmo."
+      ? "Você está liderando o mês. Continue no ritmo!"
       : diffToNext > 0
-        ? `Faltam ${diffToNext.toFixed(0)} pts para subir para ${myIndex}º lugar.`
+        ? `Faltam ${diffToNext.toFixed(0)} pts para subir para o ${myIndex}º lugar.`
         : "Continue evoluindo neste mês.";
 
   return (

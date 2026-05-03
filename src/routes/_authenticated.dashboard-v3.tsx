@@ -6,9 +6,10 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import {
   TrendingUp, Trophy, Package, DollarSign,
   FileText, UserPlus, Megaphone, Target, Users,
-  AlertTriangle, Clock, ListChecks, Sparkles,
+  Clock, ListChecks, Sparkles,
 } from "lucide-react";
 import { ErrorState } from "@/components/states/ErrorState";
+import { EmptyState } from "@/components/states/EmptyState";
 import {
   PageContainer,
   PageHeader,
@@ -305,8 +306,8 @@ function Page() {
                 tone="warning"
                 count={goalsAtRisk}
                 icon={Target}
-                title="Metas em risco"
-                description="Você está abaixo do ritmo esperado para o mês"
+                title="Metas precisando de atenção"
+                description="Acelere o ritmo para alcançar a meta do mês"
                 onClick={() => navigate({ to: "/metas" })}
               />
             )}
@@ -430,14 +431,17 @@ function Page() {
         bodyless
       >
         {monthEntries.length === 0 ? (
-          <div className="flex items-center justify-between gap-3 px-5 py-6">
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <AlertTriangle className="h-4 w-4" />
-              <span className="text-sm">Nenhum lançamento no mês ainda.</span>
-            </div>
-            <Button asChild size="sm">
-              <Link to="/registrar-producao-v3">Registrar agora</Link>
-            </Button>
+          <div className="px-5 py-8">
+            <EmptyState
+              icon={<Package className="h-8 w-8" />}
+              title="Você ainda não registrou produção este mês"
+              description="Lance suas vendas para acompanhar metas e ranking."
+              action={
+                <Button asChild size="sm">
+                  <Link to="/registrar-producao-v3">Registrar agora</Link>
+                </Button>
+              }
+            />
           </div>
         ) : (
           <ul className="divide-y divide-border">
