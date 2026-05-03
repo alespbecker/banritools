@@ -6,7 +6,7 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import {
   TrendingUp, Trophy, Package, DollarSign,
   FileText, UserPlus, Megaphone, Target, Users,
-  AlertTriangle, Clock, ListChecks, Sparkles,
+  Clock, ListChecks, Sparkles,
 } from "lucide-react";
 import { ErrorState } from "@/components/states/ErrorState";
 import { EmptyState } from "@/components/states/EmptyState";
