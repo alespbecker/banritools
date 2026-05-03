@@ -69,13 +69,14 @@ function Page() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !profile?.agency_id) return toast.error("Você precisa estar vinculado a uma agência");
-    const { error } = await supabase.from("campaigns").insert({
+    const { data: inserted, error } = await supabase.from("campaigns").insert({
       ...form,
       product_id: form.product_id || null,
       agency_id: profile.agency_id,
       created_by: user.id,
-    } as never);
+    } as never).select("id").maybeSingle();
     if (error) return toast.error(error.message);
+    await logAudit({ action: "campaign.create", entity: "campaign", entity_id: (inserted as { id?: string } | null)?.id ?? null, details: { name: form.name } });
     toast.success("Campanha criada");
     setShowForm(false); load();
   };
@@ -84,6 +85,7 @@ function Page() {
     if (!confirm("Excluir campanha?")) return;
     const { error } = await supabase.from("campaigns").delete().eq("id", id);
     if (error) return toast.error(error.message);
+    await logAudit({ action: "campaign.delete", entity: "campaign", entity_id: id });
     load();
   };
 
