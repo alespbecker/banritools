@@ -112,7 +112,12 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              {isExpanded && <span>{item.label}</span>}
+              {isExpanded && <span className="flex-1">{item.label}</span>}
+              {isExpanded && badgeFor(item.to) && (
+                <span className="rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+                  {badgeFor(item.to)}
+                </span>
+              )}
             </Link>
           );
         })}
