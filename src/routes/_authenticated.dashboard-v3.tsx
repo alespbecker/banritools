@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import {
-  Sparkles, TrendingUp, Trophy, Package, DollarSign,
-  FileText, UserPlus, Megaphone, AlertTriangle, Users, Target,
+  TrendingUp, Trophy, Package, DollarSign,
+  FileText, UserPlus, Megaphone, Target, Users,
+  AlertTriangle, Clock, ListChecks, Sparkles,
 } from "lucide-react";
 import { ErrorState } from "@/components/states/ErrorState";
 import {
@@ -14,9 +15,10 @@ import {
   DashboardGrid,
   KpiCard,
   InfoCard,
-  AlertCard,
   ActionCard,
   ProgressWithLabel,
+  HeroPerformance,
+  PriorityItem,
 } from "@/components/ds";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,6 +50,13 @@ interface GoalRow {
   period_end: string;
   target_quantity: number;
   target_amount: number | null;
+}
+
+function greetingForHour() {
+  const h = new Date().getHours();
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
 }
 
 function Page() {
@@ -129,27 +138,30 @@ function Page() {
 
   useEffect(() => { reload(); }, [reload]);
 
-  if (loading) return <PageSkeleton kpis={4} rows={6} />;
-  if (error) return <ErrorState message={error} onRetry={reload} />;
-
-  // ----- Cálculos -----
+  // ----- Cálculos (sempre executados antes dos returns para manter ordem dos hooks) -----
   const todayStr = new Date().toISOString().split("T")[0];
-  const todayEntries = monthEntries.filter((e) => e.entry_date === todayStr);
-  const todayQty = todayEntries.reduce((s, e) => s + Number(e.quantity || 0), 0);
-  const todayAmt = todayEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const todayPts = todayEntries.reduce((s, e) => {
-    const ppu = e.products?.points_per_unit ?? 0;
-    return s + (Number(e.quantity || 0) + Number(e.amount || 0)) * ppu;
-  }, 0);
 
-  const monthQty = monthEntries.reduce((s, e) => s + Number(e.quantity || 0), 0);
-  const monthAmt = monthEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const monthPts = monthEntries.reduce((s, e) => {
-    const ppu = e.products?.points_per_unit ?? 0;
-    return s + (Number(e.quantity || 0) + Number(e.amount || 0)) * ppu;
-  }, 0);
+  const todayEntries = useMemo(
+    () => monthEntries.filter((e) => e.entry_date === todayStr),
+    [monthEntries, todayStr],
+  );
 
-  // Meta do dia: derivada da meta mensal pessoal (target_quantity / dias do mês)
+  const stats = useMemo(() => {
+    const todayQty = todayEntries.reduce((s, e) => s + Number(e.quantity || 0), 0);
+    const todayAmt = todayEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
+    const todayPts = todayEntries.reduce((s, e) => {
+      const ppu = e.products?.points_per_unit ?? 0;
+      return s + (Number(e.quantity || 0) + Number(e.amount || 0)) * ppu;
+    }, 0);
+    const monthQty = monthEntries.reduce((s, e) => s + Number(e.quantity || 0), 0);
+    const monthAmt = monthEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
+    const monthPts = monthEntries.reduce((s, e) => {
+      const ppu = e.products?.points_per_unit ?? 0;
+      return s + (Number(e.quantity || 0) + Number(e.amount || 0)) * ppu;
+    }, 0);
+    return { todayQty, todayAmt, todayPts, monthQty, monthAmt, monthPts };
+  }, [monthEntries, todayEntries]);
+
   const personalMonthGoal = goals.find(
     (g) => g.scope === "individual" && g.period_type === "monthly",
   );
@@ -162,11 +174,10 @@ function Page() {
   const dailyTarget =
     personalDailyGoal?.target_quantity ??
     (personalMonthGoal ? personalMonthGoal.target_quantity / daysInMonth : 0);
-  const dailyProgress = dailyTarget > 0 ? (todayQty / dailyTarget) * 100 : 0;
+  const dailyProgress = dailyTarget > 0 ? (stats.todayQty / dailyTarget) * 100 : 0;
   const monthTarget = personalMonthGoal?.target_quantity ?? 0;
-  const monthProgress = monthTarget > 0 ? (monthQty / monthTarget) * 100 : 0;
+  const monthProgress = monthTarget > 0 ? (stats.monthQty / monthTarget) * 100 : 0;
 
-  // Ações prioritárias
   const todayDate = new Date(new Date().toDateString());
   const overdueFollowups = contacts.filter(
     (c) => c.next_follow_up && new Date(c.next_follow_up) < todayDate,
@@ -180,22 +191,77 @@ function Page() {
     const elapsed = (Date.now() - new Date(g.period_start).getTime()) /
       (new Date(g.period_end).getTime() - new Date(g.period_start).getTime());
     const expected = g.target_quantity * elapsed;
-    return monthQty < expected * 0.8;
+    return stats.monthQty < expected * 0.8;
   }).length;
 
-  // Ranking
   const myIndex = agencyEntries.findIndex((r) => r.user_id === user?.id);
   const myPos = myIndex >= 0 ? myIndex + 1 : null;
-  const myPts = myIndex >= 0 ? agencyEntries[myIndex].pts : monthPts;
+  const myPts = myIndex >= 0 ? agencyEntries[myIndex].pts : stats.monthPts;
   const nextAhead = myIndex > 0 ? agencyEntries[myIndex - 1] : null;
   const diffToNext = nextAhead ? nextAhead.pts - myPts : 0;
+  const leaderPts = agencyEntries[0]?.pts ?? 0;
+  const diffToLeader = myPos && myPos > 1 ? leaderPts - myPts : 0;
+
+  if (loading) return <PageSkeleton kpis={4} rows={6} />;
+  if (error) return <ErrorState message={error} onRetry={reload} />;
+
+  const firstName = profile?.name?.split(" ")[0] ?? "";
+  const greeting = firstName ? `${greetingForHour()}, ${firstName}` : greetingForHour();
+
+  // Próxima melhor ação
+  const nextAction =
+    overdueFollowups > 0
+      ? {
+          title: `Cuidar de ${overdueFollowups} follow-up${overdueFollowups === 1 ? "" : "s"} atrasado${overdueFollowups === 1 ? "" : "s"}`,
+          description: "Recupere oportunidades antes do fim do dia.",
+          icon: Clock,
+          tone: "danger" as const,
+          ctaLabel: "Abrir contatos",
+          onClick: () => navigate({ to: "/contacts-v3" }),
+        }
+      : stats.todayQty === 0
+        ? {
+            title: "Registrar produção do dia",
+            description: "Lance vendas e produtos para acompanhar sua meta.",
+            icon: FileText,
+            tone: "primary" as const,
+            ctaLabel: "Registrar agora",
+            onClick: () => navigate({ to: "/registrar-producao-v3" }),
+          }
+        : pendingContacts > 0
+          ? {
+              title: `Avançar ${pendingContacts} contato${pendingContacts === 1 ? "" : "s"} no funil`,
+              description: "Mova leads novos para a próxima etapa.",
+              icon: Users,
+              tone: "warning" as const,
+              ctaLabel: "Abrir contatos",
+              onClick: () => navigate({ to: "/contacts-v3" }),
+            }
+          : {
+              title: "Tudo em dia",
+              description: "Aproveite para revisar metas e novas oportunidades.",
+              icon: Sparkles,
+              tone: "success" as const,
+              ctaLabel: "Ver metas",
+              onClick: () => navigate({ to: "/metas" }),
+            };
+
+  const heroProgress = dailyTarget > 0 ? dailyProgress : monthProgress;
+  const heroProgressLabel = dailyTarget > 0 ? "Meta diária" : monthTarget > 0 ? "Meta mensal" : undefined;
+  const heroProgressCaption =
+    dailyTarget > 0
+      ? `${stats.todayQty.toFixed(0)} / ${dailyTarget.toFixed(0)}`
+      : monthTarget > 0
+        ? `${stats.monthQty.toFixed(0)} / ${monthTarget.toFixed(0)}`
+        : undefined;
+
+  const priorityCount = (overdueFollowups > 0 ? 1 : 0) + (goalsAtRisk > 0 ? 1 : 0) + (pendingContacts > 0 ? 1 : 0);
 
   return (
     <PageContainer>
       <PageHeader
-        icon={<Sparkles className="h-5 w-5" />}
-        title={`Olá, ${profile?.name?.split(" ")[0] ?? "tudo bem"}`}
-        description="Como você está hoje e o que precisa fazer agora"
+        title="Início"
+        description="Sua central de operações"
         actions={
           <Button asChild variant="ghost" size="sm">
             <Link to="/dashboard">Versão antiga</Link>
@@ -203,181 +269,187 @@ function Page() {
         }
       />
 
-      {/* Bloco 1 — Status do dia */}
-      <section aria-labelledby="bloco-status" className="space-y-3">
-        <h2 id="bloco-status" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Status do dia
-        </h2>
-        <DashboardGrid cols={3}>
-          <KpiCard
-            label="Produção de hoje"
-            value={todayQty.toLocaleString("pt-BR")}
-            icon={Package}
-            tone="primary"
-            description={`${todayEntries.length} lançamento${todayEntries.length === 1 ? "" : "s"}`}
-          />
-          <KpiCard
-            label="Valor de hoje"
-            value={`R$ ${todayAmt.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
-            icon={DollarSign}
-            tone="success"
-            description={`${todayPts.toFixed(0)} pts`}
-          />
-          <InfoCard title="Meta diária" description={dailyTarget > 0 ? `Alvo: ${dailyTarget.toFixed(0)}` : "Sem meta definida"}>
-            {dailyTarget > 0 ? (
-              <ProgressWithLabel
-                value={dailyProgress}
-                valueLabel={`${todayQty.toFixed(0)} / ${dailyTarget.toFixed(0)}`}
-                autoTone
-              />
-            ) : (
-              <Button asChild variant="outline" size="sm">
-                <Link to="/metas">
-                  <Target className="h-3.5 w-3.5" /> Definir meta
-                </Link>
-              </Button>
-            )}
-          </InfoCard>
-        </DashboardGrid>
-      </section>
+      {/* Hero de performance */}
+      <HeroPerformance
+        greeting={greeting}
+        subtitle="Aqui está sua situação hoje e sua próxima melhor ação."
+        primaryLabel="Produção de hoje"
+        primaryValue={stats.todayQty.toLocaleString("pt-BR")}
+        primaryHint={stats.todayPts > 0 ? `+${stats.todayPts.toFixed(0)} pts` : undefined}
+        progress={heroProgress > 0 || heroProgressLabel ? heroProgress : undefined}
+        progressLabel={heroProgressLabel}
+        progressCaption={heroProgressCaption}
+        nextAction={nextAction}
+      />
 
-      {/* Bloco 2 — Ações prioritárias */}
-      {(overdueFollowups > 0 || goalsAtRisk > 0 || pendingContacts > 0) && (
-        <section aria-labelledby="bloco-acoes" className="space-y-3">
-          <h2 id="bloco-acoes" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Ações prioritárias
-          </h2>
-          <div className="space-y-3">
+      {/* Bloco — Fila operacional */}
+      {priorityCount > 0 && (
+        <InfoCard
+          title="Ações prioritárias"
+          description={`${priorityCount} item${priorityCount === 1 ? "" : "s"} aguardando você`}
+          actions={<Badge variant="warning">{priorityCount}</Badge>}
+        >
+          <div className="space-y-2">
             {overdueFollowups > 0 && (
-              <AlertCard
+              <PriorityItem
                 tone="danger"
-                title={`${overdueFollowups} follow-up(s) em atraso`}
-                description="Priorize esses contatos antes do fim do dia."
-                actions={
-                  <Button asChild size="sm">
-                    <Link to="/contacts-v3">Abrir contatos</Link>
-                  </Button>
-                }
+                count={overdueFollowups}
+                icon={Clock}
+                title="Follow-ups em atraso"
+                description="Priorize esses contatos antes do fim do dia"
+                onClick={() => navigate({ to: "/contacts-v3" })}
               />
             )}
             {goalsAtRisk > 0 && (
-              <AlertCard
+              <PriorityItem
                 tone="warning"
-                title={`${goalsAtRisk} meta(s) em risco`}
-                description="Você está abaixo do ritmo esperado para o mês."
-                actions={
-                  <Button asChild size="sm" variant="outline">
-                    <Link to="/metas">Ver metas</Link>
-                  </Button>
-                }
+                count={goalsAtRisk}
+                icon={Target}
+                title="Metas em risco"
+                description="Você está abaixo do ritmo esperado para o mês"
+                onClick={() => navigate({ to: "/metas" })}
               />
             )}
             {pendingContacts > 0 && (
-              <AlertCard
+              <PriorityItem
                 tone="info"
-                title={`${pendingContacts} contato(s) pendente(s)`}
-                description="Avance esses leads para a próxima etapa do funil."
+                count={pendingContacts}
+                icon={ListChecks}
+                title="Contatos pendentes no funil"
+                description="Avance esses leads para a próxima etapa"
+                onClick={() => navigate({ to: "/contacts-v3" })}
               />
             )}
           </div>
-        </section>
+        </InfoCard>
       )}
 
-      {/* Bloco 3 — Performance */}
+      {/* Performance mensal */}
       <section aria-labelledby="bloco-perf" className="space-y-3">
-        <h2 id="bloco-perf" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Sua performance no mês
-        </h2>
-        <DashboardGrid cols={3}>
+        <div className="flex items-end justify-between">
+          <h2 id="bloco-perf" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Sua performance no mês
+          </h2>
+          <span className="text-xs text-muted-foreground">
+            {monthEntries.length} lançamento{monthEntries.length === 1 ? "" : "s"}
+          </span>
+        </div>
+        <DashboardGrid cols={4}>
           <KpiCard
-            label="Produção do mês"
-            value={monthQty.toLocaleString("pt-BR")}
-            icon={TrendingUp}
-            tone="accent"
-            description={`R$ ${monthAmt.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+            label="Produção"
+            value={stats.monthQty.toLocaleString("pt-BR")}
+            icon={Package}
+            tone="primary"
+            description="unidades no mês"
           />
           <KpiCard
-            label="Pontos acumulados"
-            value={monthPts.toFixed(0)}
-            icon={Trophy}
-            tone="warning"
+            label="Valor"
+            value={`R$ ${stats.monthAmt.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
+            icon={DollarSign}
+            tone="success"
+          />
+          <KpiCard
+            label="Pontos"
+            value={stats.monthPts.toFixed(0)}
+            icon={TrendingUp}
+            tone="accent"
             description={monthTarget > 0 ? `Meta ${monthProgress.toFixed(0)}%` : "—"}
           />
           <KpiCard
-            label="Posição no ranking"
+            label="Ranking"
             value={myPos ? `${myPos}º` : "—"}
             icon={Trophy}
-            tone="primary"
+            tone="warning"
             description={
               nextAhead
-                ? `${diffToNext.toFixed(0)} pts para o próximo`
+                ? `+${diffToNext.toFixed(0)} pts para subir`
                 : myPos === 1
-                  ? "Liderança"
-                  : "—"
+                  ? "Liderança 🏆"
+                  : "Sem ranking ainda"
             }
           />
         </DashboardGrid>
+        {monthTarget > 0 && (
+          <div className="rounded-xl border border-border bg-card p-4">
+            <ProgressWithLabel
+              label="Progresso da meta mensal"
+              value={monthProgress}
+              valueLabel={`${stats.monthQty.toFixed(0)} / ${monthTarget.toFixed(0)}`}
+              autoTone
+            />
+          </div>
+        )}
       </section>
 
-      {/* Bloco 4 — Atalhos */}
+      {/* Atalhos */}
       <section aria-labelledby="bloco-atalhos" className="space-y-3">
         <h2 id="bloco-atalhos" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Atalhos
+          Ações rápidas
         </h2>
-        <DashboardGrid cols={3}>
+        <DashboardGrid cols={4}>
           <ActionCard
             title="Registrar produção"
             description="Lançar vendas e produtos do dia"
             icon={FileText}
-            ctaLabel="Abrir"
+            ctaLabel="Lançar"
             onAction={() => navigate({ to: "/registrar-producao-v3" })}
           />
           <ActionCard
-            title="Novo contato"
-            description="Adicionar lead ou retomar follow-up"
+            title="Contatos"
+            description="Gerenciar leads e follow-ups"
             icon={UserPlus}
             ctaLabel="Abrir"
             onAction={() => navigate({ to: "/contacts-v3" })}
           />
           <ActionCard
-            title="Nova campanha"
-            description="Criar campanha comercial da agência"
+            title="Campanhas"
+            description="Acompanhar campanhas comerciais"
             icon={Megaphone}
             ctaLabel="Abrir"
             onAction={() => navigate({ to: "/campanhas" })}
           />
+          <ActionCard
+            title="Metas"
+            description="Definir e acompanhar metas"
+            icon={Target}
+            ctaLabel="Abrir"
+            onAction={() => navigate({ to: "/metas" })}
+          />
         </DashboardGrid>
       </section>
 
-      {/* Bloco 5 — Histórico rápido */}
-      <section aria-labelledby="bloco-hist" className="space-y-3">
-        <h2 id="bloco-hist" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Últimos lançamentos
-        </h2>
-        <InfoCard
-          title="Histórico recente"
-          description={`${monthEntries.length} no mês`}
-          actions={
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/historico">Ver tudo</Link>
-            </Button>
-          }
-          bodyless
-        >
-          {monthEntries.length === 0 ? (
-            <div className="flex items-center justify-between gap-3 px-5 py-6">
-              <div className="flex items-center gap-3 text-muted-foreground">
-                <AlertTriangle className="h-4 w-4" />
-                <span className="text-sm">Nenhum lançamento no mês.</span>
-              </div>
-              <Button asChild size="sm">
-                <Link to="/registrar-producao-v3">Registrar agora</Link>
-              </Button>
+      {/* Histórico rápido */}
+      <InfoCard
+        title="Últimos lançamentos"
+        description={`${monthEntries.length} no mês`}
+        actions={
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/historico">Ver tudo</Link>
+          </Button>
+        }
+        bodyless
+      >
+        {monthEntries.length === 0 ? (
+          <div className="flex items-center justify-between gap-3 px-5 py-6">
+            <div className="flex items-center gap-3 text-muted-foreground">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm">Nenhum lançamento no mês ainda.</span>
             </div>
-          ) : (
-            <ul className="divide-y divide-border">
-              {monthEntries.slice(0, 8).map((e, i) => (
-                <li key={i} className="flex items-center justify-between gap-3 px-5 py-3">
+            <Button asChild size="sm">
+              <Link to="/registrar-producao-v3">Registrar agora</Link>
+            </Button>
+          </div>
+        ) : (
+          <ul className="divide-y divide-border">
+            {monthEntries.slice(0, 8).map((e, i) => (
+              <li
+                key={i}
+                className="flex items-center justify-between gap-3 px-5 py-3 transition-colors hover:bg-accent/30"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Package className="h-4 w-4" />
+                  </span>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">
                       {e.products?.name ?? "—"}
@@ -387,40 +459,50 @@ function Page() {
                       {e.products?.category && ` · ${e.products.category}`}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {e.quantity ? <Badge variant="neutral">{e.quantity} un</Badge> : null}
-                    {e.amount ? (
-                      <Badge variant="success">
-                        R$ {Number(e.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </Badge>
-                    ) : null}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </InfoCard>
-      </section>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {e.quantity ? <Badge variant="neutral">{e.quantity} un</Badge> : null}
+                  {e.amount ? (
+                    <Badge variant="success">
+                      R$ {Number(e.amount).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </Badge>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </InfoCard>
 
-      {/* Bloco 5b — atalho para colaboradores */}
+      {/* Atalho agência */}
       {agencyEntries.length > 0 && (
         <InfoCard
           title="Sua agência"
-          description={`${agencyEntries.length} colega(s) ativos no mês`}
+          description={`${agencyEntries.length} colega${agencyEntries.length === 1 ? "" : "s"} ativos no mês`}
           actions={
             <Button asChild variant="ghost" size="sm">
               <Link to="/ranking-v3">Ver ranking</Link>
             </Button>
           }
         >
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <Users className="h-4 w-4" />
-            <span>
-              Líder: <span className="font-medium text-foreground">
-                {agencyEntries[0]?.pts.toFixed(0)} pts
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Líder:</span>
+              <span className="font-medium text-foreground">
+                {leaderPts.toFixed(0)} pts
               </span>
-              {myPos ? ` · você em ${myPos}º` : ""}
-            </span>
+            </div>
+            {myPos && (
+              <div className="flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-warning" />
+                <span className="text-muted-foreground">Você:</span>
+                <span className="font-medium text-foreground">{myPos}º lugar</span>
+                {diffToLeader > 0 && (
+                  <Badge variant="info">faltam {diffToLeader.toFixed(0)} pts</Badge>
+                )}
+              </div>
+            )}
           </div>
         </InfoCard>
       )}
