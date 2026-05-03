@@ -49,9 +49,9 @@ const STATUS_TONE: Record<string, "success" | "warning" | "danger" | "neutral" |
 
 const STATUS_LABEL: Record<string, string> = {
   novo: "Novo",
-  contato: "Em contato",
+  contato: "Em acompanhamento",
   negociando: "Negociando",
-  fechado: "Fechado",
+  fechado: "Concluído",
   perdido: "Perdido",
 };
 
@@ -130,11 +130,11 @@ function Page() {
   const filters: { key: FilterKey; label: string; count: number; tone?: "danger" | "warning" }[] = [
     { key: "all", label: "Todos", count: counts.all },
     { key: "today", label: "Hoje", count: counts.today, tone: "warning" },
-    { key: "overdue", label: "Atrasados", count: counts.overdue, tone: "danger" },
+    { key: "overdue", label: "A retomar", count: counts.overdue, tone: "danger" },
     { key: "novo", label: "Novos", count: counts.novo },
-    { key: "contato", label: "Em contato", count: counts.contato },
+    { key: "contato", label: "Em acompanhamento", count: counts.contato },
     { key: "negociando", label: "Negociando", count: counts.negociando },
-    { key: "fechado", label: "Fechados", count: counts.fechado },
+    { key: "fechado", label: "Concluídos", count: counts.fechado },
   ];
 
   return (
@@ -142,7 +142,7 @@ function Page() {
       <PageHeader
         icon={<Users className="h-5 w-5" />}
         title="Contatos"
-        description="Sua fila de relacionamento comercial"
+        description="Sua fila de trabalho comercial"
         actions={
           <Button asChild size="sm">
             <Link to="/contacts">
@@ -154,15 +154,15 @@ function Page() {
 
       <DashboardGrid cols={4}>
         <KpiCard label="Total" value={counts.all} icon={Users} tone="primary" />
-        <KpiCard label="Follow-ups hoje" value={counts.today} icon={MessageSquare} tone="accent" />
-        <KpiCard label="Atrasados" value={counts.overdue} icon={AlertTriangle} tone="danger" />
-        <KpiCard label="Fechados" value={counts.fechado} icon={CheckCircle2} tone="success" />
+        <KpiCard label="Hoje" value={counts.today} icon={MessageSquare} tone="accent" />
+        <KpiCard label="A retomar" value={counts.overdue} icon={AlertTriangle} tone="danger" />
+        <KpiCard label="Concluídos" value={counts.fechado} icon={CheckCircle2} tone="success" />
       </DashboardGrid>
 
       {counts.overdue > 0 && (
         <AlertCard
           tone="warning"
-          title={`${counts.overdue} follow-up${counts.overdue === 1 ? "" : "s"} em atraso`}
+          title={`${counts.overdue} contato${counts.overdue === 1 ? "" : "s"} para retomar`}
           description="Priorize esses contatos para não perder oportunidades."
           actions={
             <Button size="sm" variant="outline" onClick={() => setFilter("overdue")}>
@@ -196,6 +196,7 @@ function Page() {
               <button
                 key={f.key}
                 type="button"
+                aria-pressed={active}
                 onClick={() => setFilter(f.key)}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
@@ -254,7 +255,7 @@ function Page() {
                       {c.status && (
                         <Badge variant={statusTone}>{STATUS_LABEL[c.status] ?? c.status}</Badge>
                       )}
-                      {overdue && <Badge variant="danger">Atrasado</Badge>}
+                      {overdue && <Badge variant="danger">A retomar</Badge>}
                       {todayFlag && !overdue && <Badge variant="warning">Hoje</Badge>}
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">

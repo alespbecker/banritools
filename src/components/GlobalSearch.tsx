@@ -29,12 +29,12 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
       supabase.from("production_entries").select("id, entry_date, notes, product_id, products(name)").ilike("notes", like).limit(5),
     ]);
     const out: Result[] = [];
-    (contacts.data ?? []).forEach((c) => out.push({ id: c.id, label: c.name, hint: c.phone ?? "", to: "/contacts", group: "Contatos" }));
+    (contacts.data ?? []).forEach((c) => out.push({ id: c.id, label: c.name, hint: c.phone ?? "", to: "/contacts-v3", group: "Contatos" }));
     (campaigns.data ?? []).forEach((c) => out.push({ id: c.id, label: c.name, hint: c.status, to: "/campanhas", group: "Campanhas" }));
     (products.data ?? []).forEach((p) => out.push({ id: p.id, label: p.name, hint: p.category ?? "", to: "/admin/produtos", group: "Produtos" }));
     (entries.data ?? []).forEach((e) => {
       const prod = (e as unknown as { products?: { name?: string } }).products;
-      out.push({ id: e.id, label: prod?.name ?? "Lançamento", hint: e.entry_date, to: "/dashboard-v2", group: "Produção" });
+      out.push({ id: e.id, label: prod?.name ?? "Lançamento", hint: e.entry_date, to: "/dashboard-v3", group: "Produção" });
     });
     setResults(out);
     setLoading(false);
