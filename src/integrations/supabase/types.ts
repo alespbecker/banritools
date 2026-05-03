@@ -178,8 +178,10 @@ export type Database = {
           contact_id: string
           created_at: string
           id: string
+          next_follow_up: string | null
           notes: string | null
           occurred_at: string
+          outcome: string | null
           type: string
           user_id: string
         }
@@ -187,8 +189,10 @@ export type Database = {
           contact_id: string
           created_at?: string
           id?: string
+          next_follow_up?: string | null
           notes?: string | null
           occurred_at?: string
+          outcome?: string | null
           type?: string
           user_id: string
         }
@@ -196,8 +200,10 @@ export type Database = {
           contact_id?: string
           created_at?: string
           id?: string
+          next_follow_up?: string | null
           notes?: string | null
           occurred_at?: string
+          outcome?: string | null
           type?: string
           user_id?: string
         }
