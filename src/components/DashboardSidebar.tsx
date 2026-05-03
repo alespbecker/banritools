@@ -28,6 +28,10 @@ const betaItems = [
   { label: "Dashboard (Novo)", to: "/dashboard-v2", icon: Sparkles, hint: "Dashboard do novo modelo" },
   { label: "Registrar (Novo)", to: "/registrar-producao-v2", icon: Sparkles, hint: "Registrar via catálogo de produtos" },
   { label: "Ranking (Novo)", to: "/ranking-v2", icon: Sparkles, hint: "Ranking do novo modelo" },
+  { label: "Dashboard v3", to: "/dashboard-v3", icon: Sparkles, hint: "Dashboard com Design System v1" },
+  { label: "Registrar v3", to: "/registrar-producao-v3", icon: Sparkles, hint: "Registrar produção (DS v1)" },
+  { label: "Contatos v3", to: "/contacts-v3", icon: Sparkles, hint: "CRM com Design System v1" },
+  { label: "Ranking v3", to: "/ranking-v3", icon: Sparkles, hint: "Ranking com Design System v1" },
 ] as const;
 
 interface DashboardSidebarProps {
