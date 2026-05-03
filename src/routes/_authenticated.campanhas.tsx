@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 import { Megaphone, Plus, Trash2, Users } from "lucide-react";
+import { logAudit } from "@/features/audit/log";
+import { EmptyState } from "@/components/states/EmptyState";
 
 export const Route = createFileRoute("/_authenticated/campanhas")({
   head: () => ({ meta: [{ title: "Campanhas — BanriTools" }] }),
