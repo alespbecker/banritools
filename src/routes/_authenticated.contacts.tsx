@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, MessageSquare, Search } from "lucide-react";
 import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
+import { ContactInteractionsDrawer } from "@/features/contacts/ContactInteractionsDrawer";
 
 export const Route = createFileRoute("/_authenticated/contacts")({
   head: () => ({
