@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 import { Sparkles, ArrowLeft } from "lucide-react";
+import { logAudit } from "@/features/audit/log";
+import { EmptyState } from "@/components/states/EmptyState";
 import type { Product } from "@/features/production/types";
 
 export const Route = createFileRoute("/_authenticated/registrar-producao-v2")({
@@ -57,6 +59,7 @@ function Page() {
     const { error } = await supabase.from("production_entries").insert(entries as never);
     setSaving(false);
     if (error) return toast.error(error.message);
+    await logAudit({ action: "production.create", entity: "production_entry", details: { count: entries.length, date } });
     toast.success(`${entries.length} lançamento(s) salvos`);
     setValues({});
   }, [user, products, values, date]);
@@ -110,7 +113,9 @@ function Page() {
               </div>
             );
           })}
-          {products.length === 0 && <p className="text-center text-muted-foreground p-6">Nenhum produto ativo. Peça ao admin para cadastrar em /admin/produtos.</p>}
+          {products.length === 0 && (
+            <EmptyState title="Nenhum produto ativo" description="Peça ao administrador para cadastrar produtos em /admin/produtos." />
+          )}
         </div>
 
         <div className="sticky bottom-0 bg-background pt-3 pb-1">

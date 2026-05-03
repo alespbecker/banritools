@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { Sparkles, TrendingUp, Trophy, Package } from "lucide-react";
+import { EmptyState } from "@/components/states/EmptyState";
+import { ErrorState } from "@/components/states/ErrorState";
 
 export const Route = createFileRoute("/_authenticated/dashboard-v2")({
   head: () => ({ meta: [{ title: "Dashboard (Novo) — BanriTools" }] }),
@@ -23,9 +25,11 @@ function Page() {
   const { user } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const reload = () => {
     if (!user) return;
+    setLoading(true); setError(null);
     const start = new Date(); start.setDate(1);
     const startStr = start.toISOString().split("T")[0];
     supabase
@@ -35,13 +39,17 @@ function Page() {
       .eq("status", "confirmed")
       .gte("entry_date", startStr)
       .order("entry_date", { ascending: false })
-      .then(({ data }) => {
+      .then(({ data, error: e }) => {
+        if (e) setError(e.message);
         setRows((data ?? []) as never);
         setLoading(false);
       });
-  }, [user]);
+  };
+
+  useEffect(reload, [user]);
 
   if (loading) return <PageSkeleton kpis={4} rows={4} />;
+  if (error) return <ErrorState message={error} onRetry={reload} />;
 
   const totalEntries = rows.length;
   const totalQty = rows.reduce((s, r) => s + Number(r.quantity || 0), 0);

@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 import { Megaphone, Plus, Trash2, Users } from "lucide-react";
+import { logAudit } from "@/features/audit/log";
+import { EmptyState } from "@/components/states/EmptyState";
 
 export const Route = createFileRoute("/_authenticated/campanhas")({
   head: () => ({ meta: [{ title: "Campanhas — BanriTools" }] }),
@@ -31,7 +33,7 @@ function Page() {
   const [contactCounts, setContactCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const canManage = userRole === "admin";
+  const canManage = userRole === "admin" || userRole === "gerente";
 
   const today = new Date();
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
@@ -67,13 +69,14 @@ function Page() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !profile?.agency_id) return toast.error("Você precisa estar vinculado a uma agência");
-    const { error } = await supabase.from("campaigns").insert({
+    const { data: inserted, error } = await supabase.from("campaigns").insert({
       ...form,
       product_id: form.product_id || null,
       agency_id: profile.agency_id,
       created_by: user.id,
-    } as never);
+    } as never).select("id").maybeSingle();
     if (error) return toast.error(error.message);
+    await logAudit({ action: "campaign.create", entity: "campaign", entity_id: (inserted as { id?: string } | null)?.id ?? null, details: { name: form.name } });
     toast.success("Campanha criada");
     setShowForm(false); load();
   };
@@ -82,6 +85,7 @@ function Page() {
     if (!confirm("Excluir campanha?")) return;
     const { error } = await supabase.from("campaigns").delete().eq("id", id);
     if (error) return toast.error(error.message);
+    await logAudit({ action: "campaign.delete", entity: "campaign", entity_id: id });
     load();
   };
 
@@ -118,7 +122,11 @@ function Page() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {items.length === 0 && <p className="text-center text-muted-foreground p-6 sm:col-span-2">Nenhuma campanha.</p>}
+        {items.length === 0 && (
+          <div className="sm:col-span-2">
+            <EmptyState title="Sem campanhas" description={canManage ? "Crie a primeira campanha para a sua agência." : "Aguarde o gestor cadastrar campanhas."} />
+          </div>
+        )}
         {items.map((c) => (
           <div key={c.id} className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-start justify-between">

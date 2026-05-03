@@ -9,6 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 import { Plus, Target, Trash2 } from "lucide-react";
+import { logAudit } from "@/features/audit/log";
+import { EmptyState } from "@/components/states/EmptyState";
 
 export const Route = createFileRoute("/_authenticated/metas")({
   head: () => ({ meta: [{ title: "Metas — BanriTools" }] }),
@@ -38,7 +40,7 @@ function Page() {
   const [progress, setProgress] = useState<Record<string, { qty: number; amt: number }>>({});
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const isAdminOrManager = userRole === "admin";
+  const isAdminOrManager = userRole === "admin" || userRole === "gerente";
 
   const today = new Date();
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
@@ -101,8 +103,9 @@ function Page() {
     if (form.scope === "individual") payload.user_id = user.id;
     else payload.agency_id = profile.agency_id;
 
-    const { error } = await supabase.from("goals").insert(payload as never);
+    const { data: inserted, error } = await supabase.from("goals").insert(payload as never).select("id").maybeSingle();
     if (error) return toast.error(error.message);
+    await logAudit({ action: "goal.create", entity: "goal", entity_id: (inserted as { id?: string } | null)?.id ?? null, details: payload });
     toast.success("Meta criada");
     setShowForm(false);
     load();
@@ -112,6 +115,7 @@ function Page() {
     if (!confirm("Excluir meta?")) return;
     const { error } = await supabase.from("goals").delete().eq("id", id);
     if (error) return toast.error(error.message);
+    await logAudit({ action: "goal.delete", entity: "goal", entity_id: id });
     load();
   };
 
@@ -163,7 +167,9 @@ function Page() {
       )}
 
       <div className="space-y-3">
-        {goals.length === 0 && <p className="text-center text-muted-foreground p-6">Nenhuma meta cadastrada.</p>}
+        {goals.length === 0 && (
+          <EmptyState title="Nenhuma meta cadastrada" description={isAdminOrManager ? "Clique em \"Nova meta\" para começar." : "Aguarde o gestor cadastrar metas."} />
+        )}
         {goals.map((g) => {
           const p = progress[g.id] ?? { qty: 0, amt: 0 };
           const pctQty = g.target_quantity > 0 ? Math.min(100, (p.qty / g.target_quantity) * 100) : 0;

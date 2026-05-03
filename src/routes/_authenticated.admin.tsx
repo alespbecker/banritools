@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
 import { Users2 } from "lucide-react";
 import { toast } from "sonner";
+import { logAudit } from "@/features/audit/log";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -306,7 +307,10 @@ function AdminDashboardPage() {
     });
     setSavingId(null);
     if (error) { toast.error(error.message); fetchAll(); }
-    else toast.success(`Usuário agora é ${newRole === "admin" ? "Administrador" : "Usuário"}.`);
+    else {
+      await logAudit({ action: "role.update", entity: "user_role", entity_id: targetId, details: { new_role: newRole } });
+      toast.success(`Usuário agora é ${newRole === "admin" ? "Administrador" : "Usuário"}.`);
+    }
   };
 
   const handleAgencyChange = async (targetId: string, newAgency: string) => {
