@@ -113,7 +113,9 @@ function Page() {
               </div>
             );
           })}
-          {products.length === 0 && <p className="text-center text-muted-foreground p-6">Nenhum produto ativo. Peça ao admin para cadastrar em /admin/produtos.</p>}
+          {products.length === 0 && (
+            <EmptyState title="Nenhum produto ativo" description="Peça ao administrador para cadastrar produtos em /admin/produtos." />
+          )}
         </div>
 
         <div className="sticky bottom-0 bg-background pt-3 pb-1">
