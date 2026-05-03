@@ -4,8 +4,10 @@ import {
   Wrench, Settings, LogOut, ChevronLeft, ChevronRight,
   Sun, Moon, Shield, Sparkles, Package, Target, Megaphone,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import type { AppRole } from "@/features/auth/types";
 
 const navItems = [
@@ -40,15 +42,31 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, forceExpanded, userRole }: DashboardSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
+  const [pendingFollowUps, setPendingFollowUps] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    const today = new Date().toISOString().slice(0, 10);
+    supabase
+      .from("contacts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .lte("next_follow_up", today)
+      .then(({ count }) => setPendingFollowUps(count ?? 0));
+  }, [user]);
 
   const isExpanded = forceExpanded || !collapsed;
   const isAdminLike = userRole === "admin" || userRole === "gerente";
 
-  // Considera ativo quando a rota atual começa com o destino do item.
-  // Para o "/" exato evitamos casar tudo; usamos comparação estrita.
   const isRouteActive = (to: string) => {
     if (to === "/") return location.pathname === "/";
     return location.pathname === to || location.pathname.startsWith(to + "/");
+  };
+
+  const badgeFor = (to: string): number | null => {
+    if (to === "/contacts" && pendingFollowUps > 0) return pendingFollowUps;
+    return null;
   };
 
   return (
@@ -94,7 +112,12 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              {isExpanded && <span>{item.label}</span>}
+              {isExpanded && <span className="flex-1">{item.label}</span>}
+              {isExpanded && badgeFor(item.to) && (
+                <span className="rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
+                  {badgeFor(item.to)}
+                </span>
+              )}
             </Link>
           );
         })}
