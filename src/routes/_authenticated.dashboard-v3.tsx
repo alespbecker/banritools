@@ -359,8 +359,8 @@ function Page() {
             description={
               nextAhead
                 ? `+${diffToNext.toFixed(0)} pts para subir`
-                : myPos === 1
-                  ? "Liderança 🏆"
+                  : myPos === 1
+                  ? "Você lidera o mês"
                   : "Sem ranking ainda"
             }
           />
