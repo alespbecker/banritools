@@ -307,7 +307,10 @@ function AdminDashboardPage() {
     });
     setSavingId(null);
     if (error) { toast.error(error.message); fetchAll(); }
-    else toast.success(`Usuário agora é ${newRole === "admin" ? "Administrador" : "Usuário"}.`);
+    else {
+      await logAudit({ action: "role.update", entity: "user_role", entity_id: targetId, details: { new_role: newRole } });
+      toast.success(`Usuário agora é ${newRole === "admin" ? "Administrador" : "Usuário"}.`);
+    }
   };
 
   const handleAgencyChange = async (targetId: string, newAgency: string) => {
