@@ -67,7 +67,7 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
         )}
       </div>
 
-      <nav className="flex-1 space-y-1 p-2">
+      <nav className="flex-1 overflow-y-auto space-y-1 p-2">
         {navItems.filter((i) => !i.adminOnly || userRole === "admin").map((item) => {
           const isActive = location.pathname === item.to;
           return (
@@ -77,6 +77,31 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
               onClick={onNavigate}
               title={item.hint}
               aria-label={`${item.label} — ${item.hint}`}
+              className={cn(
+                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+            >
+              <item.icon className="h-4 w-4 shrink-0" />
+              {isExpanded && <span>{item.label}</span>}
+            </Link>
+          );
+        })}
+
+        {isExpanded && (
+          <div className="pt-3 pb-1 px-3 text-[10px] uppercase tracking-wide text-muted-foreground">Novo (beta)</div>
+        )}
+        {!isExpanded && <div className="my-2 border-t border-border" />}
+        {betaItems.map((item) => {
+          const isActive = location.pathname === item.to;
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={onNavigate}
+              title={item.hint}
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 isActive
