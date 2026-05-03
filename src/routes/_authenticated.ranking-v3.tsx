@@ -111,7 +111,7 @@ function Page() {
     : myIndex === 0
       ? "Você está liderando o mês. Continue no ritmo!"
       : diffToNext > 0
-        ? `Faltam ${diffToNext.toFixed(0)} pts para subir para o ${myIndex}º lugar.`
+        ? `Faltam ${diffToNext.toFixed(0)} pontos para subir para o ${myIndex}º lugar.`
         : "Continue evoluindo neste mês.";
 
   return (
@@ -179,7 +179,7 @@ function Page() {
           description={rows[0] ? `${rows[0].pts.toFixed(0)} pts` : "—"}
         />
         <KpiCard
-          label="Próximo desafio"
+          label="Próxima posição"
           value={nextAhead ? nextAhead.name : myIndex === 0 ? "Você lidera" : "—"}
           icon={TrendingUp}
           tone="accent"
