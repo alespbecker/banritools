@@ -85,12 +85,13 @@ function RankingPage() {
 
   // Realtime
   useEffect(() => {
+    if (!user) return;
     const ch = supabase
-      .channel("ranking-monthly")
+      .channel(`ranking-monthly-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "ranking_monthly" }, () => fetchRanking())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [fetchRanking]);
+  }, [fetchRanking, user]);
 
   const myRow = rows.find((r) => r.user_id === user?.id);
   const top = rows.slice(0, 3);
