@@ -325,33 +325,27 @@ function Page() {
           Atalhos
         </h2>
         <DashboardGrid cols={3}>
-          <Link to="/registrar-producao-v3" className="contents">
-            <ActionCard
-              title="Registrar produção"
-              description="Lançar vendas e produtos do dia"
-              icon={FileText}
-              ctaLabel="Abrir"
-              onAction={() => {}}
-            />
-          </Link>
-          <Link to="/contacts-v3" className="contents">
-            <ActionCard
-              title="Novo contato"
-              description="Adicionar lead ou retomar follow-up"
-              icon={UserPlus}
-              ctaLabel="Abrir"
-              onAction={() => {}}
-            />
-          </Link>
-          <Link to="/campanhas" className="contents">
-            <ActionCard
-              title="Nova campanha"
-              description="Criar campanha comercial da agência"
-              icon={Megaphone}
-              ctaLabel="Abrir"
-              onAction={() => {}}
-            />
-          </Link>
+          <ActionCard
+            title="Registrar produção"
+            description="Lançar vendas e produtos do dia"
+            icon={FileText}
+            ctaLabel="Abrir"
+            onAction={() => navigate({ to: "/registrar-producao-v3" })}
+          />
+          <ActionCard
+            title="Novo contato"
+            description="Adicionar lead ou retomar follow-up"
+            icon={UserPlus}
+            ctaLabel="Abrir"
+            onAction={() => navigate({ to: "/contacts-v3" })}
+          />
+          <ActionCard
+            title="Nova campanha"
+            description="Criar campanha comercial da agência"
+            icon={Megaphone}
+            ctaLabel="Abrir"
+            onAction={() => navigate({ to: "/campanhas" })}
+          />
         </DashboardGrid>
       </section>
 
