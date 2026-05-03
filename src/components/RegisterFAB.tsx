@@ -9,7 +9,7 @@ export function RegisterFAB() {
 
   return (
     <Link
-      to="/registrar-producao"
+      to="/registrar-producao-v3"
       aria-label="Ir para a tela de registrar produção"
       title="Registrar nova produção do dia"
       className={cn(

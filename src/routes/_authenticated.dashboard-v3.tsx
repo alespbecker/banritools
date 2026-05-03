@@ -25,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/dashboard-v3")({
-  head: () => ({ meta: [{ title: "Dashboard v3 — BanriTools" }] }),
+  head: () => ({ meta: [{ title: "Início — BanriTools" }] }),
   component: Page,
   pendingComponent: () => <PageSkeleton kpis={4} rows={4} />,
 });
@@ -213,8 +213,8 @@ function Page() {
   const nextAction =
     overdueFollowups > 0
       ? {
-          title: `Cuidar de ${overdueFollowups} follow-up${overdueFollowups === 1 ? "" : "s"} atrasado${overdueFollowups === 1 ? "" : "s"}`,
-          description: "Recupere oportunidades antes do fim do dia.",
+          title: `Retomar ${overdueFollowups} contato${overdueFollowups === 1 ? "" : "s"}`,
+          description: "Follow-ups em atraso — recupere oportunidades hoje.",
           icon: Clock,
           tone: "danger" as const,
           ctaLabel: "Abrir contatos",
@@ -263,11 +263,6 @@ function Page() {
       <PageHeader
         title="Início"
         description="Sua central de operações"
-        actions={
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/dashboard">Versão antiga</Link>
-          </Button>
-        }
       />
 
       {/* Hero de performance */}
@@ -286,8 +281,8 @@ function Page() {
       {/* Bloco — Fila operacional */}
       {priorityCount > 0 && (
         <InfoCard
-          title="Ações prioritárias"
-          description={`${priorityCount} item${priorityCount === 1 ? "" : "s"} aguardando você`}
+          title="Ações para hoje"
+          description={`${priorityCount} oportunidade${priorityCount === 1 ? "" : "s"} aguardando você`}
           actions={<Badge variant="warning">{priorityCount}</Badge>}
         >
           <div className="space-y-2">
@@ -296,8 +291,8 @@ function Page() {
                 tone="danger"
                 count={overdueFollowups}
                 icon={Clock}
-                title="Follow-ups em atraso"
-                description="Priorize esses contatos antes do fim do dia"
+                title="Contatos para retomar"
+                description="Follow-ups em atraso — retome ainda hoje"
                 onClick={() => navigate({ to: "/contacts-v3" })}
               />
             )}
@@ -306,8 +301,8 @@ function Page() {
                 tone="warning"
                 count={goalsAtRisk}
                 icon={Target}
-                title="Metas precisando de atenção"
-                description="Acelere o ritmo para alcançar a meta do mês"
+                title="Acelere o ritmo da meta"
+                description="Aumente a produção para fechar o mês forte"
                 onClick={() => navigate({ to: "/metas" })}
               />
             )}
@@ -316,8 +311,8 @@ function Page() {
                 tone="info"
                 count={pendingContacts}
                 icon={ListChecks}
-                title="Contatos pendentes no funil"
-                description="Avance esses leads para a próxima etapa"
+                title="Próxima oportunidade"
+                description="Avance esses leads para a próxima etapa do funil"
                 onClick={() => navigate({ to: "/contacts-v3" })}
               />
             )}

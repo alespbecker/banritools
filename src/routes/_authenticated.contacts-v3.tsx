@@ -24,7 +24,7 @@ import { EmptyState } from "@/components/states/EmptyState";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/contacts-v3")({
-  head: () => ({ meta: [{ title: "Contatos v3 — BanriTools" }] }),
+  head: () => ({ meta: [{ title: "Contatos — BanriTools" }] }),
   component: Page,
   pendingComponent: () => <PageSkeleton kpis={3} rows={6} />,
 });
@@ -144,16 +144,11 @@ function Page() {
         title="Contatos"
         description="Sua fila de relacionamento comercial"
         actions={
-          <>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/contacts">Versão antiga</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link to="/contacts">
-                <Plus className="h-4 w-4" /> Novo contato
-              </Link>
-            </Button>
-          </>
+          <Button asChild size="sm">
+            <Link to="/contacts">
+              <Plus className="h-4 w-4" /> Novo contato
+            </Link>
+          </Button>
         }
       />
 

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,13 +13,13 @@ import {
   ProgressWithLabel,
 } from "@/components/ds";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+
 import { ErrorState } from "@/components/states/ErrorState";
 import { EmptyState } from "@/components/states/EmptyState";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/ranking-v3")({
-  head: () => ({ meta: [{ title: "Ranking v3 — BanriTools" }] }),
+  head: () => ({ meta: [{ title: "Ranking — BanriTools" }] }),
   component: Page,
   pendingComponent: () => <PageSkeleton kpis={3} rows={8} />,
 });
@@ -120,11 +120,6 @@ function Page() {
         icon={<Trophy className="h-5 w-5" />}
         title="Ranking"
         description={`Sua evolução em ${monthName}`}
-        actions={
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/ranking">Versão antiga</Link>
-          </Button>
-        }
       />
 
       {/* Card pessoal de destaque */}

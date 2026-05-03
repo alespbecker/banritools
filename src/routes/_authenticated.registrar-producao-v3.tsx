@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import type { Product } from "@/features/production/types";
 
 export const Route = createFileRoute("/_authenticated/registrar-producao-v3")({
-  head: () => ({ meta: [{ title: "Registrar Produção v3 — BanriTools" }] }),
+  head: () => ({ meta: [{ title: "Registrar Produção — BanriTools" }] }),
   component: Page,
   pendingComponent: () => <PageSkeleton kpis={0} rows={8} />,
 });
@@ -198,11 +198,6 @@ function Page() {
         icon={<FileText className="h-5 w-5" />}
         title="Registrar Produção"
         description="Lance suas vendas do dia em segundos"
-        actions={
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/registrar-producao">Versão antiga</Link>
-          </Button>
-        }
       />
 
       {lastSaved && (
