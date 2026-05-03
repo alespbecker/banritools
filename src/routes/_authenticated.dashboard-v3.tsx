@@ -213,8 +213,8 @@ function Page() {
   const nextAction =
     overdueFollowups > 0
       ? {
-          title: `Cuidar de ${overdueFollowups} follow-up${overdueFollowups === 1 ? "" : "s"} atrasado${overdueFollowups === 1 ? "" : "s"}`,
-          description: "Recupere oportunidades antes do fim do dia.",
+          title: `Retomar ${overdueFollowups} contato${overdueFollowups === 1 ? "" : "s"}`,
+          description: "Follow-ups em atraso — recupere oportunidades hoje.",
           icon: Clock,
           tone: "danger" as const,
           ctaLabel: "Abrir contatos",
