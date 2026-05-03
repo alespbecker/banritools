@@ -34,6 +34,20 @@ function ContactsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Contact | null>(null);
   const [form, setForm] = useState({ name: "", phone: "", product_interest: "", status: "novo", next_follow_up: "", notes: "" });
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [interactionsFor, setInteractionsFor] = useState<{ id: string; name: string } | null>(null);
+
+  const filteredContacts = useMemo(() => {
+    const q = search.toLowerCase();
+    return contacts.filter((c) => {
+      if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      if (!q) return true;
+      return c.name.toLowerCase().includes(q) || (c.phone ?? "").toLowerCase().includes(q);
+    });
+  }, [contacts, search, statusFilter]);
+
+  const isOverdue = (d: string | null) => d && new Date(d) < new Date(new Date().toDateString());
 
   const loadContacts = useCallback(async () => {
     if (!user) return;
