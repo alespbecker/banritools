@@ -207,18 +207,19 @@ function Page() {
               <Sparkles className="h-6 w-6" />
             </span>
             <div className="flex-1">
-              <h3 className="text-base font-semibold text-foreground">
-                Boa! {lastSaved.count} lançamento{lastSaved.count === 1 ? "" : "s"} salvo{lastSaved.count === 1 ? "" : "s"}
-              </h3>
+              <h3 className="text-base font-semibold text-foreground">Produção registrada</h3>
               <p className="text-sm text-muted-foreground">
-                Você somou <span className="font-medium text-success">+{lastSaved.points.toFixed(0)} pontos</span> ao seu mês.
+                <span className="font-medium text-foreground tabular-nums">{lastSaved.count}</span> lançamento{lastSaved.count === 1 ? "" : "s"} salvo{lastSaved.count === 1 ? "" : "s"}
+                {lastSaved.points > 0 && (
+                  <> · <span className="font-medium text-success tabular-nums">+{lastSaved.points.toFixed(0)} pontos</span> adicionados</>
+                )}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => setLastSaved(null)}>
-                  Lançar mais
+                  Registrar mais
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => navigate({ to: "/dashboard-v3" })}>
-                  Voltar ao início
+                  Ver início
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => navigate({ to: "/historico" })}>
                   Ver histórico
