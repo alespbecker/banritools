@@ -2,7 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, History, Trophy, Users,
   Wrench, Settings, LogOut, ChevronLeft, ChevronRight,
-  Sun, Moon, Shield, Sparkles, Package, Target, Megaphone,
+  Sun, Moon, Shield, Package, Target, Megaphone,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -10,28 +10,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { AppRole } from "@/features/auth/types";
 
+// Navegação principal — experiência atual do produto.
 const navItems = [
-  { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, adminOnly: false, hint: "Sua produção pessoal e gamificação" },
+  { label: "Início", to: "/dashboard-v3", icon: LayoutDashboard, adminOnly: false, hint: "Sua central executiva" },
   { label: "Painel da Agência", to: "/admin", icon: Shield, adminOnly: true, hint: "Visão consolidada do time + gestão de usuários" },
-  { label: "Registrar Produção", to: "/registrar-producao", icon: FileText, adminOnly: false, hint: "Lançar vendas e produtos do dia" },
+  { label: "Registrar Produção", to: "/registrar-producao-v3", icon: FileText, adminOnly: false, hint: "Lançar vendas e produtos do dia" },
   { label: "Histórico", to: "/historico", icon: History, adminOnly: false, hint: "Ver e editar lançamentos passados" },
-  { label: "Ranking", to: "/ranking", icon: Trophy, adminOnly: false, hint: "Classificação mensal da agência" },
-  { label: "Contatos", to: "/contacts", icon: Users, adminOnly: false, hint: "Gerenciar contatos e follow-ups" },
+  { label: "Ranking", to: "/ranking-v3", icon: Trophy, adminOnly: false, hint: "Classificação mensal da agência" },
+  { label: "Contatos", to: "/contacts-v3", icon: Users, adminOnly: false, hint: "Gerenciar contatos e follow-ups" },
   { label: "Campanhas", to: "/campanhas", icon: Megaphone, adminOnly: false, hint: "Campanhas comerciais da agência" },
   { label: "Metas", to: "/metas", icon: Target, adminOnly: false, hint: "Metas individuais e da agência" },
   { label: "Ferramentas", to: "/tools", icon: Wrench, adminOnly: false, hint: "Acessar ferramentas auxiliares" },
   { label: "Produtos", to: "/admin/produtos", icon: Package, adminOnly: true, hint: "Catálogo de métricas (admin)" },
   { label: "Configurações", to: "/settings", icon: Settings, adminOnly: false, hint: "Editar perfil e preferências" },
-] as const;
-
-const betaItems = [
-  { label: "Dashboard (Novo)", to: "/dashboard-v2", icon: Sparkles, hint: "Dashboard do novo modelo" },
-  { label: "Registrar (Novo)", to: "/registrar-producao-v2", icon: Sparkles, hint: "Registrar via catálogo de produtos" },
-  { label: "Ranking (Novo)", to: "/ranking-v2", icon: Sparkles, hint: "Ranking do novo modelo" },
-  { label: "Dashboard v3", to: "/dashboard-v3", icon: Sparkles, hint: "Dashboard com Design System v1" },
-  { label: "Registrar v3", to: "/registrar-producao-v3", icon: Sparkles, hint: "Registrar produção (DS v1)" },
-  { label: "Contatos v3", to: "/contacts-v3", icon: Sparkles, hint: "CRM com Design System v1" },
-  { label: "Ranking v3", to: "/ranking-v3", icon: Sparkles, hint: "Ranking com Design System v1" },
 ] as const;
 
 interface DashboardSidebarProps {
@@ -69,7 +60,7 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
   };
 
   const badgeFor = (to: string): number | null => {
-    if (to === "/contacts" && pendingFollowUps > 0) return pendingFollowUps;
+    if (to === "/contacts-v3" && pendingFollowUps > 0) return pendingFollowUps;
     return null;
   };
 
@@ -122,31 +113,6 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
                   {badgeFor(item.to)}
                 </span>
               )}
-            </Link>
-          );
-        })}
-
-        {isExpanded && (
-          <div className="pt-3 pb-1 px-3 text-[10px] uppercase tracking-wide text-muted-foreground">Novo (beta)</div>
-        )}
-        {!isExpanded && <div className="my-2 border-t border-border" />}
-        {betaItems.map((item) => {
-          const isActive = isRouteActive(item.to);
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={onNavigate}
-              title={item.hint}
-              className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              )}
-            >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {isExpanded && <span>{item.label}</span>}
             </Link>
           );
         })}
