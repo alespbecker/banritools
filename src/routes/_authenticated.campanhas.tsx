@@ -33,7 +33,7 @@ function Page() {
   const [contactCounts, setContactCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const canManage = userRole === "admin";
+  const canManage = userRole === "admin" || userRole === "gerente";
 
   const today = new Date();
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0];
