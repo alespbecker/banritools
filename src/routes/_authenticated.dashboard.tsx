@@ -103,7 +103,7 @@ function DashboardPage() {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel("dashboard-reports")
+      .channel(`dashboard-reports-${user.id}`)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "daily_reports", filter: `user_id=eq.${user.id}` },
         () => fetchReports()
