@@ -14,6 +14,8 @@ interface Interaction {
   type: string;
   notes: string | null;
   occurred_at: string;
+  outcome: string | null;
+  next_follow_up: string | null;
 }
 
 const TYPE_ICON = { call: Phone, message: MessageSquare, meeting: Calendar, note: FileText } as const;
