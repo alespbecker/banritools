@@ -59,6 +59,7 @@ function Page() {
     const { error } = await supabase.from("production_entries").insert(entries as never);
     setSaving(false);
     if (error) return toast.error(error.message);
+    await logAudit({ action: "production.create", entity: "production_entry", details: { count: entries.length, date } });
     toast.success(`${entries.length} lançamento(s) salvos`);
     setValues({});
   }, [user, products, values, date]);
