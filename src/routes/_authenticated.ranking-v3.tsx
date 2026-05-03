@@ -1,14 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageSkeleton } from "@/components/PageSkeleton";
-import { Trophy, Medal, Award } from "lucide-react";
+import { Trophy, Medal, Award, TrendingUp, Sparkles } from "lucide-react";
 import {
   PageContainer,
   PageHeader,
   InfoCard,
-  AlertCard,
   KpiCard,
   DashboardGrid,
   ProgressWithLabel,
@@ -17,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/states/ErrorState";
 import { EmptyState } from "@/components/states/EmptyState";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/ranking-v3")({
   head: () => ({ meta: [{ title: "Ranking v3 — BanriTools" }] }),
@@ -25,6 +25,10 @@ export const Route = createFileRoute("/_authenticated/ranking-v3")({
 });
 
 interface Row { user_id: string; name: string; pts: number }
+
+function initials(name: string) {
+  return name.split(" ").filter(Boolean).slice(0, 2).map((s) => s[0]?.toUpperCase()).join("");
+}
 
 function Page() {
   const { profile, user } = useAuth();
@@ -76,27 +80,46 @@ function Page() {
 
   useEffect(() => { load(); }, [load]);
 
+  const computed = useMemo(() => {
+    const top = rows[0]?.pts ?? 0;
+    const myIndex = rows.findIndex((r) => r.user_id === user?.id);
+    const myRow = myIndex >= 0 ? rows[myIndex] : null;
+    const nextAhead = myIndex > 0 ? rows[myIndex - 1] : null;
+    const diffToNext = nextAhead && myRow ? nextAhead.pts - myRow.pts : 0;
+    const diffToLeader = myRow && myIndex > 0 ? top - myRow.pts : 0;
+    const totalPts = rows.reduce((s, r) => s + r.pts, 0);
+    return { top, myIndex, myRow, nextAhead, diffToNext, diffToLeader, totalPts };
+  }, [rows, user?.id]);
+
   if (loading) return <PageSkeleton kpis={3} rows={8} />;
   if (error) return <ErrorState message={error} onRetry={load} />;
 
-  const top = rows[0]?.pts ?? 0;
-  const myIndex = rows.findIndex((r) => r.user_id === user?.id);
-  const myRow = myIndex >= 0 ? rows[myIndex] : null;
-  const totalPts = rows.reduce((s, r) => s + r.pts, 0);
+  const { top, myIndex, myRow, nextAhead, diffToNext, diffToLeader, totalPts } = computed;
 
-  const podiumIcon = (i: number) => {
-    if (i === 0) return <Trophy className="h-4 w-4 text-warning" />;
-    if (i === 1) return <Medal className="h-4 w-4 text-muted-foreground" />;
-    if (i === 2) return <Award className="h-4 w-4 text-accent" />;
+  const podium = (i: number) => {
+    if (i === 0) return { Icon: Trophy, color: "text-warning", bg: "bg-warning/15" };
+    if (i === 1) return { Icon: Medal, color: "text-muted-foreground", bg: "bg-muted" };
+    if (i === 2) return { Icon: Award, color: "text-accent", bg: "bg-accent/15" };
     return null;
   };
+
+  const monthName = new Date().toLocaleDateString("pt-BR", { month: "long" });
+
+  // mensagem motivadora
+  const motivation = !myRow
+    ? "Comece a registrar produção para entrar no ranking deste mês."
+    : myIndex === 0
+      ? "Você está liderando! 🏆 Continue mantendo o ritmo."
+      : diffToNext > 0
+        ? `Faltam ${diffToNext.toFixed(0)} pts para subir para ${myIndex}º lugar.`
+        : "Continue evoluindo neste mês.";
 
   return (
     <PageContainer>
       <PageHeader
         icon={<Trophy className="h-5 w-5" />}
         title="Ranking"
-        description="Classificação da agência no mês corrente (v3)"
+        description={`Sua evolução em ${monthName}`}
         actions={
           <Button asChild variant="ghost" size="sm">
             <Link to="/ranking">Versão antiga</Link>
@@ -104,20 +127,70 @@ function Page() {
         }
       />
 
+      {/* Card pessoal de destaque */}
+      <section className="animate-fade-in-up overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/15 via-card to-card p-6">
+        <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr] lg:items-center">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <Sparkles className="h-3.5 w-3.5" />
+              Sua posição
+            </div>
+            <div className="flex items-baseline gap-3">
+              <span className="text-5xl font-bold tracking-tight text-foreground">
+                {myRow ? `${myIndex + 1}º` : "—"}
+              </span>
+              {myRow && (
+                <span className="text-sm text-muted-foreground">
+                  de {rows.length}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">{motivation}</p>
+            {myRow && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Badge variant="info">{myRow.pts.toFixed(0)} pts</Badge>
+                {diffToNext > 0 && (
+                  <Badge variant="warning">+{diffToNext.toFixed(0)} para subir</Badge>
+                )}
+                {diffToLeader > 0 && (
+                  <Badge variant="neutral">{diffToLeader.toFixed(0)} para o líder</Badge>
+                )}
+              </div>
+            )}
+          </div>
+          {myRow && top > 0 && (
+            <div className="space-y-2">
+              <ProgressWithLabel
+                label="Sua evolução vs. líder"
+                value={(myRow.pts / top) * 100}
+                valueLabel={`${myRow.pts.toFixed(0)} / ${top.toFixed(0)} pts`}
+                tone={myIndex === 0 ? "success" : "primary"}
+                size="lg"
+              />
+              <p className="text-xs text-muted-foreground">
+                Cada lançamento de produção soma pontos para sua posição no mês.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
       <DashboardGrid cols={3}>
         <KpiCard
-          label="Sua posição"
-          value={myRow ? `${myIndex + 1}º` : "—"}
-          icon={Trophy}
-          tone="primary"
-          description={myRow ? `${myRow.pts.toFixed(0)} pts` : "Sem produção"}
-        />
-        <KpiCard
-          label="Líder"
+          label="Líder do mês"
           value={rows[0]?.name ?? "—"}
-          icon={Medal}
+          icon={Trophy}
           tone="warning"
           description={rows[0] ? `${rows[0].pts.toFixed(0)} pts` : "—"}
+        />
+        <KpiCard
+          label="Próximo desafio"
+          value={nextAhead ? nextAhead.name : myIndex === 0 ? "Você lidera" : "—"}
+          icon={TrendingUp}
+          tone="accent"
+          description={
+            nextAhead ? `+${diffToNext.toFixed(0)} pts à frente` : myIndex === 0 ? "Continue assim!" : "—"
+          }
         />
         <KpiCard
           label="Total da agência"
@@ -127,14 +200,6 @@ function Page() {
           description={`${rows.length} participante${rows.length === 1 ? "" : "s"}`}
         />
       </DashboardGrid>
-
-      {myRow && myIndex > 2 && (
-        <AlertCard
-          tone="info"
-          title={`Você está em ${myIndex + 1}º lugar`}
-          description={`Faltam ${(top - myRow.pts).toFixed(0)} pontos para alcançar a liderança.`}
-        />
-      )}
 
       <InfoCard title="Classificação" description="Pontuação acumulada no mês" bodyless>
         {rows.length === 0 ? (
@@ -149,21 +214,38 @@ function Page() {
             {rows.map((r, i) => {
               const isMe = r.user_id === user?.id;
               const pct = top > 0 ? (r.pts / top) * 100 : 0;
+              const p = podium(i);
               return (
                 <li
                   key={r.user_id}
-                  className={`flex items-center gap-3 px-5 py-3 transition-colors ${
-                    isMe ? "bg-primary/5" : "hover:bg-accent/30"
-                  }`}
+                  className={cn(
+                    "flex items-center gap-3 px-5 py-3 transition-colors",
+                    isMe ? "bg-primary/5 ring-1 ring-inset ring-primary/20" : "hover:bg-accent/30",
+                    i < 3 && "bg-card",
+                  )}
                 >
-                  <div className="flex w-8 shrink-0 items-center gap-1 font-semibold text-foreground">
-                    {podiumIcon(i)}
-                    <span>{i + 1}</span>
+                  <div className="flex w-10 shrink-0 items-center justify-center">
+                    {p ? (
+                      <span className={cn("flex h-8 w-8 items-center justify-center rounded-full", p.bg)}>
+                        <p.Icon className={cn("h-4 w-4", p.color)} />
+                      </span>
+                    ) : (
+                      <span className="text-sm font-semibold text-muted-foreground tabular-nums">
+                        {i + 1}
+                      </span>
+                    )}
                   </div>
+                  <span className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                    isMe ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                  )}>
+                    {initials(r.name) || "?"}
+                  </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="truncate text-sm font-medium text-foreground">{r.name}</span>
                       {isMe && <Badge variant="info">Você</Badge>}
+                      {i === 0 && <Badge variant="warning">Líder</Badge>}
                     </div>
                     <div className="mt-1.5">
                       <ProgressWithLabel
