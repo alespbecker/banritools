@@ -68,6 +68,149 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_contacts: {
+        Row: {
+          assigned_to: string | null
+          campaign_id: string
+          contact_id: string
+          created_at: string
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          campaign_id: string
+          contact_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          campaign_id?: string
+          contact_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_contacts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_contacts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          period_end: string
+          period_start: string
+          product_id: string | null
+          status: string
+          target_quantity: number
+          updated_at: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          period_end: string
+          period_start: string
+          product_id?: string | null
+          status?: string
+          target_quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          period_end?: string
+          period_start?: string
+          product_id?: string | null
+          status?: string
+          target_quantity?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_interactions: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          occurred_at: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          occurred_at?: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          occurred_at?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_interactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           created_at: string
@@ -200,7 +343,9 @@ export type Database = {
           id: string
           period_end: string
           period_start: string
+          period_type: string
           product_id: string | null
+          scope: string
           target_amount: number | null
           target_quantity: number
           updated_at: string
@@ -212,7 +357,9 @@ export type Database = {
           id?: string
           period_end: string
           period_start: string
+          period_type?: string
           product_id?: string | null
+          scope?: string
           target_amount?: number | null
           target_quantity?: number
           updated_at?: string
@@ -224,7 +371,9 @@ export type Database = {
           id?: string
           period_end?: string
           period_start?: string
+          period_type?: string
           product_id?: string | null
+          scope?: string
           target_amount?: number | null
           target_quantity?: number
           updated_at?: string
@@ -302,6 +451,7 @@ export type Database = {
           notes: string | null
           product_id: string
           quantity: number
+          status: string
           updated_at: string
           user_id: string
         }
@@ -314,6 +464,7 @@ export type Database = {
           notes?: string | null
           product_id: string
           quantity?: number
+          status?: string
           updated_at?: string
           user_id: string
         }
@@ -326,6 +477,7 @@ export type Database = {
           notes?: string | null
           product_id?: string
           quantity?: number
+          status?: string
           updated_at?: string
           user_id?: string
         }
@@ -351,7 +503,9 @@ export type Database = {
           active: boolean
           category: string | null
           created_at: string
+          display_order: number
           id: string
+          metric_type: string
           name: string
           points_per_unit: number
           unit: string | null
@@ -361,7 +515,9 @@ export type Database = {
           active?: boolean
           category?: string | null
           created_at?: string
+          display_order?: number
           id?: string
+          metric_type?: string
           name: string
           points_per_unit?: number
           unit?: string | null
@@ -371,7 +527,9 @@ export type Database = {
           active?: boolean
           category?: string | null
           created_at?: string
+          display_order?: number
           id?: string
+          metric_type?: string
           name?: string
           points_per_unit?: number
           unit?: string | null
