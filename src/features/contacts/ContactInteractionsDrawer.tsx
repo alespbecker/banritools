@@ -14,6 +14,8 @@ interface Interaction {
   type: string;
   notes: string | null;
   occurred_at: string;
+  outcome: string | null;
+  next_follow_up: string | null;
 }
 
 const TYPE_ICON = { call: Phone, message: MessageSquare, meeting: Calendar, note: FileText } as const;
@@ -32,13 +34,15 @@ export function ContactInteractionsDrawer({
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState("note");
   const [notes, setNotes] = useState("");
+  const [outcome, setOutcome] = useState("");
+  const [nextFollowUp, setNextFollowUp] = useState("");
 
   const load = useCallback(async () => {
     if (!contactId) return;
     setLoading(true);
     const { data } = await supabase
       .from("contact_interactions")
-      .select("id, type, notes, occurred_at")
+      .select("id, type, notes, occurred_at, outcome, next_follow_up")
       .eq("contact_id", contactId)
       .order("occurred_at", { ascending: false });
     setItems((data ?? []) as Interaction[]);
@@ -51,11 +55,16 @@ export function ContactInteractionsDrawer({
     e.preventDefault();
     if (!user || !contactId) return;
     const { error } = await supabase.from("contact_interactions").insert({
-      contact_id: contactId, user_id: user.id, type, notes: notes || null,
+      contact_id: contactId,
+      user_id: user.id,
+      type,
+      notes: notes || null,
+      outcome: outcome || null,
+      next_follow_up: nextFollowUp || null,
     });
     if (error) return toast.error(error.message);
     toast.success("Interação registrada");
-    setNotes(""); setType("note");
+    setNotes(""); setOutcome(""); setNextFollowUp(""); setType("note");
     load();
   };
 
@@ -73,6 +82,14 @@ export function ContactInteractionsDrawer({
             </select>
           </div>
           <div><Label>Notas</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} /></div>
+          <div>
+            <Label>Resultado</Label>
+            <Input placeholder="Ex: Interessado, Sem retorno, Fechado..." value={outcome} onChange={(e) => setOutcome(e.target.value)} />
+          </div>
+          <div>
+            <Label>Próximo follow-up</Label>
+            <Input type="date" value={nextFollowUp} onChange={(e) => setNextFollowUp(e.target.value)} />
+          </div>
           <Button type="submit" className="w-full"><Plus className="h-4 w-4 mr-2" />Registrar</Button>
         </form>
 
@@ -88,6 +105,12 @@ export function ContactInteractionsDrawer({
                   <span className="text-xs text-muted-foreground">{new Date(i.occurred_at).toLocaleString("pt-BR")}</span>
                 </div>
                 {i.notes && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{i.notes}</p>}
+                {(i.outcome || i.next_follow_up) && (
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                    {i.outcome && <span className="rounded-md bg-muted px-2 py-0.5">Resultado: {i.outcome}</span>}
+                    {i.next_follow_up && <span className="rounded-md bg-muted px-2 py-0.5">Follow-up: {new Date(i.next_follow_up).toLocaleDateString("pt-BR")}</span>}
+                  </div>
+                )}
               </div>
             );
           })}

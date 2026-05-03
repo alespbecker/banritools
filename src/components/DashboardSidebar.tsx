@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import type { AppRole } from "@/features/auth/types";
 
 const navItems = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, adminOnly: false, hint: "Sua produção pessoal e gamificação" },
@@ -33,7 +34,7 @@ interface DashboardSidebarProps {
   onToggleTheme?: () => void;
   onNavigate?: () => void;
   forceExpanded?: boolean;
-  userRole?: "admin" | "user" | null;
+  userRole?: AppRole | null;
 }
 
 export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, forceExpanded, userRole }: DashboardSidebarProps) {
@@ -41,6 +42,14 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
   const location = useLocation();
 
   const isExpanded = forceExpanded || !collapsed;
+  const isAdminLike = userRole === "admin" || userRole === "gerente";
+
+  // Considera ativo quando a rota atual começa com o destino do item.
+  // Para o "/" exato evitamos casar tudo; usamos comparação estrita.
+  const isRouteActive = (to: string) => {
+    if (to === "/") return location.pathname === "/";
+    return location.pathname === to || location.pathname.startsWith(to + "/");
+  };
 
   return (
     <aside
@@ -68,8 +77,8 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
       </div>
 
       <nav className="flex-1 overflow-y-auto space-y-1 p-2">
-        {navItems.filter((i) => !i.adminOnly || userRole === "admin").map((item) => {
-          const isActive = location.pathname === item.to;
+        {navItems.filter((i) => !i.adminOnly || isAdminLike).map((item) => {
+          const isActive = isRouteActive(item.to);
           return (
             <Link
               key={item.to}
@@ -95,7 +104,7 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
         )}
         {!isExpanded && <div className="my-2 border-t border-border" />}
         {betaItems.map((item) => {
-          const isActive = location.pathname === item.to;
+          const isActive = isRouteActive(item.to);
           return (
             <Link
               key={item.to}

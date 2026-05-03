@@ -4,6 +4,9 @@ import {
 } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import type { AppRole } from "@/features/auth/types";
+
+export type { AppRole };
 
 /**
  * AuthProvider — fonte ÚNICA de autenticação para todo o app.
@@ -19,7 +22,7 @@ export interface AuthState {
   session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  userRole: "admin" | "user" | null;
+  userRole: AppRole | null;
   profile: { id: string; name: string | null; email: string | null; agency_id: string | null } | null;
 }
 
@@ -49,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({
       ...prev,
       profile: profileRes.data ?? prev.profile,
-      userRole: (roleRes.data?.role as "admin" | "user") ?? "user",
+      userRole: (roleRes.data?.role as AppRole) ?? "user",
     }));
   }, []);
 
