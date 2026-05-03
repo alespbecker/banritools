@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
 import { Users2 } from "lucide-react";
 import { toast } from "sonner";
+import { logAudit } from "@/features/audit/log";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
