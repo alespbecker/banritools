@@ -23,7 +23,7 @@ export async function logAudit(input: {
     const actor = userRes.user?.id;
     if (!actor) return;
     const { data: profile } = await supabase.from("profiles").select("agency_id").eq("id", actor).maybeSingle();
-    await supabase.from("audit_logs").insert({
+    await (supabase.from("audit_logs") as unknown as { insert: (v: unknown) => Promise<unknown> }).insert({
       actor_id: actor,
       agency_id: profile?.agency_id ?? null,
       action: input.action,
