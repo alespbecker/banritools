@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import type { AppRole } from "@/features/auth/types";
 
 const navItems = [
   { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard, adminOnly: false, hint: "Sua produção pessoal e gamificação" },
