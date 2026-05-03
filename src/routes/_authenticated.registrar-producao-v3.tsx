@@ -129,7 +129,10 @@ function Page() {
   }, []);
 
   const upd = (id: string, key: "quantity" | "amount", v: number) => {
-    setValues((s) => ({ ...s, [id]: { quantity: 0, amount: 0, ...s[id], [key]: v } }));
+    setValues((s) => {
+      const prev = s[id] ?? { quantity: 0, amount: 0 };
+      return { ...s, [id]: { ...prev, [key]: v } };
+    });
   };
 
   const summary = useMemo(() => {
