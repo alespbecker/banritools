@@ -4,8 +4,10 @@ import {
   Wrench, Settings, LogOut, ChevronLeft, ChevronRight,
   Sun, Moon, Shield, Sparkles, Package, Target, Megaphone,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import type { AppRole } from "@/features/auth/types";
 
 const navItems = [
