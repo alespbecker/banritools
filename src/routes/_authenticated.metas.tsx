@@ -103,8 +103,9 @@ function Page() {
     if (form.scope === "individual") payload.user_id = user.id;
     else payload.agency_id = profile.agency_id;
 
-    const { error } = await supabase.from("goals").insert(payload as never);
+    const { data: inserted, error } = await supabase.from("goals").insert(payload as never).select("id").maybeSingle();
     if (error) return toast.error(error.message);
+    await logAudit({ action: "goal.create", entity: "goal", entity_id: (inserted as { id?: string } | null)?.id ?? null, details: payload });
     toast.success("Meta criada");
     setShowForm(false);
     load();
