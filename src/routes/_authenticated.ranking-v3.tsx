@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +13,7 @@ import {
   ProgressWithLabel,
 } from "@/components/ds";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+// Button removed (no longer needed)
 import { ErrorState } from "@/components/states/ErrorState";
 import { EmptyState } from "@/components/states/EmptyState";
 import { cn } from "@/lib/utils";
