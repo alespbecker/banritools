@@ -2,7 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, History, Trophy, Users,
   Wrench, Settings, LogOut, ChevronLeft, ChevronRight,
-  Sun, Moon, Shield,
+  Sun, Moon, Shield, Sparkles, Package, Target, Megaphone,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -14,8 +14,17 @@ const navItems = [
   { label: "Histórico", to: "/historico", icon: History, adminOnly: false, hint: "Ver e editar lançamentos passados" },
   { label: "Ranking", to: "/ranking", icon: Trophy, adminOnly: false, hint: "Classificação mensal da agência" },
   { label: "Contatos", to: "/contacts", icon: Users, adminOnly: false, hint: "Gerenciar contatos e follow-ups" },
+  { label: "Campanhas", to: "/campanhas", icon: Megaphone, adminOnly: false, hint: "Campanhas comerciais da agência" },
+  { label: "Metas", to: "/metas", icon: Target, adminOnly: false, hint: "Metas individuais e da agência" },
   { label: "Ferramentas", to: "/tools", icon: Wrench, adminOnly: false, hint: "Acessar ferramentas auxiliares" },
+  { label: "Produtos", to: "/admin/produtos", icon: Package, adminOnly: true, hint: "Catálogo de métricas (admin)" },
   { label: "Configurações", to: "/settings", icon: Settings, adminOnly: false, hint: "Editar perfil e preferências" },
+] as const;
+
+const betaItems = [
+  { label: "Dashboard (Novo)", to: "/dashboard-v2", icon: Sparkles, hint: "Dashboard do novo modelo" },
+  { label: "Registrar (Novo)", to: "/registrar-producao-v2", icon: Sparkles, hint: "Registrar via catálogo de produtos" },
+  { label: "Ranking (Novo)", to: "/ranking-v2", icon: Sparkles, hint: "Ranking do novo modelo" },
 ] as const;
 
 interface DashboardSidebarProps {
