@@ -100,12 +100,13 @@ function HistoricoPage() {
 
   // Realtime
   useEffect(() => {
+    if (!user) return;
     const ch = supabase
-      .channel("historico-reports")
+      .channel(`historico-reports-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "daily_reports" }, () => fetchReports())
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [fetchReports]);
+  }, [fetchReports, user]);
 
   const startEdit = (r: ReportRow) => {
     setEditingId(r.id);
