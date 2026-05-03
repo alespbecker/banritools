@@ -294,20 +294,26 @@ function Page() {
           </div>
         )}
 
-        <div className="sticky bottom-0 -mx-4 border-t border-border bg-background/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-xl sm:border">
+        <div className="sticky bottom-0 -mx-4 border-t border-border bg-background/85 px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.25)] backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border sm:shadow-none">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-xs text-muted-foreground">
+            <div className="min-w-0 text-xs text-muted-foreground">
               {summary.count > 0 ? (
-                <>
-                  <span className="font-medium text-foreground">{summary.count}</span> produto{summary.count === 1 ? "" : "s"}
-                  {summary.totalAmt > 0 && <> · R$ {summary.totalAmt.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</>}
-                  {summary.points > 0 && <> · +{summary.points.toFixed(0)} pts</>}
-                </>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge variant="success">{summary.count} produto{summary.count === 1 ? "" : "s"}</Badge>
+                  {summary.totalAmt > 0 && (
+                    <Badge variant="neutral" className="tabular-nums">
+                      R$ {summary.totalAmt.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </Badge>
+                  )}
+                  {summary.points > 0 && (
+                    <Badge variant="info" className="tabular-nums">+{summary.points.toFixed(0)} pts</Badge>
+                  )}
+                </div>
               ) : (
                 "Preencha ao menos um produto para salvar"
               )}
             </div>
-            <Button type="submit" disabled={saving || summary.count === 0} size="lg">
+            <Button type="submit" disabled={saving || summary.count === 0} size="lg" className="min-w-[180px]">
               <Save className="h-4 w-4" />
               {saving ? "Salvando..." : `Salvar lançamento${summary.count === 1 ? "" : "s"}`}
             </Button>
