@@ -77,8 +77,8 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
       </div>
 
       <nav className="flex-1 overflow-y-auto space-y-1 p-2">
-        {navItems.filter((i) => !i.adminOnly || userRole === "admin").map((item) => {
-          const isActive = location.pathname === item.to;
+        {navItems.filter((i) => !i.adminOnly || isAdminLike).map((item) => {
+          const isActive = isRouteActive(item.to);
           return (
             <Link
               key={item.to}
