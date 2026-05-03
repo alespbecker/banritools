@@ -193,6 +193,60 @@ export type Database = {
           },
         ]
       }
+      goals: {
+        Row: {
+          agency_id: string | null
+          created_at: string
+          id: string
+          period_end: string
+          period_start: string
+          product_id: string | null
+          target_amount: number | null
+          target_quantity: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string
+          id?: string
+          period_end: string
+          period_start: string
+          product_id?: string | null
+          target_amount?: number | null
+          target_quantity?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          product_id?: string | null
+          target_amount?: number | null
+          target_quantity?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       points_log: {
         Row: {
           agency_id: string | null
@@ -237,6 +291,93 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      production_entries: {
+        Row: {
+          agency_id: string | null
+          amount: number | null
+          created_at: string
+          entry_date: string
+          id: string
+          notes: string | null
+          product_id: string
+          quantity: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agency_id?: string | null
+          amount?: number | null
+          created_at?: string
+          entry_date?: string
+          id?: string
+          notes?: string | null
+          product_id: string
+          quantity?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agency_id?: string | null
+          amount?: number | null
+          created_at?: string
+          entry_date?: string
+          id?: string
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_entries_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_entries_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          active: boolean
+          category: string | null
+          created_at: string
+          id: string
+          name: string
+          points_per_unit: number
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          points_per_unit?: number
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          points_per_unit?: number
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -460,7 +601,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "funcionario" | "gerente" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -588,7 +729,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "funcionario", "gerente", "viewer"],
     },
   },
 } as const
