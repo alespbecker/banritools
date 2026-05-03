@@ -104,7 +104,7 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
         )}
         {!isExpanded && <div className="my-2 border-t border-border" />}
         {betaItems.map((item) => {
-          const isActive = location.pathname === item.to;
+          const isActive = isRouteActive(item.to);
           return (
             <Link
               key={item.to}
