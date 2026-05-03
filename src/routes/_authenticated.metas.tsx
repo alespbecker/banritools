@@ -115,6 +115,7 @@ function Page() {
     if (!confirm("Excluir meta?")) return;
     const { error } = await supabase.from("goals").delete().eq("id", id);
     if (error) return toast.error(error.message);
+    await logAudit({ action: "goal.delete", entity: "goal", entity_id: id });
     load();
   };
 
