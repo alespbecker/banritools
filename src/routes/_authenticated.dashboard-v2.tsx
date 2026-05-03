@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { Sparkles, TrendingUp, Trophy, Package } from "lucide-react";
+import { EmptyState } from "@/components/states/EmptyState";
+import { ErrorState } from "@/components/states/ErrorState";
 
 export const Route = createFileRoute("/_authenticated/dashboard-v2")({
   head: () => ({ meta: [{ title: "Dashboard (Novo) — BanriTools" }] }),
