@@ -29,11 +29,7 @@ function AuthenticatedLayout() {
   }, [isLoading, isAuthenticated, navigate]);
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-muted-foreground">Carregando...</p>
-      </div>
-    );
+    return <AppLoading />;
   }
 
   if (!isAuthenticated) return null;
