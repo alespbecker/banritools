@@ -43,26 +43,20 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
   useEffect(() => {
     if (!user) return;
     const today = new Date().toISOString().slice(0, 10);
-    supabase
-      .from("contacts")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .lte("next_follow_up", today)
-      .then(({ count }) => setPendingFollowUps(count ?? 0));
-  }, [user]);
-
   const isExpanded = forceExpanded || !collapsed;
   const isAdminLike = userRole === "admin" || userRole === "gerente";
 
   const isRouteActive = (to: string) => {
     if (to === "/") return location.pathname === "/";
+    // Rotas com sub-rotas (ex.: /admin tem /admin/produtos) usam match exato
+    // para não acender dois itens do menu ao mesmo tempo.
+    const hasSubroutes = navItems.some(
+      (i) => i.to !== to && i.to.startsWith(to + "/")
+    );
+    if (hasSubroutes) return location.pathname === to;
     return location.pathname === to || location.pathname.startsWith(to + "/");
   };
 
-  const badgeFor = (to: string): number | null => {
-    if (to === "/contacts-v3" && pendingFollowUps > 0) return pendingFollowUps;
-    return null;
-  };
 
   return (
     <aside
