@@ -261,16 +261,24 @@ function AdminProductsPage() {
         {filtered.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-8">
             <EmptyState
-              icon={Package}
+              icon={<Package className="h-8 w-8" />}
               title={products.length === 0 ? "Nenhum produto cadastrado" : "Nenhum produto encontrado"}
               description={
                 products.length === 0
                   ? "Cadastre o primeiro produto para começar a registrar produção."
                   : "Ajuste os filtros ou faça uma nova busca."
               }
-              action={products.length === 0 ? { label: "Novo produto", onClick: openCreate } : undefined}
+              action={
+                products.length === 0 ? (
+                  <Button onClick={openCreate}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Novo produto
+                  </Button>
+                ) : undefined
+              }
             />
           </div>
+
         ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
