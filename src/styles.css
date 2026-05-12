@@ -290,6 +290,18 @@
   0%, 100% { opacity: 0.55; }
   50%      { opacity: 0.85; }
 }
+@keyframes loading-slide {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(420%); }
+}
+@keyframes bounce-soft {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+.animate-pulse-soft     { animation: pulse-soft 2.4s ease-in-out infinite; }
+.animate-loading-slide  { animation: loading-slide 1.4s var(--ease-banri, cubic-bezier(0.22, 0.61, 0.36, 1)) infinite; }
+.animate-bounce-soft    { animation: bounce-soft 1.6s ease-in-out infinite; }
 
 /* Easing curva Banrisul — suave, com leve antecipação */
 :root {
