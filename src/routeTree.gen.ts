@@ -30,7 +30,6 @@ import { Route as AuthenticatedContactsV3RouteImport } from './routes/_authentic
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated.contacts'
 import { Route as AuthenticatedCampanhasRouteImport } from './routes/_authenticated.campanhas'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
-import { Route as AuthenticatedAdminProdutosRouteImport } from './routes/_authenticated.admin.produtos'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -141,18 +140,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedAdminProdutosRoute =
-  AuthenticatedAdminProdutosRouteImport.update({
-    id: '/produtos',
-    path: '/produtos',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/admin': typeof AuthenticatedAdminRoute
   '/campanhas': typeof AuthenticatedCampanhasRoute
   '/contacts': typeof AuthenticatedContactsRoute
   '/contacts-v3': typeof AuthenticatedContactsV3Route
@@ -169,13 +162,12 @@ export interface FileRoutesByFullPath {
   '/registrar-producao-v3': typeof AuthenticatedRegistrarProducaoV3Route
   '/settings': typeof AuthenticatedSettingsRoute
   '/tools': typeof AuthenticatedToolsRoute
-  '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/admin': typeof AuthenticatedAdminRoute
   '/campanhas': typeof AuthenticatedCampanhasRoute
   '/contacts': typeof AuthenticatedContactsRoute
   '/contacts-v3': typeof AuthenticatedContactsV3Route
@@ -192,7 +184,6 @@ export interface FileRoutesByTo {
   '/registrar-producao-v3': typeof AuthenticatedRegistrarProducaoV3Route
   '/settings': typeof AuthenticatedSettingsRoute
   '/tools': typeof AuthenticatedToolsRoute
-  '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -200,7 +191,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/campanhas': typeof AuthenticatedCampanhasRoute
   '/_authenticated/contacts': typeof AuthenticatedContactsRoute
   '/_authenticated/contacts-v3': typeof AuthenticatedContactsV3Route
@@ -217,7 +208,6 @@ export interface FileRoutesById {
   '/_authenticated/registrar-producao-v3': typeof AuthenticatedRegistrarProducaoV3Route
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tools': typeof AuthenticatedToolsRoute
-  '/_authenticated/admin/produtos': typeof AuthenticatedAdminProdutosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -242,7 +232,6 @@ export interface FileRouteTypes {
     | '/registrar-producao-v3'
     | '/settings'
     | '/tools'
-    | '/admin/produtos'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -265,7 +254,6 @@ export interface FileRouteTypes {
     | '/registrar-producao-v3'
     | '/settings'
     | '/tools'
-    | '/admin/produtos'
   id:
     | '__root__'
     | '/'
@@ -289,7 +277,6 @@ export interface FileRouteTypes {
     | '/_authenticated/registrar-producao-v3'
     | '/_authenticated/settings'
     | '/_authenticated/tools'
-    | '/_authenticated/admin/produtos'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -448,29 +435,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/admin/produtos': {
-      id: '/_authenticated/admin/produtos'
-      path: '/produtos'
-      fullPath: '/admin/produtos'
-      preLoaderRoute: typeof AuthenticatedAdminProdutosRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
   }
 }
 
-interface AuthenticatedAdminRouteChildren {
-  AuthenticatedAdminProdutosRoute: typeof AuthenticatedAdminProdutosRoute
-}
-
-const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
-  AuthenticatedAdminProdutosRoute: AuthenticatedAdminProdutosRoute,
-}
-
-const AuthenticatedAdminRouteWithChildren =
-  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
-
 interface AuthenticatedRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCampanhasRoute: typeof AuthenticatedCampanhasRoute
   AuthenticatedContactsRoute: typeof AuthenticatedContactsRoute
   AuthenticatedContactsV3Route: typeof AuthenticatedContactsV3Route
@@ -490,7 +459,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCampanhasRoute: AuthenticatedCampanhasRoute,
   AuthenticatedContactsRoute: AuthenticatedContactsRoute,
   AuthenticatedContactsV3Route: AuthenticatedContactsV3Route,
