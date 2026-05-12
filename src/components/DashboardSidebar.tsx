@@ -37,12 +37,8 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, forceExpanded, userRole }: DashboardSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const { user } = useAuth();
-  const [pendingFollowUps, setPendingFollowUps] = useState(0);
+  const { user: _user } = useAuth();
 
-  useEffect(() => {
-    if (!user) return;
-    const today = new Date().toISOString().slice(0, 10);
   const isExpanded = forceExpanded || !collapsed;
   const isAdminLike = userRole === "admin" || userRole === "gerente";
 
@@ -56,6 +52,7 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
     if (hasSubroutes) return location.pathname === to;
     return location.pathname === to || location.pathname.startsWith(to + "/");
   };
+
 
 
   return (
