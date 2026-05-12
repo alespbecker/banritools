@@ -4,9 +4,8 @@ import {
   Wrench, Settings, LogOut, ChevronLeft, ChevronRight,
   Sun, Moon, Shield, Package, Target, Megaphone,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { AppRole } from "@/features/auth/types";
 
@@ -37,32 +36,23 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, forceExpanded, userRole }: DashboardSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const { user } = useAuth();
-  const [pendingFollowUps, setPendingFollowUps] = useState(0);
-
-  useEffect(() => {
-    if (!user) return;
-    const today = new Date().toISOString().slice(0, 10);
-    supabase
-      .from("contacts")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .lte("next_follow_up", today)
-      .then(({ count }) => setPendingFollowUps(count ?? 0));
-  }, [user]);
+  const { user: _user } = useAuth();
 
   const isExpanded = forceExpanded || !collapsed;
   const isAdminLike = userRole === "admin" || userRole === "gerente";
 
   const isRouteActive = (to: string) => {
     if (to === "/") return location.pathname === "/";
+    // Rotas com sub-rotas (ex.: /admin tem /admin/produtos) usam match exato
+    // para não acender dois itens do menu ao mesmo tempo.
+    const hasSubroutes = navItems.some(
+      (i) => i.to !== to && i.to.startsWith(to + "/")
+    );
+    if (hasSubroutes) return location.pathname === to;
     return location.pathname === to || location.pathname.startsWith(to + "/");
   };
 
-  const badgeFor = (to: string): number | null => {
-    if (to === "/contacts-v3" && pendingFollowUps > 0) return pendingFollowUps;
-    return null;
-  };
+
 
   return (
     <aside
@@ -108,11 +98,7 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
             >
               <item.icon className="h-4 w-4 shrink-0" />
               {isExpanded && <span className="flex-1">{item.label}</span>}
-              {isExpanded && badgeFor(item.to) && (
-                <span className="rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
-                  {badgeFor(item.to)}
-                </span>
-              )}
+
             </Link>
           );
         })}
