@@ -4,9 +4,8 @@ import {
   Wrench, Settings, LogOut, ChevronLeft, ChevronRight,
   Sun, Moon, Shield, Package, Target, Megaphone,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import type { AppRole } from "@/features/auth/types";
 
