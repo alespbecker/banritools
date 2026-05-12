@@ -28,7 +28,7 @@ function LoginPage() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate({ to: "/dashboard", replace: true });
+      navigate({ to: "/dashboard-v3", replace: true });
     }
   }, [isAuthenticated, isLoading, navigate]);
 
