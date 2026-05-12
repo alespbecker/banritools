@@ -48,17 +48,11 @@
   font-style: normal;
   font-display: swap;
 }
+/* Bold leve: 700/800/900 mapeados para SemiBold (Banrisul evita pesos pesados) */
 @font-face {
   font-family: "Lufga";
-  src: url("/fonts/LufgaBold.ttf") format("truetype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Lufga";
-  src: url("/fonts/LufgaExtraBold.ttf") format("truetype");
-  font-weight: 800;
+  src: url("/fonts/LufgaSemiBold.ttf") format("truetype");
+  font-weight: 700 900;
   font-style: normal;
   font-display: swap;
 }
