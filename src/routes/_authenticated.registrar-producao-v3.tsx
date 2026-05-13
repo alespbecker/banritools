@@ -123,7 +123,7 @@ function Page() {
     supabase
       .from("products").select("*").eq("active", true).order("display_order")
       .then(({ data }) => {
-        setProducts((data ?? []) as Product[]);
+        setProducts((data ?? []) as unknown as Product[]);
         setLoading(false);
       });
   }, []);

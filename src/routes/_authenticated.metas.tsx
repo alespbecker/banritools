@@ -63,7 +63,7 @@ function Page() {
       supabase.from("products").select("id, name").eq("active", true).order("display_order"),
     ]);
     setGoals((g ?? []) as Goal[]);
-    setProducts((p ?? []) as Product[]);
+    setProducts((p ?? []) as unknown as Product[]);
 
     // calculate progress per goal
     const prog: Record<string, { qty: number; amt: number }> = {};
