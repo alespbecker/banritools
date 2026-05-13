@@ -480,11 +480,51 @@ export type Database = {
           },
         ]
       }
+      product_variants: {
+        Row: {
+          active: boolean
+          created_at: string
+          display_order: number
+          id: string
+          legacy_field: string | null
+          name: string
+          product_id: string
+          slug: string
+          updated_at: string
+          variant_type: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          id?: string
+          legacy_field?: string | null
+          name: string
+          product_id: string
+          slug: string
+          updated_at?: string
+          variant_type?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          display_order?: number
+          id?: string
+          legacy_field?: string | null
+          name?: string
+          product_id?: string
+          slug?: string
+          updated_at?: string
+          variant_type?: string
+        }
+        Relationships: []
+      }
       production_entries: {
         Row: {
           agency_id: string | null
           amount: number | null
           created_at: string
+          details: Json
           entry_date: string
           id: string
           notes: string | null
@@ -493,11 +533,13 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          variant_id: string | null
         }
         Insert: {
           agency_id?: string | null
           amount?: number | null
           created_at?: string
+          details?: Json
           entry_date?: string
           id?: string
           notes?: string | null
@@ -506,11 +548,13 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          variant_id?: string | null
         }
         Update: {
           agency_id?: string | null
           amount?: number | null
           created_at?: string
+          details?: Json
           entry_date?: string
           id?: string
           notes?: string | null
@@ -519,6 +563,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -542,11 +587,16 @@ export type Database = {
           active: boolean
           category: string | null
           created_at: string
+          description: string | null
           display_order: number
+          field_schema: Json
           id: string
+          legacy_field: string | null
           metric_type: string
           name: string
           points_per_unit: number
+          slug: string | null
+          subcategory: string | null
           unit: string | null
           updated_at: string
         }
@@ -554,11 +604,16 @@ export type Database = {
           active?: boolean
           category?: string | null
           created_at?: string
+          description?: string | null
           display_order?: number
+          field_schema?: Json
           id?: string
+          legacy_field?: string | null
           metric_type?: string
           name: string
           points_per_unit?: number
+          slug?: string | null
+          subcategory?: string | null
           unit?: string | null
           updated_at?: string
         }
@@ -566,11 +621,16 @@ export type Database = {
           active?: boolean
           category?: string | null
           created_at?: string
+          description?: string | null
           display_order?: number
+          field_schema?: Json
           id?: string
+          legacy_field?: string | null
           metric_type?: string
           name?: string
           points_per_unit?: number
+          slug?: string | null
+          subcategory?: string | null
           unit?: string | null
           updated_at?: string
         }
