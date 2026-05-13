@@ -595,7 +595,7 @@ export type Database = {
           metric_type: string
           name: string
           points_per_unit: number
-          slug: string | null
+          slug: string
           subcategory: string | null
           unit: string | null
           updated_at: string
@@ -612,7 +612,7 @@ export type Database = {
           metric_type?: string
           name: string
           points_per_unit?: number
-          slug?: string | null
+          slug: string
           subcategory?: string | null
           unit?: string | null
           updated_at?: string
@@ -629,7 +629,7 @@ export type Database = {
           metric_type?: string
           name?: string
           points_per_unit?: number
-          slug?: string | null
+          slug?: string
           subcategory?: string | null
           unit?: string | null
           updated_at?: string
