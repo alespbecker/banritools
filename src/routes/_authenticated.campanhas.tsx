@@ -50,7 +50,7 @@ function Page() {
       supabase.from("products").select("id, name").eq("active", true).order("display_order"),
     ]);
     setItems((c ?? []) as Campaign[]);
-    setProducts((p ?? []) as Product[]);
+    setProducts((p ?? []) as unknown as Product[]);
 
     if (c && c.length) {
       const { data: cc } = await supabase
