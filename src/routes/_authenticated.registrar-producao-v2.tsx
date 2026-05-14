@@ -227,12 +227,13 @@ function ProductPicker({
 }
 
 function EntryForm({
-  product, variants, userId, onBack,
+  product, variants, userId, onBack, onSaved,
 }: {
   product: Product;
   variants: ProductVariant[];
   userId: string;
   onBack: () => void;
+  onSaved: () => void;
 }) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [quantity, setQuantity] = useState<number>(0);
@@ -260,17 +261,24 @@ function EntryForm({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId) return;
-    if (showQty && !quantity && showAmt && !amount) {
-      return toast.error("Informe quantidade ou valor");
+
+    const qtyValid = quantity > 0;
+    const amtValid = amount > 0;
+
+    if (product.metric_type === "mixed") {
+      if (!qtyValid && !amtValid) return toast.error("Informe quantidade ou valor (maior que zero)");
+      if (quantity < 0) return toast.error("Quantidade não pode ser negativa");
+      if (amount < 0) return toast.error("Valor não pode ser negativo");
+    } else if (product.metric_type === "quantity") {
+      if (!qtyValid) return toast.error("Informe uma quantidade maior que zero");
+    } else if (product.metric_type === "amount") {
+      if (!amtValid) return toast.error("Informe um valor maior que zero");
     }
-    if (!showQty && showAmt && !amount) return toast.error("Informe o valor");
-    if (showQty && !showAmt && !quantity) return toast.error("Informe a quantidade");
 
     for (const f of product.field_schema) {
       if (f.required && !details[f.key]) return toast.error(`Campo obrigatório: ${f.label}`);
     }
 
-    // primeira variante (se houver) vai em variant_id; restantes ficam em details.variants
     const variantIds = Object.values(variantSelections).filter(Boolean);
     const primaryVariantId = variantIds[0] ?? null;
     const fullDetails = {
@@ -294,7 +302,7 @@ function EntryForm({
     if (error) return toast.error(error.message);
     await logAudit({ action: "production.create", entity: "production_entry", details: { product: product.slug, date } });
     toast.success("Lançamento salvo");
-    onBack();
+    onSaved();
   };
 
   return (
