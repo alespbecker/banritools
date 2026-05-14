@@ -13,7 +13,7 @@ import {
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { EmptyState } from "@/components/states/EmptyState";
 import { toast } from "sonner";
-import { Sparkles, ArrowLeft, Search, ChevronLeft, Check } from "lucide-react";
+import { Sparkles, ArrowLeft, Search, ChevronLeft, Check, Clock } from "lucide-react";
 import { logAudit } from "@/features/audit/log";
 import type { Product, ProductVariant, SchemaField, VariantType } from "@/features/production/types";
 import { VARIANT_TYPE_LABEL } from "@/features/production/types";
@@ -24,13 +24,37 @@ export const Route = createFileRoute("/_authenticated/registrar-producao-v2")({
   pendingComponent: () => <PageSkeleton kpis={0} rows={8} />,
 });
 
+interface RecentEntry {
+  id: string;
+  entry_date: string;
+  product_id: string;
+  variant_id: string | null;
+  quantity: number;
+  amount: number | null;
+  details: Record<string, unknown>;
+  notes: string | null;
+}
+
 function Page() {
   const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [recent, setRecent] = useState<RecentEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Product | null>(null);
+
+  const loadRecent = useCallback(async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from("production_entries")
+      .select("id, entry_date, product_id, variant_id, quantity, amount, details, notes")
+      .eq("user_id", user.id)
+      .order("entry_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(10);
+    setRecent((data ?? []) as unknown as RecentEntry[]);
+  }, [user?.id]);
 
   useEffect(() => {
     Promise.all([
@@ -42,6 +66,8 @@ function Page() {
       setLoading(false);
     });
   }, []);
+
+  useEffect(() => { loadRecent(); }, [loadRecent]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -95,9 +121,66 @@ function Page() {
           variants={variantsForSelected}
           userId={user?.id ?? ""}
           onBack={() => setSelected(null)}
+          onSaved={() => { loadRecent(); setSelected(null); }}
         />
       )}
+
+      <RecentEntries entries={recent} products={products} variants={variants} />
     </div>
+  );
+}
+
+function RecentEntries({
+  entries, products, variants,
+}: { entries: RecentEntry[]; products: Product[]; variants: ProductVariant[] }) {
+  const productsById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+  const variantsById = useMemo(() => new Map(variants.map((v) => [v.id, v])), [variants]);
+  const fmtDate = (d: string) => new Date(d + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  const fmtMoney = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  return (
+    <section className="space-y-2">
+      <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+        <Clock className="h-3.5 w-3.5" /> Últimos lançamentos
+      </h2>
+      {entries.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+          Nenhum lançamento ainda.
+        </div>
+      ) : (
+        <ul className="rounded-lg border border-border divide-y divide-border bg-card">
+          {entries.map((e) => {
+            const p = productsById.get(e.product_id);
+            const v = e.variant_id ? variantsById.get(e.variant_id) : null;
+            const detailKeys = Object.keys(e.details ?? {}).filter((k) => k !== "variant_ids");
+            const detailSummary = detailKeys.slice(0, 2).map((k) => {
+              const val = (e.details as Record<string, unknown>)[k];
+              return `${k}: ${typeof val === "number" ? val : String(val ?? "—")}`;
+            }).join(" · ");
+            return (
+              <li key={e.id} className="px-3 py-2.5 text-sm flex items-start gap-3">
+                <div className="text-[11px] text-muted-foreground tabular-nums w-12 shrink-0 pt-0.5">
+                  {fmtDate(e.entry_date)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium truncate">{p?.name ?? "—"}</span>
+                    {v && <Badge variant="secondary" className="text-[10px]">{v.name}</Badge>}
+                  </div>
+                  {detailSummary && (
+                    <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{detailSummary}</div>
+                  )}
+                </div>
+                <div className="text-right text-xs tabular-nums shrink-0">
+                  {e.quantity > 0 && <div>{e.quantity} {p?.unit ?? ""}</div>}
+                  {e.amount && e.amount > 0 ? <div className="text-muted-foreground">{fmtMoney(Number(e.amount))}</div> : null}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -144,12 +227,13 @@ function ProductPicker({
 }
 
 function EntryForm({
-  product, variants, userId, onBack,
+  product, variants, userId, onBack, onSaved,
 }: {
   product: Product;
   variants: ProductVariant[];
   userId: string;
   onBack: () => void;
+  onSaved: () => void;
 }) {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [quantity, setQuantity] = useState<number>(0);
@@ -177,17 +261,24 @@ function EntryForm({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId) return;
-    if (showQty && !quantity && showAmt && !amount) {
-      return toast.error("Informe quantidade ou valor");
+
+    const qtyValid = quantity > 0;
+    const amtValid = amount > 0;
+
+    if (product.metric_type === "mixed") {
+      if (!qtyValid && !amtValid) return toast.error("Informe quantidade ou valor (maior que zero)");
+      if (quantity < 0) return toast.error("Quantidade não pode ser negativa");
+      if (amount < 0) return toast.error("Valor não pode ser negativo");
+    } else if (product.metric_type === "quantity") {
+      if (!qtyValid) return toast.error("Informe uma quantidade maior que zero");
+    } else if (product.metric_type === "amount") {
+      if (!amtValid) return toast.error("Informe um valor maior que zero");
     }
-    if (!showQty && showAmt && !amount) return toast.error("Informe o valor");
-    if (showQty && !showAmt && !quantity) return toast.error("Informe a quantidade");
 
     for (const f of product.field_schema) {
       if (f.required && !details[f.key]) return toast.error(`Campo obrigatório: ${f.label}`);
     }
 
-    // primeira variante (se houver) vai em variant_id; restantes ficam em details.variants
     const variantIds = Object.values(variantSelections).filter(Boolean);
     const primaryVariantId = variantIds[0] ?? null;
     const fullDetails = {
@@ -211,7 +302,7 @@ function EntryForm({
     if (error) return toast.error(error.message);
     await logAudit({ action: "production.create", entity: "production_entry", details: { product: product.slug, date } });
     toast.success("Lançamento salvo");
-    onBack();
+    onSaved();
   };
 
   return (
