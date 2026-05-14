@@ -288,13 +288,23 @@ function ProductEditDialog({
     if (!newVar.name.trim()) return toast.error("Informe o nome");
     const slug = newVar.name.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    if (!slug) return toast.error("Nome inválido");
+
+    const duplicate = localVariants.some(
+      (v) => v.variant_type === newVar.variant_type && v.slug === slug,
+    );
+    if (duplicate) return toast.error("Já existe uma variante com esse slug para este produto.");
+
     const next_order = (localVariants.filter((v) => v.variant_type === newVar.variant_type).at(-1)?.display_order ?? 0) + 10;
     const { data, error } = await supabase.from("product_variants").insert({
       product_id: product.id,
       slug, name: newVar.name.trim(), variant_type: newVar.variant_type,
       display_order: next_order, active: true,
     }).select().single();
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (error.code === "23505") return toast.error("Já existe uma variante com esse slug para este produto.");
+      return toast.error(error.message);
+    }
     setLocalVariants((s) => [...s, data as unknown as ProductVariant]);
     setNewVar({ name: "", variant_type: "subtype" });
     toast.success("Variante adicionada");
