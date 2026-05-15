@@ -67,15 +67,19 @@ function LoginPage() {
     setError("");
     setSuccess("");
     setLoading(true);
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Tempo esgotado. Verifique sua conexão e tente novamente.")), 15000)
+    );
     try {
       if (isSignUp) {
-        await signUp(email, password, name);
+        await Promise.race([signUp(email, password, name), timeout]);
         setSuccess("Conta criada! Verifique seu email para confirmar.");
       } else {
-        await signIn(email, password);
+        await Promise.race([signIn(email, password), timeout]);
       }
     } catch (err: any) {
-      setError(err.message || "Erro ao autenticar");
+      console.error("[login] auth failed:", err);
+      setError(err?.message || "Erro ao autenticar");
     } finally {
       setLoading(false);
     }
