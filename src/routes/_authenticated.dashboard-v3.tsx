@@ -71,7 +71,7 @@ function Page() {
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     setLoading(true); setError(null);
 
     const monthStart = new Date(); monthStart.setDate(1);
