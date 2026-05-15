@@ -76,6 +76,7 @@ function LoginPage() {
         setSuccess("Conta criada! Verifique seu email para confirmar.");
       } else {
         await Promise.race([signIn(email, password), timeout]);
+        navigate({ to: "/dashboard-v3", replace: true });
       }
     } catch (err: any) {
       console.error("[login] auth failed:", err);
