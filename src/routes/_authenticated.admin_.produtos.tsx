@@ -272,6 +272,8 @@ function ProductEditDialog({
     unit: product.unit ?? "unidade",
     metric_type: product.metric_type,
     points_per_unit: product.points_per_unit,
+    commission_per_unit: product.commission_per_unit ?? 0,
+    commission_rate: product.commission_rate ?? 0,
     display_order: product.display_order,
   });
   const [saving, setSaving] = useState(false);
