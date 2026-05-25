@@ -24,12 +24,25 @@ export interface Product {
   subcategory: string | null;
   unit: string | null;
   points_per_unit: number;
+  commission_per_unit: number;
+  commission_rate: number;
   metric_type: MetricType;
   display_order: number;
   active: boolean;
   legacy_field: string | null;
   field_schema: SchemaField[];
 }
+
+/** Comissão prevista do vendedor para um lançamento (R$).
+ *  Soma valor fixo por unidade + percentual sobre o valor da venda. */
+export function computeCommission(p: Pick<Product, "commission_per_unit" | "commission_rate">, quantity: number, amount: number): number {
+  const perUnit = Number(p.commission_per_unit ?? 0) * (Number(quantity) || 0);
+  const rate = Number(p.commission_rate ?? 0) * (Number(amount) || 0);
+  return perUnit + rate;
+}
+
+export const formatBRL = (n: number) =>
+  (Number(n) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export type VariantType =
   | "subtype" | "operation_type" | "client_type" | "modality"
