@@ -349,6 +349,20 @@ function EntryForm({
           <Badge variant="secondary" className="text-[10px]">{product.points_per_unit} pts/{product.unit}</Badge>
         </div>
         {product.description && <p className="text-xs text-muted-foreground">{product.description}</p>}
+        <div className="mt-2 flex items-center justify-between rounded-md bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5">
+          <span className="text-[11px] text-emerald-700 dark:text-emerald-300">
+            Comissão prevista
+            {product.commission_per_unit > 0 && (
+              <span className="text-muted-foreground"> · {formatBRL(product.commission_per_unit)}/{product.unit}</span>
+            )}
+            {product.commission_rate > 0 && (
+              <span className="text-muted-foreground"> · {(product.commission_rate * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% do valor</span>
+            )}
+          </span>
+          <span className="text-sm font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
+            {formatBRL(computeCommission(product, showQty ? quantity : 0, showAmt ? amount : 0))}
+          </span>
+        </div>
       </div>
 
       <div className="rounded-lg border border-border bg-card p-4 space-y-4">
