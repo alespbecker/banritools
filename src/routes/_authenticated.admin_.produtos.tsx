@@ -201,6 +201,16 @@ function AdminProductsPage() {
                       <div className="flex flex-wrap gap-1.5 mb-3">
                         <Badge variant="secondary" className="text-[10px]">{METRIC_LABEL[p.metric_type]}</Badge>
                         <Badge variant="secondary" className="text-[10px]">{p.points_per_unit} pts/{p.unit}</Badge>
+                        {p.commission_per_unit > 0 && (
+                          <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-700 dark:text-emerald-300">
+                            R$ {p.commission_per_unit}/{p.unit}
+                          </Badge>
+                        )}
+                        {p.commission_rate > 0 && (
+                          <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-700 dark:text-emerald-300">
+                            {(p.commission_rate * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% do valor
+                          </Badge>
+                        )}
                         {p.legacy_field && (
                           <Badge variant="outline" className="text-[10px]" title="Mapeia para coluna do dashboard antigo">
                             legacy
