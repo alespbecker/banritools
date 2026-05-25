@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { Sparkles, ArrowLeft, Search, ChevronLeft, Check, Clock } from "lucide-react";
 import { logAudit } from "@/features/audit/log";
 import type { Product, ProductVariant, SchemaField, VariantType } from "@/features/production/types";
-import { VARIANT_TYPE_LABEL } from "@/features/production/types";
+import { VARIANT_TYPE_LABEL, computeCommission, formatBRL } from "@/features/production/types";
 
 export const Route = createFileRoute("/_authenticated/registrar-producao-v2")({
   head: () => ({ meta: [{ title: "Registrar Produção (Novo) — BanriTools" }] }),
