@@ -138,11 +138,27 @@ function RecentEntries({
   const fmtDate = (d: string) => new Date(d + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
   const fmtMoney = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+  const totalCommission = useMemo(
+    () => entries.reduce((s, e) => {
+      const p = productsById.get(e.product_id);
+      return p ? s + computeCommission(p, e.quantity, Number(e.amount ?? 0)) : s;
+    }, 0),
+    [entries, productsById],
+  );
+
   return (
     <section className="space-y-2">
-      <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-        <Clock className="h-3.5 w-3.5" /> Últimos lançamentos
-      </h2>
+      <div className="flex items-end justify-between">
+        <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5" /> Últimos lançamentos
+        </h2>
+        {totalCommission > 0 && (
+          <div className="text-xs text-muted-foreground">
+            Comissão prevista (10 últimos):{" "}
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{fmtMoney(totalCommission)}</span>
+          </div>
+        )}
+      </div>
       {entries.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           Nenhum lançamento ainda.
