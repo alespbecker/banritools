@@ -157,6 +157,7 @@ function RecentEntries({
               const val = (e.details as Record<string, unknown>)[k];
               return `${k}: ${typeof val === "number" ? val : String(val ?? "—")}`;
             }).join(" · ");
+            const commission = p ? computeCommission(p, e.quantity, Number(e.amount ?? 0)) : 0;
             return (
               <li key={e.id} className="px-3 py-2.5 text-sm flex items-start gap-3">
                 <div className="text-[11px] text-muted-foreground tabular-nums w-12 shrink-0 pt-0.5">
@@ -174,6 +175,11 @@ function RecentEntries({
                 <div className="text-right text-xs tabular-nums shrink-0">
                   {e.quantity > 0 && <div>{e.quantity} {p?.unit ?? ""}</div>}
                   {e.amount && e.amount > 0 ? <div className="text-muted-foreground">{fmtMoney(Number(e.amount))}</div> : null}
+                  {commission > 0 && (
+                    <div className="text-emerald-600 dark:text-emerald-400 font-medium" title="Comissão prevista">
+                      +{fmtMoney(commission)}
+                    </div>
+                  )}
                 </div>
               </li>
             );
