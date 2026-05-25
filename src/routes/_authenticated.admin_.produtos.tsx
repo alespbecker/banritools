@@ -404,6 +404,26 @@ function ProductEditDialog({
                 </SelectContent>
               </Select>
             </div>
+            <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-3">
+              <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                Comissão prevista do vendedor
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">R$ por unidade</Label>
+                  <Input type="number" min="0" step="0.01" value={form.commission_per_unit}
+                    onChange={(e) => setForm({ ...form, commission_per_unit: Number(e.target.value) || 0 })} />
+                  <p className="text-[10px] text-muted-foreground mt-1">Valor fixo pago a cada unidade vendida.</p>
+                </div>
+                <div>
+                  <Label className="text-xs">% sobre o valor</Label>
+                  <Input type="number" min="0" max="100" step="0.01"
+                    value={form.commission_rate * 100}
+                    onChange={(e) => setForm({ ...form, commission_rate: (Number(e.target.value) || 0) / 100 })} />
+                  <p className="text-[10px] text-muted-foreground mt-1">Percentual aplicado ao valor da venda (ex.: 1,5).</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
