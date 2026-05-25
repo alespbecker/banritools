@@ -586,6 +586,8 @@ export type Database = {
         Row: {
           active: boolean
           category: string | null
+          commission_per_unit: number
+          commission_rate: number
           created_at: string
           description: string | null
           display_order: number
@@ -603,6 +605,8 @@ export type Database = {
         Insert: {
           active?: boolean
           category?: string | null
+          commission_per_unit?: number
+          commission_rate?: number
           created_at?: string
           description?: string | null
           display_order?: number
@@ -620,6 +624,8 @@ export type Database = {
         Update: {
           active?: boolean
           category?: string | null
+          commission_per_unit?: number
+          commission_rate?: number
           created_at?: string
           description?: string | null
           display_order?: number

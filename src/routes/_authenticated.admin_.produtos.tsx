@@ -201,6 +201,16 @@ function AdminProductsPage() {
                       <div className="flex flex-wrap gap-1.5 mb-3">
                         <Badge variant="secondary" className="text-[10px]">{METRIC_LABEL[p.metric_type]}</Badge>
                         <Badge variant="secondary" className="text-[10px]">{p.points_per_unit} pts/{p.unit}</Badge>
+                        {p.commission_per_unit > 0 && (
+                          <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-700 dark:text-emerald-300">
+                            R$ {p.commission_per_unit}/{p.unit}
+                          </Badge>
+                        )}
+                        {p.commission_rate > 0 && (
+                          <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-700 dark:text-emerald-300">
+                            {(p.commission_rate * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% do valor
+                          </Badge>
+                        )}
                         {p.legacy_field && (
                           <Badge variant="outline" className="text-[10px]" title="Mapeia para coluna do dashboard antigo">
                             legacy
@@ -262,6 +272,8 @@ function ProductEditDialog({
     unit: product.unit ?? "unidade",
     metric_type: product.metric_type,
     points_per_unit: product.points_per_unit,
+    commission_per_unit: product.commission_per_unit ?? 0,
+    commission_rate: product.commission_rate ?? 0,
     display_order: product.display_order,
   });
   const [saving, setSaving] = useState(false);
@@ -391,6 +403,26 @@ function ProductEditDialog({
                   <SelectItem value="mixed">Quantidade + Valor</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-3">
+              <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                Comissão prevista do vendedor
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">R$ por unidade</Label>
+                  <Input type="number" min="0" step="0.01" value={form.commission_per_unit}
+                    onChange={(e) => setForm({ ...form, commission_per_unit: Number(e.target.value) || 0 })} />
+                  <p className="text-[10px] text-muted-foreground mt-1">Valor fixo pago a cada unidade vendida.</p>
+                </div>
+                <div>
+                  <Label className="text-xs">% sobre o valor</Label>
+                  <Input type="number" min="0" max="100" step="0.01"
+                    value={form.commission_rate * 100}
+                    onChange={(e) => setForm({ ...form, commission_rate: (Number(e.target.value) || 0) / 100 })} />
+                  <p className="text-[10px] text-muted-foreground mt-1">Percentual aplicado ao valor da venda (ex.: 1,5).</p>
+                </div>
+              </div>
             </div>
           </div>
         )}

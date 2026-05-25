@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { Sparkles, ArrowLeft, Search, ChevronLeft, Check, Clock } from "lucide-react";
 import { logAudit } from "@/features/audit/log";
 import type { Product, ProductVariant, SchemaField, VariantType } from "@/features/production/types";
-import { VARIANT_TYPE_LABEL } from "@/features/production/types";
+import { VARIANT_TYPE_LABEL, computeCommission, formatBRL } from "@/features/production/types";
 
 export const Route = createFileRoute("/_authenticated/registrar-producao-v2")({
   head: () => ({ meta: [{ title: "Registrar Produção (Novo) — BanriTools" }] }),
@@ -138,11 +138,27 @@ function RecentEntries({
   const fmtDate = (d: string) => new Date(d + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
   const fmtMoney = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+  const totalCommission = useMemo(
+    () => entries.reduce((s, e) => {
+      const p = productsById.get(e.product_id);
+      return p ? s + computeCommission(p, e.quantity, Number(e.amount ?? 0)) : s;
+    }, 0),
+    [entries, productsById],
+  );
+
   return (
     <section className="space-y-2">
-      <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-        <Clock className="h-3.5 w-3.5" /> Últimos lançamentos
-      </h2>
+      <div className="flex items-end justify-between">
+        <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <Clock className="h-3.5 w-3.5" /> Últimos lançamentos
+        </h2>
+        {totalCommission > 0 && (
+          <div className="text-xs text-muted-foreground">
+            Comissão prevista (10 últimos):{" "}
+            <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{fmtMoney(totalCommission)}</span>
+          </div>
+        )}
+      </div>
       {entries.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           Nenhum lançamento ainda.
@@ -157,6 +173,7 @@ function RecentEntries({
               const val = (e.details as Record<string, unknown>)[k];
               return `${k}: ${typeof val === "number" ? val : String(val ?? "—")}`;
             }).join(" · ");
+            const commission = p ? computeCommission(p, e.quantity, Number(e.amount ?? 0)) : 0;
             return (
               <li key={e.id} className="px-3 py-2.5 text-sm flex items-start gap-3">
                 <div className="text-[11px] text-muted-foreground tabular-nums w-12 shrink-0 pt-0.5">
@@ -174,6 +191,11 @@ function RecentEntries({
                 <div className="text-right text-xs tabular-nums shrink-0">
                   {e.quantity > 0 && <div>{e.quantity} {p?.unit ?? ""}</div>}
                   {e.amount && e.amount > 0 ? <div className="text-muted-foreground">{fmtMoney(Number(e.amount))}</div> : null}
+                  {commission > 0 && (
+                    <div className="text-emerald-600 dark:text-emerald-400 font-medium" title="Comissão prevista">
+                      +{fmtMoney(commission)}
+                    </div>
+                  )}
                 </div>
               </li>
             );
@@ -208,17 +230,27 @@ function ProductPicker({
         <section key={cat}>
           <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">{cat}</h2>
           <div className="grid gap-2 sm:grid-cols-2">
-            {items.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => onPick(p)}
-                className="text-left rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/30 transition p-3"
-              >
-                <div className="font-medium">{p.name}</div>
-                <div className="text-[11px] text-muted-foreground mt-0.5">{p.points_per_unit} pts/{p.unit}</div>
-              </button>
-            ))}
+            {items.map((p) => {
+              const commHint = p.commission_per_unit > 0
+                ? `${formatBRL(p.commission_per_unit)}/${p.unit}`
+                : p.commission_rate > 0
+                  ? `${(p.commission_rate * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% do valor`
+                  : null;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => onPick(p)}
+                  className="text-left rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/30 transition p-3"
+                >
+                  <div className="font-medium">{p.name}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{p.points_per_unit} pts/{p.unit}</div>
+                  {commHint && (
+                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5">Comissão: {commHint}</div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </section>
       ))}
@@ -317,6 +349,20 @@ function EntryForm({
           <Badge variant="secondary" className="text-[10px]">{product.points_per_unit} pts/{product.unit}</Badge>
         </div>
         {product.description && <p className="text-xs text-muted-foreground">{product.description}</p>}
+        <div className="mt-2 flex items-center justify-between rounded-md bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5">
+          <span className="text-[11px] text-emerald-700 dark:text-emerald-300">
+            Comissão prevista
+            {product.commission_per_unit > 0 && (
+              <span className="text-muted-foreground"> · {formatBRL(product.commission_per_unit)}/{product.unit}</span>
+            )}
+            {product.commission_rate > 0 && (
+              <span className="text-muted-foreground"> · {(product.commission_rate * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% do valor</span>
+            )}
+          </span>
+          <span className="text-sm font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
+            {formatBRL(computeCommission(product, showQty ? quantity : 0, showAmt ? amount : 0))}
+          </span>
+        </div>
       </div>
 
       <div className="rounded-lg border border-border bg-card p-4 space-y-4">
