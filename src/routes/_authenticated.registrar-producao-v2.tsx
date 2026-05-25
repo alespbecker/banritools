@@ -230,17 +230,27 @@ function ProductPicker({
         <section key={cat}>
           <h2 className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">{cat}</h2>
           <div className="grid gap-2 sm:grid-cols-2">
-            {items.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => onPick(p)}
-                className="text-left rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/30 transition p-3"
-              >
-                <div className="font-medium">{p.name}</div>
-                <div className="text-[11px] text-muted-foreground mt-0.5">{p.points_per_unit} pts/{p.unit}</div>
-              </button>
-            ))}
+            {items.map((p) => {
+              const commHint = p.commission_per_unit > 0
+                ? `${formatBRL(p.commission_per_unit)}/${p.unit}`
+                : p.commission_rate > 0
+                  ? `${(p.commission_rate * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}% do valor`
+                  : null;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => onPick(p)}
+                  className="text-left rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/30 transition p-3"
+                >
+                  <div className="font-medium">{p.name}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">{p.points_per_unit} pts/{p.unit}</div>
+                  {commHint && (
+                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5">Comissão: {commHint}</div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </section>
       ))}
