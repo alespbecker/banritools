@@ -335,8 +335,10 @@ function Page() {
                       <ProductRow
                         key={p.id}
                         product={p}
-                        values={values[p.id] ?? { quantity: 0, amount: 0 }}
+                        variants={variantsByProduct.get(p.id) ?? []}
+                        values={values[p.id] ?? { quantity: 0, amount: 0, variants: {} }}
                         onChange={(k, v) => upd(p.id, k, v)}
+                        onVariant={(t, vid) => updVariant(p.id, t, vid)}
                       />
                     ))}
                   </div>
