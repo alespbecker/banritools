@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 import { FileText, Save, CheckCircle2, Sparkles, Package } from "lucide-react";
@@ -17,7 +18,8 @@ import {
   AlertCard,
 } from "@/components/ds";
 import { cn } from "@/lib/utils";
-import type { Product } from "@/features/production/types";
+import type { Product, ProductVariant } from "@/features/production/types";
+import { VARIANT_TYPE_LABEL } from "@/features/production/types";
 
 export const Route = createFileRoute("/_authenticated/registrar-producao-v3")({
   head: () => ({ meta: [{ title: "Registrar Produção — BanriTools" }] }),
@@ -25,21 +27,34 @@ export const Route = createFileRoute("/_authenticated/registrar-producao-v3")({
   pendingComponent: () => <PageSkeleton kpis={0} rows={8} />,
 });
 
-interface Values { quantity: number; amount: number }
+interface Values { quantity: number; amount: number; variants: Record<string, string> }
 
 function ProductRow({
   product,
+  variants,
   values,
   onChange,
+  onVariant,
 }: {
   product: Product;
+  variants: ProductVariant[];
   values: Values;
   onChange: (key: "quantity" | "amount", v: number) => void;
+  onVariant: (type: string, variantId: string) => void;
 }) {
   const showQty = product.metric_type === "quantity" || product.metric_type === "mixed";
   const showAmt = product.metric_type === "amount" || product.metric_type === "mixed";
   const filled = values.quantity > 0 || values.amount > 0;
   const points = (values.quantity + values.amount) * (product.points_per_unit ?? 0);
+
+  const variantsByType = useMemo(() => {
+    const m = new Map<string, ProductVariant[]>();
+    for (const v of variants) {
+      if (!m.has(v.variant_type)) m.set(v.variant_type, []);
+      m.get(v.variant_type)!.push(v);
+    }
+    return Array.from(m.entries());
+  }, [variants]);
 
   return (
     <div
@@ -105,6 +120,28 @@ function ProductRow({
           </div>
         )}
       </div>
+      {filled && variantsByType.length > 0 && (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {variantsByType.map(([type, list]) => (
+            <div key={type}>
+              <Label className="text-xs text-muted-foreground">
+                {VARIANT_TYPE_LABEL[type as keyof typeof VARIANT_TYPE_LABEL] ?? type}
+              </Label>
+              <Select
+                value={values.variants[type] ?? ""}
+                onValueChange={(v) => onVariant(type, v)}
+              >
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {list.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -113,6 +150,7 @@ function Page() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [values, setValues] = useState<Record<string, Values>>({});
@@ -120,18 +158,36 @@ function Page() {
   const [lastSaved, setLastSaved] = useState<{ count: number; points: number } | null>(null);
 
   useEffect(() => {
-    supabase
-      .from("products").select("*").eq("active", true).order("display_order")
-      .then(({ data }) => {
-        setProducts((data ?? []) as unknown as Product[]);
-        setLoading(false);
-      });
+    Promise.all([
+      supabase.from("products").select("*").eq("active", true).order("display_order"),
+      supabase.from("product_variants").select("*").eq("active", true).order("display_order"),
+    ]).then(([prodRes, varRes]) => {
+      setProducts((prodRes.data ?? []) as unknown as Product[]);
+      setVariants((varRes.data ?? []) as unknown as ProductVariant[]);
+      setLoading(false);
+    });
   }, []);
+
+  const variantsByProduct = useMemo(() => {
+    const m = new Map<string, ProductVariant[]>();
+    for (const v of variants) {
+      if (!m.has(v.product_id)) m.set(v.product_id, []);
+      m.get(v.product_id)!.push(v);
+    }
+    return m;
+  }, [variants]);
 
   const upd = (id: string, key: "quantity" | "amount", v: number) => {
     setValues((s) => {
-      const prev = s[id] ?? { quantity: 0, amount: 0 };
+      const prev = s[id] ?? { quantity: 0, amount: 0, variants: {} };
       return { ...s, [id]: { ...prev, [key]: v } };
+    });
+  };
+
+  const updVariant = (id: string, type: string, variantId: string) => {
+    setValues((s) => {
+      const prev = s[id] ?? { quantity: 0, amount: 0, variants: {} };
+      return { ...s, [id]: { ...prev, variants: { ...prev.variants, [type]: variantId } } };
     });
   };
 
@@ -166,19 +222,22 @@ function Page() {
     if (!user) return;
     const entries = products
       .map((p) => {
-        const v = values[p.id] ?? { quantity: 0, amount: 0 };
+        const v = values[p.id] ?? { quantity: 0, amount: 0, variants: {} };
         if (v.quantity === 0 && v.amount === 0) return null;
+        const variantIds = Object.values(v.variants ?? {}).filter(Boolean);
+        const primaryVariantId = variantIds[0] ?? null;
         return {
           user_id: user.id,
           product_id: p.id,
+          variant_id: primaryVariantId,
           entry_date: date,
           quantity: v.quantity,
           amount: v.amount,
           status: "confirmed",
+          details: variantIds.length > 1 ? { variant_ids: variantIds } : {},
         };
       })
       .filter(Boolean);
-    if (entries.length === 0) return toast.error("Preencha ao menos um produto");
     setSaving(true);
     const { error } = await supabase.from("production_entries").insert(entries as never);
     setSaving(false);
@@ -279,8 +338,10 @@ function Page() {
                       <ProductRow
                         key={p.id}
                         product={p}
-                        values={values[p.id] ?? { quantity: 0, amount: 0 }}
+                        variants={variantsByProduct.get(p.id) ?? []}
+                        values={values[p.id] ?? { quantity: 0, amount: 0, variants: {} }}
                         onChange={(k, v) => upd(p.id, k, v)}
+                        onVariant={(t, vid) => updVariant(p.id, t, vid)}
                       />
                     ))}
                   </div>

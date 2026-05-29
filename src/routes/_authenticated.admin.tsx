@@ -119,7 +119,7 @@ function AdminDashboardPage() {
   const agencyId = profile?.agency_id ?? null;
 
   const fetchAll = useCallback(async (showLoader = false) => {
-    if (!agencyId) return;
+    if (!agencyId) { setLoading(false); return; }
     if (showLoader) setLoading(true);
     // 1) Buscar profiles da agência primeiro (rápido) para poder filtrar user_roles
     const profilesPromise = supabase
