@@ -31,17 +31,30 @@ interface Values { quantity: number; amount: number; variants: Record<string, st
 
 function ProductRow({
   product,
+  variants,
   values,
   onChange,
+  onVariant,
 }: {
   product: Product;
+  variants: ProductVariant[];
   values: Values;
   onChange: (key: "quantity" | "amount", v: number) => void;
+  onVariant: (type: string, variantId: string) => void;
 }) {
   const showQty = product.metric_type === "quantity" || product.metric_type === "mixed";
   const showAmt = product.metric_type === "amount" || product.metric_type === "mixed";
   const filled = values.quantity > 0 || values.amount > 0;
   const points = (values.quantity + values.amount) * (product.points_per_unit ?? 0);
+
+  const variantsByType = useMemo(() => {
+    const m = new Map<string, ProductVariant[]>();
+    for (const v of variants) {
+      if (!m.has(v.variant_type)) m.set(v.variant_type, []);
+      m.get(v.variant_type)!.push(v);
+    }
+    return Array.from(m.entries());
+  }, [variants]);
 
   return (
     <div
@@ -107,6 +120,28 @@ function ProductRow({
           </div>
         )}
       </div>
+      {filled && variantsByType.length > 0 && (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {variantsByType.map(([type, list]) => (
+            <div key={type}>
+              <Label className="text-xs text-muted-foreground">
+                {VARIANT_TYPE_LABEL[type as keyof typeof VARIANT_TYPE_LABEL] ?? type}
+              </Label>
+              <Select
+                value={values.variants[type] ?? ""}
+                onValueChange={(v) => onVariant(type, v)}
+              >
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {list.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
