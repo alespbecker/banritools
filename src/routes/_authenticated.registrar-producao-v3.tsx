@@ -150,6 +150,7 @@ function Page() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [values, setValues] = useState<Record<string, Values>>({});
@@ -157,18 +158,36 @@ function Page() {
   const [lastSaved, setLastSaved] = useState<{ count: number; points: number } | null>(null);
 
   useEffect(() => {
-    supabase
-      .from("products").select("*").eq("active", true).order("display_order")
-      .then(({ data }) => {
-        setProducts((data ?? []) as unknown as Product[]);
-        setLoading(false);
-      });
+    Promise.all([
+      supabase.from("products").select("*").eq("active", true).order("display_order"),
+      supabase.from("product_variants").select("*").eq("active", true).order("display_order"),
+    ]).then(([prodRes, varRes]) => {
+      setProducts((prodRes.data ?? []) as unknown as Product[]);
+      setVariants((varRes.data ?? []) as unknown as ProductVariant[]);
+      setLoading(false);
+    });
   }, []);
+
+  const variantsByProduct = useMemo(() => {
+    const m = new Map<string, ProductVariant[]>();
+    for (const v of variants) {
+      if (!m.has(v.product_id)) m.set(v.product_id, []);
+      m.get(v.product_id)!.push(v);
+    }
+    return m;
+  }, [variants]);
 
   const upd = (id: string, key: "quantity" | "amount", v: number) => {
     setValues((s) => {
-      const prev = s[id] ?? { quantity: 0, amount: 0 };
+      const prev = s[id] ?? { quantity: 0, amount: 0, variants: {} };
       return { ...s, [id]: { ...prev, [key]: v } };
+    });
+  };
+
+  const updVariant = (id: string, type: string, variantId: string) => {
+    setValues((s) => {
+      const prev = s[id] ?? { quantity: 0, amount: 0, variants: {} };
+      return { ...s, [id]: { ...prev, variants: { ...prev.variants, [type]: variantId } } };
     });
   };
 
