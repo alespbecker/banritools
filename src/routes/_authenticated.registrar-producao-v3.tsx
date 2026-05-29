@@ -309,10 +309,31 @@ function Page() {
                   <> · <span className="font-medium text-success tabular-nums">+{lastSaved.points.toFixed(0)} pontos</span> adicionados</>
                 )}
               </p>
+              {lastSaved.items.length > 0 && (
+                <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                  {lastSaved.items.map((it, i) => (
+                    <li key={i} className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-medium text-foreground">{it.name}</span>
+                      {it.qty > 0 && <span className="tabular-nums">· {it.qty} un</span>}
+                      {it.amt > 0 && <span className="tabular-nums">· R$ {it.amt.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>}
+                      {it.variantNames.map((vn) => (
+                        <Badge key={vn} variant="neutral" className="text-[10px]">{vn}</Badge>
+                      ))}
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => setLastSaved(null)}>
                   Registrar mais
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => navigate({ to: "/dashboard-v3" })}>
+                  Ver início
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => navigate({ to: "/historico" })}>
+                  Ver histórico
+                </Button>
+              </div>
                 <Button size="sm" variant="outline" onClick={() => navigate({ to: "/dashboard-v3" })}>
                   Ver início
                 </Button>
