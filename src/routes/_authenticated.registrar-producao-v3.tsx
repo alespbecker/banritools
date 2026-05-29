@@ -219,6 +219,7 @@ function Page() {
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     const entries = products
       .map((p) => {
         const v = values[p.id] ?? { quantity: 0, amount: 0, variants: {} };
