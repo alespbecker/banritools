@@ -237,15 +237,28 @@ function Page() {
     return Array.from(map.entries());
   }, [products]);
 
+  const variantById = useMemo(() => {
+    const m = new Map<string, ProductVariant>();
+    for (const v of variants) m.set(v.id, v);
+    return m;
+  }, [variants]);
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    const summaryItems: { name: string; qty: number; amt: number; variantNames: string[] }[] = [];
     const entries = products
       .map((p) => {
         const v = values[p.id] ?? { quantity: 0, amount: 0, variants: {} };
         if (v.quantity === 0 && v.amount === 0) return null;
         const variantIds = Object.values(v.variants ?? {}).filter(Boolean);
         const primaryVariantId = variantIds[0] ?? null;
+        summaryItems.push({
+          name: p.name,
+          qty: v.quantity,
+          amt: v.amount,
+          variantNames: variantIds.map((id) => variantById.get(id)?.name ?? "").filter(Boolean),
+        });
         return {
           user_id: user.id,
           product_id: p.id,
@@ -264,10 +277,13 @@ function Page() {
     if (error) return toast.error(error.message);
     await logAudit({ action: "production.create", entity: "production_entry", details: { count: entries.length, date } });
     toast.success(`${entries.length} lançamento(s) salvos`);
-    setLastSaved({ count: entries.length, points: summary.points });
+    setLastSaved({ count: entries.length, points: summary.points, items: summaryItems });
     setValues({});
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [user, products, values, date, summary.points]);
+    if (typeof window !== "undefined") {
+      try { window.localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [user, products, values, date, summary.points, variantById]);
 
   if (loading) return <PageSkeleton kpis={0} rows={8} />;
 
