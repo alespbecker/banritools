@@ -146,6 +146,8 @@ function ProductRow({
   );
 }
 
+const DRAFT_KEY = "banritools:producao-v3:draft";
+
 function Page() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -153,9 +155,20 @@ function Page() {
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [values, setValues] = useState<Record<string, Values>>({});
+  const [values, setValues] = useState<Record<string, Values>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem(DRAFT_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as { values?: Record<string, Values> };
+      return parsed.values ?? {};
+    } catch { return {}; }
+  });
   const [saving, setSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<{ count: number; points: number } | null>(null);
+  const [lastSaved, setLastSaved] = useState<{
+    count: number; points: number;
+    items: { name: string; qty: number; amt: number; variantNames: string[] }[];
+  } | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -167,6 +180,13 @@ function Page() {
       setLoading(false);
     });
   }, []);
+
+  // Persist draft so variant selection survives reload until salvar
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { window.localStorage.setItem(DRAFT_KEY, JSON.stringify({ date, values })); }
+    catch { /* ignore quota */ }
+  }, [date, values]);
 
   const variantsByProduct = useMemo(() => {
     const m = new Map<string, ProductVariant[]>();
