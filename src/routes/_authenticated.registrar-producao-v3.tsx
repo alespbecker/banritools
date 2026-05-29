@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 import { FileText, Save, CheckCircle2, Sparkles, Package } from "lucide-react";
@@ -17,7 +18,8 @@ import {
   AlertCard,
 } from "@/components/ds";
 import { cn } from "@/lib/utils";
-import type { Product } from "@/features/production/types";
+import type { Product, ProductVariant } from "@/features/production/types";
+import { VARIANT_TYPE_LABEL } from "@/features/production/types";
 
 export const Route = createFileRoute("/_authenticated/registrar-producao-v3")({
   head: () => ({ meta: [{ title: "Registrar Produção — BanriTools" }] }),
@@ -25,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/registrar-producao-v3")({
   pendingComponent: () => <PageSkeleton kpis={0} rows={8} />,
 });
 
-interface Values { quantity: number; amount: number }
+interface Values { quantity: number; amount: number; variants: Record<string, string> }
 
 function ProductRow({
   product,
