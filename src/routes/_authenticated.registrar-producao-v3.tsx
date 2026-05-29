@@ -219,22 +219,24 @@ function Page() {
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
     const entries = products
       .map((p) => {
-        const v = values[p.id] ?? { quantity: 0, amount: 0 };
+        const v = values[p.id] ?? { quantity: 0, amount: 0, variants: {} };
         if (v.quantity === 0 && v.amount === 0) return null;
+        const variantIds = Object.values(v.variants ?? {}).filter(Boolean);
+        const primaryVariantId = variantIds[0] ?? null;
         return {
           user_id: user.id,
           product_id: p.id,
+          variant_id: primaryVariantId,
           entry_date: date,
           quantity: v.quantity,
           amount: v.amount,
           status: "confirmed",
+          details: variantIds.length > 1 ? { variant_ids: variantIds } : {},
         };
       })
       .filter(Boolean);
-    if (entries.length === 0) return toast.error("Preencha ao menos um produto");
     setSaving(true);
     const { error } = await supabase.from("production_entries").insert(entries as never);
     setSaving(false);
