@@ -146,6 +146,8 @@ function ProductRow({
   );
 }
 
+const DRAFT_KEY = "banritools:producao-v3:draft";
+
 function Page() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -153,9 +155,20 @@ function Page() {
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [values, setValues] = useState<Record<string, Values>>({});
+  const [values, setValues] = useState<Record<string, Values>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = window.localStorage.getItem(DRAFT_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as { values?: Record<string, Values> };
+      return parsed.values ?? {};
+    } catch { return {}; }
+  });
   const [saving, setSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<{ count: number; points: number } | null>(null);
+  const [lastSaved, setLastSaved] = useState<{
+    count: number; points: number;
+    items: { name: string; qty: number; amt: number; variantNames: string[] }[];
+  } | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -167,6 +180,13 @@ function Page() {
       setLoading(false);
     });
   }, []);
+
+  // Persist draft so variant selection survives reload until salvar
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { window.localStorage.setItem(DRAFT_KEY, JSON.stringify({ date, values })); }
+    catch { /* ignore quota */ }
+  }, [date, values]);
 
   const variantsByProduct = useMemo(() => {
     const m = new Map<string, ProductVariant[]>();
@@ -217,15 +237,28 @@ function Page() {
     return Array.from(map.entries());
   }, [products]);
 
+  const variantById = useMemo(() => {
+    const m = new Map<string, ProductVariant>();
+    for (const v of variants) m.set(v.id, v);
+    return m;
+  }, [variants]);
+
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    const summaryItems: { name: string; qty: number; amt: number; variantNames: string[] }[] = [];
     const entries = products
       .map((p) => {
         const v = values[p.id] ?? { quantity: 0, amount: 0, variants: {} };
         if (v.quantity === 0 && v.amount === 0) return null;
         const variantIds = Object.values(v.variants ?? {}).filter(Boolean);
         const primaryVariantId = variantIds[0] ?? null;
+        summaryItems.push({
+          name: p.name,
+          qty: v.quantity,
+          amt: v.amount,
+          variantNames: variantIds.map((id) => variantById.get(id)?.name ?? "").filter(Boolean),
+        });
         return {
           user_id: user.id,
           product_id: p.id,
@@ -244,10 +277,13 @@ function Page() {
     if (error) return toast.error(error.message);
     await logAudit({ action: "production.create", entity: "production_entry", details: { count: entries.length, date } });
     toast.success(`${entries.length} lançamento(s) salvos`);
-    setLastSaved({ count: entries.length, points: summary.points });
+    setLastSaved({ count: entries.length, points: summary.points, items: summaryItems });
     setValues({});
-    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [user, products, values, date, summary.points]);
+    if (typeof window !== "undefined") {
+      try { window.localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [user, products, values, date, summary.points, variantById]);
 
   if (loading) return <PageSkeleton kpis={0} rows={8} />;
 
@@ -273,6 +309,20 @@ function Page() {
                   <> · <span className="font-medium text-success tabular-nums">+{lastSaved.points.toFixed(0)} pontos</span> adicionados</>
                 )}
               </p>
+              {lastSaved.items.length > 0 && (
+                <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                  {lastSaved.items.map((it, i) => (
+                    <li key={i} className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-medium text-foreground">{it.name}</span>
+                      {it.qty > 0 && <span className="tabular-nums">· {it.qty} un</span>}
+                      {it.amt > 0 && <span className="tabular-nums">· R$ {it.amt.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>}
+                      {it.variantNames.map((vn) => (
+                        <Badge key={vn} variant="neutral" className="text-[10px]">{vn}</Badge>
+                      ))}
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => setLastSaved(null)}>
                   Registrar mais
