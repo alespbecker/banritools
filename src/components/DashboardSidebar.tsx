@@ -105,7 +105,7 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
         })}
       </nav>
 
-      <div className="border-t border-border p-2 space-y-1">
+      <div className="border-t border-border/60 p-2 space-y-1">
         {onToggleTheme && (
           <button
             onClick={onToggleTheme}
