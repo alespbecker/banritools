@@ -261,23 +261,13 @@ function Page() {
       />
 
       {/* Bloco — Fila operacional */}
-      {priorityCount > 0 && (
+      {goalsAtRisk > 0 && (
         <InfoCard
           title="Ações para hoje"
-          description={`${priorityCount} oportunidade${priorityCount === 1 ? "" : "s"} aguardando você`}
-          actions={<Badge variant="warning">{priorityCount}</Badge>}
+          description={`${goalsAtRisk} oportunidade${goalsAtRisk === 1 ? "" : "s"} aguardando você`}
+          actions={<Badge variant="warning">{goalsAtRisk}</Badge>}
         >
           <div className="space-y-2">
-            {overdueFollowups > 0 && (
-              <PriorityItem
-                tone="danger"
-                count={overdueFollowups}
-                icon={Clock}
-                title="Contatos para retomar"
-                description="Follow-ups em atraso — retome ainda hoje"
-                onClick={() => navigate({ to: "/contacts-v3" })}
-              />
-            )}
             {goalsAtRisk > 0 && (
               <PriorityItem
                 tone="warning"
@@ -286,16 +276,6 @@ function Page() {
                 title="Acelere o ritmo da meta"
                 description="Aumente a produção para fechar o mês forte"
                 onClick={() => navigate({ to: "/metas" })}
-              />
-            )}
-            {pendingContacts > 0 && (
-              <PriorityItem
-                tone="info"
-                count={pendingContacts}
-                icon={ListChecks}
-                title="Próxima oportunidade"
-                description="Avance esses leads para a próxima etapa do funil"
-                onClick={() => navigate({ to: "/contacts-v3" })}
               />
             )}
           </div>
