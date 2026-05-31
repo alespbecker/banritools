@@ -96,14 +96,19 @@ function Page() {
   if (loading) return <PageSkeleton kpis={0} rows={4} />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Megaphone className="h-5 w-5 text-primary" />Campanhas</h1>
-          <p className="text-sm text-muted-foreground">Campanhas comerciais da agência</p>
-        </div>
-        {canManage && <Button onClick={() => setShowForm(!showForm)}><Plus className="h-4 w-4 mr-2" />Nova</Button>}
-      </div>
+    <PageContainer>
+      <PageHeader
+        icon={<Megaphone className="h-5 w-5" />}
+        title="Campanhas"
+        description="Campanhas comerciais da agência"
+        actions={
+          canManage && (
+            <Button onClick={() => setShowForm(!showForm)}>
+              <Plus className="h-4 w-4 mr-2" />Nova
+            </Button>
+          )
+        }
+      />
 
       {showForm && (
         <form onSubmit={handleSave} className="rounded-lg border border-border bg-card p-4 space-y-3">
