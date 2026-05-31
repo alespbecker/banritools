@@ -21,6 +21,7 @@ import { Route as AuthenticatedRegistrarProducaoRouteImport } from './routes/_au
 import { Route as AuthenticatedRankingV3RouteImport } from './routes/_authenticated.ranking-v3'
 import { Route as AuthenticatedRankingV2RouteImport } from './routes/_authenticated.ranking-v2'
 import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated.ranking'
+import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated.perfil'
 import { Route as AuthenticatedMetasRouteImport } from './routes/_authenticated.metas'
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated.historico'
 import { Route as AuthenticatedDashboardV3RouteImport } from './routes/_authenticated.dashboard-v3'
@@ -94,6 +95,11 @@ const AuthenticatedRankingRoute = AuthenticatedRankingRouteImport.update({
   path: '/ranking',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
+  id: '/perfil',
+  path: '/perfil',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedMetasRoute = AuthenticatedMetasRouteImport.update({
   id: '/metas',
   path: '/metas',
@@ -161,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/dashboard-v3': typeof AuthenticatedDashboardV3Route
   '/historico': typeof AuthenticatedHistoricoRoute
   '/metas': typeof AuthenticatedMetasRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/ranking': typeof AuthenticatedRankingRoute
   '/ranking-v2': typeof AuthenticatedRankingV2Route
   '/ranking-v3': typeof AuthenticatedRankingV3Route
@@ -184,6 +191,7 @@ export interface FileRoutesByTo {
   '/dashboard-v3': typeof AuthenticatedDashboardV3Route
   '/historico': typeof AuthenticatedHistoricoRoute
   '/metas': typeof AuthenticatedMetasRoute
+  '/perfil': typeof AuthenticatedPerfilRoute
   '/ranking': typeof AuthenticatedRankingRoute
   '/ranking-v2': typeof AuthenticatedRankingV2Route
   '/ranking-v3': typeof AuthenticatedRankingV3Route
@@ -209,6 +217,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard-v3': typeof AuthenticatedDashboardV3Route
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
   '/_authenticated/metas': typeof AuthenticatedMetasRoute
+  '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/ranking': typeof AuthenticatedRankingRoute
   '/_authenticated/ranking-v2': typeof AuthenticatedRankingV2Route
   '/_authenticated/ranking-v3': typeof AuthenticatedRankingV3Route
@@ -234,6 +243,7 @@ export interface FileRouteTypes {
     | '/dashboard-v3'
     | '/historico'
     | '/metas'
+    | '/perfil'
     | '/ranking'
     | '/ranking-v2'
     | '/ranking-v3'
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/dashboard-v3'
     | '/historico'
     | '/metas'
+    | '/perfil'
     | '/ranking'
     | '/ranking-v2'
     | '/ranking-v3'
@@ -281,6 +292,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard-v3'
     | '/_authenticated/historico'
     | '/_authenticated/metas'
+    | '/_authenticated/perfil'
     | '/_authenticated/ranking'
     | '/_authenticated/ranking-v2'
     | '/_authenticated/ranking-v3'
@@ -385,6 +397,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRankingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/perfil': {
+      id: '/_authenticated/perfil'
+      path: '/perfil'
+      fullPath: '/perfil'
+      preLoaderRoute: typeof AuthenticatedPerfilRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/metas': {
       id: '/_authenticated/metas'
       path: '/metas'
@@ -468,6 +487,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardV3Route: typeof AuthenticatedDashboardV3Route
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
   AuthenticatedMetasRoute: typeof AuthenticatedMetasRoute
+  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedRankingRoute: typeof AuthenticatedRankingRoute
   AuthenticatedRankingV2Route: typeof AuthenticatedRankingV2Route
   AuthenticatedRankingV3Route: typeof AuthenticatedRankingV3Route
@@ -489,6 +509,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardV3Route: AuthenticatedDashboardV3Route,
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
   AuthenticatedMetasRoute: AuthenticatedMetasRoute,
+  AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedRankingRoute: AuthenticatedRankingRoute,
   AuthenticatedRankingV2Route: AuthenticatedRankingV2Route,
   AuthenticatedRankingV3Route: AuthenticatedRankingV3Route,
