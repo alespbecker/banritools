@@ -398,13 +398,14 @@ function Page() {
                       <Badge variant="success">{filledInCat} preenchido{filledInCat === 1 ? "" : "s"}</Badge>
                     )}
                   </div>
-                  <div className="grid gap-3">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     {items.map((p) => (
                       <ProductRow
                         key={p.id}
                         product={p}
                         variants={variantsByProduct.get(p.id) ?? []}
                         values={values[p.id] ?? { quantity: 0, amount: 0, variants: {} }}
+                        gradient={CATEGORY_GRADIENT[category] ?? "from-muted/20 to-muted/5"}
                         onChange={(k, v) => upd(p.id, k, v)}
                         onVariant={(t, vid) => updVariant(p.id, t, vid)}
                       />
