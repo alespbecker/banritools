@@ -422,7 +422,7 @@ function Page() {
           </div>
         )}
 
-        <div className="sticky bottom-0 -mx-4 border-t border-primary/20 bg-primary/65 px-4 py-3 shadow-[0_-12px_40px_-12px_rgba(0,0,0,0.35)] backdrop-blur-2xl backdrop-saturate-150 sm:mx-0 sm:rounded-xl sm:border sm:shadow-none">
+        <div className="sticky bottom-3 mx-2 rounded-2xl border border-primary/30 bg-primary/55 px-4 py-3 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.4)] [backdrop-filter:blur(24px)_saturate(160%)] [-webkit-backdrop-filter:blur(24px)_saturate(160%)] sm:mx-0 sm:bottom-0 sm:rounded-xl sm:shadow-none">
           <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:text-left">
             <div className="min-w-0 text-xs text-primary-foreground/80">
               {summary.count > 0 ? (
