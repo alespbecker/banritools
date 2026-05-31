@@ -384,3 +384,29 @@
   .skeleton-shimmer::after { animation: none !important; }
   .card-hover { transition: none !important; }
 }
+
+/* =========================================================
+   Radar / Pulse — usado no FAB "Registrar Produção"
+   Emite uma onda expansiva a cada 5s
+   ========================================================= */
+@keyframes fab-radar {
+  0%   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 55%, transparent); }
+  60%  { box-shadow: 0 0 0 18px color-mix(in oklab, var(--primary) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 0%, transparent); }
+}
+.fab-radar {
+  animation: fab-radar 5s var(--ease-banri) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fab-radar { animation: none !important; }
+}
+
+/* =========================================================
+   Light theme — sombra mais difusa e elevada no menu lateral
+   ========================================================= */
+.light aside[aria-label="Navegação principal"] {
+  box-shadow:
+    0 2px 8px -2px color-mix(in oklab, var(--brand-deep) 8%, transparent),
+    0 18px 40px -12px color-mix(in oklab, var(--brand-deep) 22%, transparent),
+    0 32px 64px -24px color-mix(in oklab, var(--brand-deep) 18%, transparent);
+}
