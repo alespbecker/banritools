@@ -652,7 +652,8 @@ function AdminDashboardPage() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold text-card-foreground">Performance por Colaborador</h2>
           <ExportDialog
-            title={`Performance por colaborador — ${monthRange.label}`}
+            title="Performance por colaborador"
+            subtitle={`Período: ${monthRange.label}`}
             filenameBase="banritools-performance"
             columns={exportColumns}
             rows={exportRows}
