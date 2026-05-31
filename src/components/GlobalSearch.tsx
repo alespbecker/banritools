@@ -9,7 +9,7 @@ interface Result {
   label: string;
   hint?: string;
   to: string;
-  group: "Contatos" | "Campanhas" | "Produtos" | "Produção";
+  group: "Campanhas" | "Produtos" | "Produção";
 }
 
 export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
