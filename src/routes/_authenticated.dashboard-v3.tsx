@@ -418,11 +418,6 @@ function Page() {
       <InfoCard
         title="Últimos lançamentos"
         description={`${monthEntries.length} no mês`}
-        actions={
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/historico">Ver tudo</Link>
-          </Button>
-        }
         bodyless
       >
         {monthEntries.length === 0 ? (
