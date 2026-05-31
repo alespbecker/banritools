@@ -73,10 +73,11 @@ function ProductRow({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card p-4 transition-all duration-200",
+        "rounded-xl border bg-gradient-to-br p-4 transition-all duration-200",
+        gradient,
         filled
-          ? "border-success/40 bg-success/5 shadow-sm"
-          : "border-border hover:border-primary/40",
+          ? "border-success/50 shadow-sm ring-1 ring-success/20"
+          : "border-border hover:border-primary/40 hover:shadow-sm",
       )}
     >
       <div className="mb-3 flex items-start justify-between gap-3">
