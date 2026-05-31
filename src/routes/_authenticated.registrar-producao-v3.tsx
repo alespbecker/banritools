@@ -110,12 +110,13 @@ function ProductRow({
             <Label htmlFor={`q-${product.id}`} className="text-xs text-muted-foreground">
               Quantidade
             </Label>
-            <Input
+            <NumberInput
               id={`q-${product.id}`}
-              type="number" min="0" step="1" inputMode="numeric"
+              min={0}
+              step={1}
               placeholder="0"
               value={values.quantity || ""}
-              onChange={(e) => onChange("quantity", Number(e.target.value) || 0)}
+              onValueChange={(v) => onChange("quantity", v)}
               className="mt-1"
             />
           </div>
@@ -125,12 +126,14 @@ function ProductRow({
             <Label htmlFor={`a-${product.id}`} className="text-xs text-muted-foreground">
               Valor (R$)
             </Label>
-            <Input
+            <NumberInput
               id={`a-${product.id}`}
-              type="number" min="0" step="0.01" inputMode="decimal"
+              min={0}
+              step={0.01}
+              decimals={2}
               placeholder="0,00"
               value={values.amount || ""}
-              onChange={(e) => onChange("amount", Number(e.target.value) || 0)}
+              onValueChange={(v) => onChange("amount", v)}
               className="mt-1"
             />
           </div>
