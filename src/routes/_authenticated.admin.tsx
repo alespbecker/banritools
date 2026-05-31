@@ -444,7 +444,8 @@ function AdminDashboardPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ExportDialog
-            title={`Relatório bruto — ${monthRange.label}`}
+            title="Relatório bruto de lançamentos"
+            subtitle={`Período: ${monthRange.label}`}
             filenameBase="banritools-relatorios"
             columns={rawColumns}
             rows={rawRows}
