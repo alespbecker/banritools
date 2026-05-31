@@ -56,29 +56,25 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
 
   return (
     <aside
+      onMouseEnter={() => !forceExpanded && setCollapsed(false)}
+      onMouseLeave={() => !forceExpanded && setCollapsed(true)}
       className={cn(
-        "flex h-full flex-col border border-border/60 bg-sidebar/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/20 overflow-hidden transition-all duration-200",
+        "flex h-full flex-col border border-border/60 bg-sidebar/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/20 overflow-hidden transition-[width] duration-200 ease-out",
         isExpanded ? "w-60" : "w-16"
       )}
     >
 
-      <div className="flex h-14 items-center justify-between border-b border-border/60 px-4">
-        {isExpanded && (
-          <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
-            BanriTools
-          </span>
-        )}
-        {!forceExpanded && (
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="rounded-md p-1 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            title={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
-            aria-label={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
-          >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </button>
-        )}
+      <div className="flex h-14 items-center justify-center border-b border-border/60 px-4">
+        {/* Placeholder para o logotipo do banco */}
+        <div
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-dashed border-border/70 bg-muted/30 text-[10px] font-medium text-muted-foreground"
+          aria-label="Logotipo (placeholder)"
+          title="Logotipo (placeholder)"
+        >
+          logo
+        </div>
       </div>
+
 
       <nav className="flex-1 overflow-y-auto space-y-1 p-2">
         {navItems.filter((i) => !i.adminOnly || isAdminLike).map((item) => {
