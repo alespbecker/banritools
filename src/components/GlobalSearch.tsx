@@ -45,9 +45,8 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
 
   const go = (to: string) => { onOpenChange(false); navigate({ to }); };
 
-  const groups: Result["group"][] = ["Contatos", "Campanhas", "Produtos", "Produção"];
+  const groups: Result["group"][] = ["Campanhas", "Produtos", "Produção"];
   const iconFor = (g: Result["group"]) => {
-    if (g === "Contatos") return <Users className="h-4 w-4" />;
     if (g === "Campanhas") return <Megaphone className="h-4 w-4" />;
     if (g === "Produtos") return <Package className="h-4 w-4" />;
     return <FileText className="h-4 w-4" />;
