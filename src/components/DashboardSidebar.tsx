@@ -34,7 +34,7 @@ interface DashboardSidebarProps {
 }
 
 export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, forceExpanded, userRole }: DashboardSidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const location = useLocation();
   const { user: _user } = useAuth();
 
@@ -57,10 +57,11 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
   return (
     <aside
       className={cn(
-        "flex h-full flex-col border-r border-border bg-sidebar transition-all duration-200",
+        "flex h-full flex-col border border-border/60 bg-sidebar/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/20 overflow-hidden transition-all duration-200",
         isExpanded ? "w-60" : "w-16"
       )}
     >
+
       <div className="flex h-14 items-center justify-between border-b border-border px-4">
         {isExpanded && (
           <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
