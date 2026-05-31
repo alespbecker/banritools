@@ -250,7 +250,7 @@ function AdminProductsPage() {
           onSaved={() => { setEditing(null); load(); }}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }
 
