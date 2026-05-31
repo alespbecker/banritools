@@ -23,7 +23,7 @@ export interface AuthState {
   isLoading: boolean;
   isAuthenticated: boolean;
   userRole: AppRole | null;
-  profile: { id: string; name: string | null; email: string | null; agency_id: string | null } | null;
+  profile: { id: string; name: string | null; email: string | null; agency_id: string | null; avatar_url: string | null } | null;
 }
 
 interface AuthContextValue extends AuthState {
