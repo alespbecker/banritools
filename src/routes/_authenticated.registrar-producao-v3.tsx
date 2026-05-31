@@ -422,7 +422,7 @@ function Page() {
           </div>
         )}
 
-        <div className="sticky bottom-0 -mx-4 border-t border-primary/20 bg-primary px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.25)] backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border sm:shadow-none">
+        <div className="sticky bottom-0 -mx-4 border-t border-primary/20 bg-primary/85 px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.25)] backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border sm:shadow-none">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0 text-xs text-primary-foreground/80">
               {summary.count > 0 ? (
