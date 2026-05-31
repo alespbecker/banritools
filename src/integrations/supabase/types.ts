@@ -645,24 +645,33 @@ export type Database = {
       profiles: {
         Row: {
           agency_id: string | null
+          avatar_url: string | null
           created_at: string
           email: string | null
           id: string
+          job_title: string | null
           name: string | null
+          phone: string | null
         }
         Insert: {
           agency_id?: string | null
+          avatar_url?: string | null
           created_at?: string
           email?: string | null
           id: string
+          job_title?: string | null
           name?: string | null
+          phone?: string | null
         }
         Update: {
           agency_id?: string | null
+          avatar_url?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          job_title?: string | null
           name?: string | null
+          phone?: string | null
         }
         Relationships: [
           {
