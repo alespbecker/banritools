@@ -422,7 +422,14 @@ function Page() {
           </div>
         )}
 
-        <div className="sticky bottom-3 mx-2 rounded-2xl border border-primary/30 bg-primary/55 px-4 py-3 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.4)] [backdrop-filter:blur(24px)_saturate(160%)] [-webkit-backdrop-filter:blur(24px)_saturate(160%)] sm:mx-0 sm:bottom-0 sm:rounded-xl sm:shadow-none">
+        <div
+          className="sticky bottom-3 rounded-2xl border border-primary/30 bg-primary/55 px-4 py-3 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.4)] sm:bottom-0 sm:rounded-xl sm:shadow-none"
+          style={{
+            backdropFilter: "blur(24px) saturate(160%)",
+            WebkitBackdropFilter: "blur(24px) saturate(160%)",
+          }}
+        >
+
           <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:text-left">
             <div className="min-w-0 text-xs text-primary-foreground/80">
               {summary.count > 0 ? (
