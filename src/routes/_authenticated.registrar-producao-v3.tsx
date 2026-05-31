@@ -45,12 +45,14 @@ function ProductRow({
   product,
   variants,
   values,
+  gradient,
   onChange,
   onVariant,
 }: {
   product: Product;
   variants: ProductVariant[];
   values: Values;
+  gradient: string;
   onChange: (key: "quantity" | "amount", v: number) => void;
   onVariant: (type: string, variantId: string) => void;
 }) {
