@@ -11,6 +11,10 @@ import { toast } from "sonner";
 import { Megaphone, Plus, Trash2, Users } from "lucide-react";
 import { logAudit } from "@/features/audit/log";
 import { EmptyState } from "@/components/states/EmptyState";
+import {
+  PageContainer,
+  PageHeader,
+} from "@/components/ds";
 
 export const Route = createFileRoute("/_authenticated/campanhas")({
   head: () => ({ meta: [{ title: "Campanhas — BanriTools" }] }),

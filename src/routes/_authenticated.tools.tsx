@@ -3,6 +3,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Wrench } from "lucide-react";
 import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
+import {
+  PageContainer,
+  PageHeader,
+} from "@/components/ds";
 
 
 export const Route = createFileRoute("/_authenticated/tools")({
