@@ -150,6 +150,6 @@ function Page() {
           </div>
         ))}
       </div>
-    </div>
+    </PageContainer>
   );
 }
