@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserData = useCallback(async (userId: string) => {
     const [profileRes, roleRes] = await Promise.all([
-      supabase.from("profiles").select("id, name, email, agency_id").eq("id", userId).maybeSingle(),
+      supabase.from("profiles").select("id, name, email, agency_id, avatar_url").eq("id", userId).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
     ]);
     setState((prev) => ({
