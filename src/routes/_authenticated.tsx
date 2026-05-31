@@ -63,7 +63,7 @@ function AuthenticatedLayout() {
         </Sheet>
       )}
 
-      <div className={cn("flex flex-1 flex-col overflow-hidden", !isMobile && "pl-[88px]")}>
+      <div className={cn("flex flex-1 flex-col overflow-hidden", !isMobile && "pl-[80px]")}>
         <Topbar
           userName={profile?.name ?? null}
           userRole={userRole}

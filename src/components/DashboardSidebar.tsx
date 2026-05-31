@@ -4,30 +4,24 @@ import {
   Wrench, Settings, LogOut,
   Sun, Moon, Shield, Package, Target, Megaphone,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import type { AppRole } from "@/features/auth/types";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 // Navegação principal — experiência atual do produto.
 const navItems = [
-  { label: "Início", to: "/dashboard-v3", icon: LayoutDashboard, adminOnly: false, hint: "Sua central executiva" },
-  { label: "Painel da Agência", to: "/admin", icon: Shield, adminOnly: true, hint: "Visão consolidada do time + gestão de usuários" },
-  { label: "Registrar Produção", to: "/registrar-producao-v3", icon: FileText, adminOnly: false, hint: "Lançar vendas e produtos do dia" },
-  { label: "Histórico", to: "/historico", icon: History, adminOnly: false, hint: "Ver e editar lançamentos passados" },
-  { label: "Ranking", to: "/ranking-v3", icon: Trophy, adminOnly: false, hint: "Classificação mensal da agência" },
-  { label: "Contatos", to: "/contacts-v3", icon: Users, adminOnly: false, hint: "Gerenciar contatos e follow-ups" },
-  { label: "Campanhas", to: "/campanhas", icon: Megaphone, adminOnly: false, hint: "Campanhas comerciais da agência" },
-  { label: "Metas", to: "/metas", icon: Target, adminOnly: false, hint: "Metas individuais e da agência" },
-  { label: "Ferramentas", to: "/tools", icon: Wrench, adminOnly: false, hint: "Acessar ferramentas auxiliares" },
-  { label: "Produtos", to: "/admin/produtos", icon: Package, adminOnly: true, hint: "Catálogo de métricas (admin)" },
-  { label: "Configurações", to: "/settings", icon: Settings, adminOnly: false, hint: "Editar perfil e preferências" },
+  { label: "Início", to: "/dashboard-v3", icon: LayoutDashboard, adminOnly: false },
+  { label: "Painel da Agência", to: "/admin", icon: Shield, adminOnly: true },
+  { label: "Registrar Produção", to: "/registrar-producao-v3", icon: FileText, adminOnly: false },
+  { label: "Histórico", to: "/historico", icon: History, adminOnly: false },
+  { label: "Ranking", to: "/ranking-v3", icon: Trophy, adminOnly: false },
+  { label: "Contatos", to: "/contacts-v3", icon: Users, adminOnly: false },
+  { label: "Campanhas", to: "/campanhas", icon: Megaphone, adminOnly: false },
+  { label: "Metas", to: "/metas", icon: Target, adminOnly: false },
+  { label: "Ferramentas", to: "/tools", icon: Wrench, adminOnly: false },
+  { label: "Produtos", to: "/admin/produtos", icon: Package, adminOnly: true },
+  { label: "Configurações", to: "/settings", icon: Settings, adminOnly: false },
 ] as const;
 
 interface DashboardSidebarProps {
