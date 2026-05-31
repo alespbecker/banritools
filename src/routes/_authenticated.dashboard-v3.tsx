@@ -391,11 +391,11 @@ function Page() {
             onAction={() => navigate({ to: "/registrar-producao-v3" })}
           />
           <ActionCard
-            title="Contatos"
-            description="Gerenciar leads e follow-ups"
-            icon={UserPlus}
-            ctaLabel="Abrir"
-            onAction={() => navigate({ to: "/contacts-v3" })}
+            title="Ranking"
+            description="Sua posição e evolução no mês"
+            icon={Trophy}
+            ctaLabel="Ver"
+            onAction={() => navigate({ to: "/ranking-v3" })}
           />
           <ActionCard
             title="Campanhas"
