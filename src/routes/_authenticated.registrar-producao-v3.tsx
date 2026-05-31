@@ -359,16 +359,20 @@ function Page() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <InfoCard title="Data do lançamento">
-          <div className="flex flex-wrap items-center gap-3">
-            <Label htmlFor="entry-date" className="sr-only">Data</Label>
+        <div className="flex flex-wrap items-end justify-between gap-3 px-1">
+          <div className="space-y-1.5">
+            <Label htmlFor="entry-date" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Data do lançamento
+            </Label>
             <Input
               id="entry-date"
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="max-w-xs"
+              className="h-11 max-w-[220px] text-base font-medium"
             />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant={summary.count > 0 ? "success" : "neutral"}>
               {summary.count} preenchido{summary.count === 1 ? "" : "s"}
             </Badge>
@@ -376,7 +380,7 @@ function Page() {
               <Badge variant="info">+{summary.points.toFixed(0)} pts</Badge>
             )}
           </div>
-        </InfoCard>
+        </div>
 
         {products.length === 0 ? (
           <AlertCard
