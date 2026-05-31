@@ -92,7 +92,7 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
               title={item.hint}
               aria-label={`${item.label} — ${item.hint}`}
               className={cn(
-                "flex items-center gap-3 rounded-md py-2 pl-3 pr-3 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-md py-2 pl-4 pr-3 text-sm font-medium transition-colors",
                 isActive
                   ? "bg-sidebar-primary text-sidebar-primary-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -111,7 +111,7 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
             onClick={onToggleTheme}
             title={theme === "dark" ? "Mudar para modo claro" : "Mudar para modo escuro"}
             aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
-            className="flex w-full items-center gap-3 rounded-md py-2 pl-3 pr-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            className="flex w-full items-center gap-3 rounded-md py-2 pl-4 pr-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             {theme === "dark" ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
             {isExpanded && <span className="whitespace-nowrap">{theme === "dark" ? "Modo Claro" : "Modo Escuro"}</span>}
@@ -121,7 +121,7 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
           onClick={onSignOut}
           title="Encerrar a sessão e voltar ao login"
           aria-label="Sair da conta"
-          className="flex w-full items-center gap-3 rounded-md py-2 pl-3 pr-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          className="flex w-full items-center gap-3 rounded-md py-2 pl-4 pr-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         >
           <LogOut className="h-4 w-4 shrink-0" />
           {isExpanded && <span className="whitespace-nowrap">Sair</span>}
