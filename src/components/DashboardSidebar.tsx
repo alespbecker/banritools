@@ -4,7 +4,7 @@ import {
   Wrench, Settings, LogOut,
   Sun, Moon, Shield, Package, Target, Megaphone,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import type { AppRole } from "@/features/auth/types";
