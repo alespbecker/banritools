@@ -1,7 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
-  LayoutDashboard, FileText, History, Trophy, Users,
-  Wrench, Settings, LogOut,
+  LayoutDashboard, FileText, Trophy,
+  Wrench, LogOut,
   Sun, Moon, Shield, Package, Target, Megaphone,
 } from "lucide-react";
 import { useState } from "react";
