@@ -64,8 +64,8 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
       )}
     >
 
-      <div className="flex h-14 items-center justify-center border-b border-border/60 px-4">
-        {/* Placeholder para o logotipo do banco */}
+      <div className="flex h-14 items-center gap-3 border-b border-border/60 px-4">
+        {/* Placeholder para o logotipo do banco — alinhado à esquerda, mesmo eixo dos ícones */}
         <div
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-dashed border-border/70 bg-muted/30 text-[10px] font-medium text-muted-foreground"
           aria-label="Logotipo (placeholder)"
@@ -73,6 +73,11 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
         >
           logo
         </div>
+        {isExpanded && (
+          <span className="whitespace-nowrap text-sm font-semibold tracking-tight text-sidebar-foreground">
+            Banritools
+          </span>
+        )}
       </div>
 
 
@@ -87,15 +92,14 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
               title={item.hint}
               aria-label={`${item.label} — ${item.hint}`}
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-md py-2 pl-3 pr-3 text-sm font-medium transition-colors",
                 isActive
                   ? "bg-sidebar-primary text-sidebar-primary-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               )}
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              {isExpanded && <span className="flex-1">{item.label}</span>}
-
+              {isExpanded && <span className="whitespace-nowrap">{item.label}</span>}
             </Link>
           );
         })}
@@ -107,20 +111,20 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
             onClick={onToggleTheme}
             title={theme === "dark" ? "Mudar para modo claro" : "Mudar para modo escuro"}
             aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
-            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            className="flex w-full items-center gap-3 rounded-md py-2 pl-3 pr-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             {theme === "dark" ? <Sun className="h-4 w-4 shrink-0" /> : <Moon className="h-4 w-4 shrink-0" />}
-            {isExpanded && <span>{theme === "dark" ? "Modo Claro" : "Modo Escuro"}</span>}
+            {isExpanded && <span className="whitespace-nowrap">{theme === "dark" ? "Modo Claro" : "Modo Escuro"}</span>}
           </button>
         )}
         <button
           onClick={onSignOut}
           title="Encerrar a sessão e voltar ao login"
           aria-label="Sair da conta"
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          className="flex w-full items-center gap-3 rounded-md py-2 pl-3 pr-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          {isExpanded && <span>Sair</span>}
+          {isExpanded && <span className="whitespace-nowrap">Sair</span>}
         </button>
       </div>
     </aside>
