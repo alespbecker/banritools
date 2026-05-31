@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { AppLoading } from "@/components/AppLoading";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
