@@ -21,6 +21,18 @@ import { cn } from "@/lib/utils";
 import type { Product, ProductVariant } from "@/features/production/types";
 import { VARIANT_TYPE_LABEL } from "@/features/production/types";
 
+const CATEGORY_GRADIENT: Record<string, string> = {
+  Seguros: "from-blue-500/10 to-cyan-500/10",
+  Capitalização: "from-purple-500/10 to-pink-500/10",
+  Crédito: "from-emerald-500/10 to-teal-500/10",
+  Cartões: "from-orange-500/10 to-amber-500/10",
+  Recuperação: "from-rose-500/10 to-red-500/10",
+  PJ: "from-indigo-500/10 to-blue-500/10",
+  "Serviços Bancários": "from-slate-500/10 to-zinc-500/10",
+  Relacionamento: "from-fuchsia-500/10 to-pink-500/10",
+  Investimentos: "from-violet-500/10 to-purple-500/10",
+};
+
 export const Route = createFileRoute("/_authenticated/registrar-producao-v3")({
   head: () => ({ meta: [{ title: "Registrar Produção — BanriTools" }] }),
   component: Page,
