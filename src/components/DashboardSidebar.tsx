@@ -4,7 +4,7 @@ import {
   Wrench, Settings, LogOut,
   Sun, Moon, Shield, Package, Target, Megaphone,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import type { AppRole } from "@/features/auth/types";
@@ -56,16 +56,65 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
     return location.pathname === to || location.pathname.startsWith(to + "/");
   };
 
-  // Tooltip helper: só ativa quando o menu está recolhido (no expanded a label já aparece).
+  // Contagem de vezes que cada tooltip foi mostrada (por label).
+  // Regra: primeiras 2 exibições => 3.5s de hover parado; 3ª em diante => 10s.
+  const tooltipShowCountRef = useRef<Map<string, number>>(new Map());
+
+  // Tooltip helper: controlado, com delay dinâmico baseado no histórico de exibições.
   const MaybeTooltip = ({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) => {
+    const [open, setOpen] = useState(false);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    }, []);
+
     if (isExpanded) return <>{children}</>;
+
+    const clearTimer = () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+
+    const scheduleOpen = () => {
+      clearTimer();
+      const shown = tooltipShowCountRef.current.get(label) ?? 0;
+      const delay = shown < 2 ? 3500 : 10000;
+      timerRef.current = setTimeout(() => {
+        tooltipShowCountRef.current.set(label, shown + 1);
+        setOpen(true);
+      }, delay);
+    };
+
+    const handleClose = () => {
+      clearTimer();
+      setOpen(false);
+    };
+
     return (
-      <Tooltip delayDuration={150}>
-        <TooltipTrigger asChild>{children}</TooltipTrigger>
-        <TooltipContent side="right" sideOffset={12} className="bg-popover text-popover-foreground border border-border">
+      <Tooltip open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
+        <TooltipTrigger asChild>
+          <span
+            onMouseEnter={scheduleOpen}
+            onMouseLeave={handleClose}
+            onMouseMove={() => { if (!open) scheduleOpen(); }}
+            onFocus={scheduleOpen}
+            onBlur={handleClose}
+            className="block"
+          >
+            {children}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent
+          side="right"
+          sideOffset={12}
+          className="rounded-md border border-border bg-popover px-3 py-2 text-popover-foreground shadow-lg data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out data-[state=open]:zoom-in-100 data-[state=closed]:zoom-out-100 data-[side=right]:slide-in-from-left-0"
+        >
           <div className="flex flex-col">
-            <span className="text-xs font-medium">{label}</span>
-            {hint && <span className="text-[10px] text-muted-foreground">{hint}</span>}
+            <span className="text-xs font-semibold leading-tight">{label}</span>
+            {hint && <span className="mt-0.5 text-[11px] text-muted-foreground leading-snug">{hint}</span>}
           </div>
         </TooltipContent>
       </Tooltip>
