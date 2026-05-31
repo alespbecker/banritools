@@ -422,26 +422,26 @@ function Page() {
           </div>
         )}
 
-        <div className="sticky bottom-0 -mx-4 border-t border-border bg-background/85 px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.25)] backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border sm:shadow-none">
+        <div className="sticky bottom-0 -mx-4 border-t border-primary/20 bg-primary px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.25)] backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border sm:shadow-none">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0 text-xs text-muted-foreground">
+            <div className="min-w-0 text-xs text-primary-foreground/80">
               {summary.count > 0 ? (
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <Badge variant="success">{summary.count} produto{summary.count === 1 ? "" : "s"}</Badge>
+                  <Badge variant="outline" className="border-primary-foreground/30 text-primary-foreground bg-primary-foreground/10">{summary.count} produto{summary.count === 1 ? "" : "s"}</Badge>
                   {summary.totalAmt > 0 && (
-                    <Badge variant="neutral" className="tabular-nums">
+                    <Badge variant="outline" className="border-primary-foreground/30 text-primary-foreground bg-primary-foreground/10 tabular-nums">
                       R$ {summary.totalAmt.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                     </Badge>
                   )}
                   {summary.points > 0 && (
-                    <Badge variant="info" className="tabular-nums">+{summary.points.toFixed(0)} pts</Badge>
+                    <Badge variant="outline" className="border-primary-foreground/30 text-primary-foreground bg-primary-foreground/10 tabular-nums">+{summary.points.toFixed(0)} pts</Badge>
                   )}
                 </div>
               ) : (
                 "Preencha ao menos um produto para salvar"
               )}
             </div>
-            <Button type="submit" disabled={saving || summary.count === 0} size="lg" className="min-w-[180px]">
+            <Button type="submit" disabled={saving || summary.count === 0} size="lg" className="min-w-[180px] bg-primary-foreground text-primary hover:bg-primary-foreground/90">
               <Save className="h-4 w-4" />
               {saving ? "Salvando..." : `Salvar lançamento${summary.count === 1 ? "" : "s"}`}
             </Button>
