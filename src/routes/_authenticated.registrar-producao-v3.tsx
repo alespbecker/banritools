@@ -21,6 +21,18 @@ import { cn } from "@/lib/utils";
 import type { Product, ProductVariant } from "@/features/production/types";
 import { VARIANT_TYPE_LABEL } from "@/features/production/types";
 
+const CATEGORY_GRADIENT: Record<string, string> = {
+  Seguros: "from-blue-500/10 to-cyan-500/10",
+  Capitalização: "from-purple-500/10 to-pink-500/10",
+  Crédito: "from-emerald-500/10 to-teal-500/10",
+  Cartões: "from-orange-500/10 to-amber-500/10",
+  Recuperação: "from-rose-500/10 to-red-500/10",
+  PJ: "from-indigo-500/10 to-blue-500/10",
+  "Serviços Bancários": "from-slate-500/10 to-zinc-500/10",
+  Relacionamento: "from-fuchsia-500/10 to-pink-500/10",
+  Investimentos: "from-violet-500/10 to-purple-500/10",
+};
+
 export const Route = createFileRoute("/_authenticated/registrar-producao-v3")({
   head: () => ({ meta: [{ title: "Registrar Produção — BanriTools" }] }),
   component: Page,
@@ -33,12 +45,14 @@ function ProductRow({
   product,
   variants,
   values,
+  gradient,
   onChange,
   onVariant,
 }: {
   product: Product;
   variants: ProductVariant[];
   values: Values;
+  gradient: string;
   onChange: (key: "quantity" | "amount", v: number) => void;
   onVariant: (type: string, variantId: string) => void;
 }) {
@@ -59,10 +73,11 @@ function ProductRow({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card p-4 transition-all duration-200",
+        "rounded-xl border bg-gradient-to-br p-4 transition-all duration-200",
+        gradient,
         filled
-          ? "border-success/40 bg-success/5 shadow-sm"
-          : "border-border hover:border-primary/40",
+          ? "border-success/50 shadow-sm ring-1 ring-success/20"
+          : "border-border hover:border-primary/40 hover:shadow-sm",
       )}
     >
       <div className="mb-3 flex items-start justify-between gap-3">
@@ -288,7 +303,7 @@ function Page() {
   if (loading) return <PageSkeleton kpis={0} rows={8} />;
 
   return (
-    <PageContainer size="md">
+    <PageContainer size="lg">
       <PageHeader
         icon={<FileText className="h-5 w-5" />}
         title="Registrar Produção"
@@ -383,13 +398,14 @@ function Page() {
                       <Badge variant="success">{filledInCat} preenchido{filledInCat === 1 ? "" : "s"}</Badge>
                     )}
                   </div>
-                  <div className="grid gap-3">
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     {items.map((p) => (
                       <ProductRow
                         key={p.id}
                         product={p}
                         variants={variantsByProduct.get(p.id) ?? []}
                         values={values[p.id] ?? { quantity: 0, amount: 0, variants: {} }}
+                        gradient={CATEGORY_GRADIENT[category] ?? "from-muted/20 to-muted/5"}
                         onChange={(k, v) => upd(p.id, k, v)}
                         onVariant={(t, vid) => updVariant(p.id, t, vid)}
                       />
