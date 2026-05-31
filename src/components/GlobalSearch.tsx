@@ -22,14 +22,12 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
     if (term.trim().length < 2) { setResults([]); return; }
     setLoading(true);
     const like = `%${term}%`;
-    const [contacts, campaigns, products, entries] = await Promise.all([
-      supabase.from("contacts").select("id, name, phone").ilike("name", like).limit(5),
+    const [campaigns, products, entries] = await Promise.all([
       supabase.from("campaigns").select("id, name, status").ilike("name", like).limit(5),
       supabase.from("products").select("id, name, category").ilike("name", like).limit(5),
       supabase.from("production_entries").select("id, entry_date, notes, product_id, products(name)").ilike("notes", like).limit(5),
     ]);
     const out: Result[] = [];
-    (contacts.data ?? []).forEach((c) => out.push({ id: c.id, label: c.name, hint: c.phone ?? "", to: "/contacts-v3", group: "Contatos" }));
     (campaigns.data ?? []).forEach((c) => out.push({ id: c.id, label: c.name, hint: c.status, to: "/campanhas", group: "Campanhas" }));
     (products.data ?? []).forEach((p) => out.push({ id: p.id, label: p.name, hint: p.category ?? "", to: "/admin/produtos", group: "Produtos" }));
     (entries.data ?? []).forEach((e) => {
