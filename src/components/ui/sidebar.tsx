@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
-import { PanelLeft } from "lucide-react"
+import { PanelLeft, X } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -214,6 +214,14 @@ const Sidebar = React.forwardRef<
               <SheetTitle>Sidebar</SheetTitle>
               <SheetDescription>Displays the mobile sidebar.</SheetDescription>
             </SheetHeader>
+            <button
+              type="button"
+              onClick={() => setOpenMobile(false)}
+              aria-label="Fechar menu"
+              className="absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-md text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+            >
+              <X className="h-5 w-5" />
+            </button>
             <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>
         </Sheet>
