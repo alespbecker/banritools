@@ -180,7 +180,7 @@
 
 /* Light theme — off-white sereno alinhado ao Design System v1 */
 .light {
-  --background: oklch(0.985 0.004 250);
+  --background: oklch(0.955 0.006 250);
   --foreground: oklch(0.20 0.03 260);
 
   --card: oklch(1 0 0);
