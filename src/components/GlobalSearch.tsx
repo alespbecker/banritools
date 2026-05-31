@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Megaphone, Package, FileText } from "lucide-react";
+import { Megaphone, Package, FileText } from "lucide-react";
 
 interface Result {
   id: string;
