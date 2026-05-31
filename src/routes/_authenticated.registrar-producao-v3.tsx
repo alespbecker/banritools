@@ -363,7 +363,7 @@ function Page() {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="max-w-xs"
+              className="max-w-xs bg-slate-600/5 transition-all"
             />
             <Badge variant={summary.count > 0 ? "success" : "neutral"}>
               {summary.count} preenchido{summary.count === 1 ? "" : "s"}
