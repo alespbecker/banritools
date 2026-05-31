@@ -62,7 +62,7 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
       )}
     >
 
-      <div className="flex h-14 items-center justify-between border-b border-border px-4">
+      <div className="flex h-14 items-center justify-between border-b border-border/60 px-4">
         {isExpanded && (
           <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
             BanriTools
