@@ -303,7 +303,7 @@ function Page() {
   if (loading) return <PageSkeleton kpis={0} rows={8} />;
 
   return (
-    <PageContainer size="md">
+    <PageContainer size="lg">
       <PageHeader
         icon={<FileText className="h-5 w-5" />}
         title="Registrar Produção"
