@@ -97,7 +97,7 @@ function ProductRow({
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <Badge variant="neutral">{product.points_per_unit} pts/{product.unit}</Badge>
+          <Badge variant="neutral" className="text-[10px] leading-none px-1.5 py-0.5 whitespace-nowrap">{product.points_per_unit} pts/{product.unit}</Badge>
           {filled && points > 0 && (
             <span className="text-xs font-medium text-success">+{points.toFixed(0)} pts</span>
           )}
