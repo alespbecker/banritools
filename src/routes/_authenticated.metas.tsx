@@ -200,6 +200,6 @@ function Page() {
           );
         })}
       </div>
-    </div>
+    </PageContainer>
   );
 }
