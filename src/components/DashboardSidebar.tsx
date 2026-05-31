@@ -14,14 +14,11 @@ const navItems = [
   { label: "Início", to: "/dashboard-v3", icon: LayoutDashboard, adminOnly: false },
   { label: "Painel da Agência", to: "/admin", icon: Shield, adminOnly: true },
   { label: "Registrar Produção", to: "/registrar-producao-v3", icon: FileText, adminOnly: false },
-  { label: "Histórico", to: "/historico", icon: History, adminOnly: false },
   { label: "Ranking", to: "/ranking-v3", icon: Trophy, adminOnly: false },
-  { label: "Contatos", to: "/contacts-v3", icon: Users, adminOnly: false },
   { label: "Campanhas", to: "/campanhas", icon: Megaphone, adminOnly: false },
   { label: "Metas", to: "/metas", icon: Target, adminOnly: false },
   { label: "Ferramentas", to: "/tools", icon: Wrench, adminOnly: false },
   { label: "Produtos", to: "/admin/produtos", icon: Package, adminOnly: true },
-  { label: "Configurações", to: "/settings", icon: Settings, adminOnly: false },
 ] as const;
 
 interface DashboardSidebarProps {
