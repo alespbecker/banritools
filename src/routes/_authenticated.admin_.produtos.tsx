@@ -22,6 +22,13 @@ import {
 } from "lucide-react";
 import type { Product, ProductVariant, MetricType, VariantType } from "@/features/production/types";
 import { VARIANT_TYPE_LABEL } from "@/features/production/types";
+import {
+  PageContainer,
+  PageHeader,
+  DashboardGrid,
+  KpiCard,
+  InfoCard,
+} from "@/components/ds";
 
 export const Route = createFileRoute("/_authenticated/admin_/produtos")({
   head: () => ({
