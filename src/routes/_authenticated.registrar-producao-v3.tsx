@@ -423,7 +423,7 @@ function Page() {
         )}
 
         <div
-          className="sticky bottom-3 rounded-2xl border border-primary/20 bg-primary px-4 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.35),0_2px_8px_rgba(0,0,0,0.25)] sm:bottom-0 sm:rounded-xl"
+          className="sticky bottom-1 rounded-2xl border border-primary/20 bg-primary px-4 py-3 shadow-[0_-12px_32px_-8px_rgba(0,0,0,0.35),0_-2px_8px_-2px_rgba(0,0,0,0.25)] sm:bottom-1 sm:rounded-xl"
         >
 
           <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:text-left">
