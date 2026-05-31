@@ -115,7 +115,7 @@ function ProductRow({
               placeholder="0"
               value={values.quantity || ""}
               onChange={(e) => onChange("quantity", Number(e.target.value) || 0)}
-              className="mt-1"
+              className="mt-1 bg-slate-600/5 focus:bg-white dark:focus:bg-slate-900 transition-all"
             />
           </div>
         )}
@@ -130,7 +130,7 @@ function ProductRow({
               placeholder="0,00"
               value={values.amount || ""}
               onChange={(e) => onChange("amount", Number(e.target.value) || 0)}
-              className="mt-1"
+              className="mt-1 bg-slate-600/5 focus:bg-white dark:focus:bg-slate-900 transition-all"
             />
           </div>
         )}
@@ -146,7 +146,7 @@ function ProductRow({
                 value={values.variants[type] ?? ""}
                 onValueChange={(v) => onVariant(type, v)}
               >
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger className="mt-1 bg-slate-600/5 transition-all"><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
                   {list.map((v) => (
                     <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
