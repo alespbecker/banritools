@@ -2,14 +2,14 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Megaphone, Package, FileText } from "lucide-react";
+import { Megaphone, Package, FileText } from "lucide-react";
 
 interface Result {
   id: string;
   label: string;
   hint?: string;
   to: string;
-  group: "Contatos" | "Campanhas" | "Produtos" | "Produção";
+  group: "Campanhas" | "Produtos" | "Produção";
 }
 
 export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
@@ -22,14 +22,12 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
     if (term.trim().length < 2) { setResults([]); return; }
     setLoading(true);
     const like = `%${term}%`;
-    const [contacts, campaigns, products, entries] = await Promise.all([
-      supabase.from("contacts").select("id, name, phone").ilike("name", like).limit(5),
+    const [campaigns, products, entries] = await Promise.all([
       supabase.from("campaigns").select("id, name, status").ilike("name", like).limit(5),
       supabase.from("products").select("id, name, category").ilike("name", like).limit(5),
       supabase.from("production_entries").select("id, entry_date, notes, product_id, products(name)").ilike("notes", like).limit(5),
     ]);
     const out: Result[] = [];
-    (contacts.data ?? []).forEach((c) => out.push({ id: c.id, label: c.name, hint: c.phone ?? "", to: "/contacts-v3", group: "Contatos" }));
     (campaigns.data ?? []).forEach((c) => out.push({ id: c.id, label: c.name, hint: c.status, to: "/campanhas", group: "Campanhas" }));
     (products.data ?? []).forEach((p) => out.push({ id: p.id, label: p.name, hint: p.category ?? "", to: "/admin/produtos", group: "Produtos" }));
     (entries.data ?? []).forEach((e) => {
@@ -47,9 +45,8 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
 
   const go = (to: string) => { onOpenChange(false); navigate({ to }); };
 
-  const groups: Result["group"][] = ["Contatos", "Campanhas", "Produtos", "Produção"];
+  const groups: Result["group"][] = ["Campanhas", "Produtos", "Produção"];
   const iconFor = (g: Result["group"]) => {
-    if (g === "Contatos") return <Users className="h-4 w-4" />;
     if (g === "Campanhas") return <Megaphone className="h-4 w-4" />;
     if (g === "Produtos") return <Package className="h-4 w-4" />;
     return <FileText className="h-4 w-4" />;

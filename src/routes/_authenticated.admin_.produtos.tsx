@@ -22,6 +22,13 @@ import {
 } from "lucide-react";
 import type { Product, ProductVariant, MetricType, VariantType } from "@/features/production/types";
 import { VARIANT_TYPE_LABEL } from "@/features/production/types";
+import {
+  PageContainer,
+  PageHeader,
+  DashboardGrid,
+  KpiCard,
+  InfoCard,
+} from "@/components/ds";
 
 export const Route = createFileRoute("/_authenticated/admin_/produtos")({
   head: () => ({
@@ -124,44 +131,35 @@ function AdminProductsPage() {
   const activeProducts = products.filter((p) => p.active).length;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="rounded-xl border border-border bg-gradient-to-br from-primary/5 via-background to-background p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-              <Package className="h-3.5 w-3.5" />
-              Catálogo
-            </div>
-            <h1 className="text-2xl font-semibold tracking-tight">Produtos</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Catálogo dos produtos vendidos na agência. Cada produto define os campos do lançamento e suas variantes.
-            </p>
-          </div>
-          <div className="hidden sm:flex gap-3">
-            <div className="rounded-lg border border-border bg-card px-4 py-3 min-w-[110px]">
-              <div className="text-xs text-muted-foreground">Produtos</div>
-              <div className="text-xl font-medium tabular-nums">{products.length}</div>
-              <div className="text-[10px] text-muted-foreground">{activeProducts} ativos</div>
-            </div>
-            <div className="rounded-lg border border-border bg-card px-4 py-3 min-w-[110px]">
-              <div className="text-xs text-muted-foreground">Variantes</div>
-              <div className="text-xl font-medium tabular-nums">{totalVariants}</div>
-              <div className="text-[10px] text-muted-foreground">subtipos / modalidades</div>
-            </div>
-          </div>
-        </div>
+    <PageContainer>
+      <PageHeader
+        icon={<Package className="h-5 w-5" />}
+        title="Produtos"
+        description="Catálogo dos produtos vendidos na agência. Cada produto define os campos do lançamento e suas variantes."
+      />
 
-        <div className="mt-5 relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar produto, slug ou categoria…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+      <DashboardGrid cols={4}>
+        <KpiCard label="Produtos" value={products.length} icon={Package} tone="primary" description={`${activeProducts} ativos`} />
+        <KpiCard label="Variantes" value={totalVariants} icon={Tag} tone="accent" description="subtipos / modalidades" />
+      </DashboardGrid>
+
+      <InfoCard
+        title="Buscar"
+        description="Produto, slug ou categoria"
+        bodyless
+      >
+        <div className="px-5 py-3">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar produto, slug ou categoria…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
         </div>
-      </div>
+      </InfoCard>
 
       {/* Categorias */}
       {grouped.length === 0 ? (
@@ -252,7 +250,7 @@ function AdminProductsPage() {
           onSaved={() => { setEditing(null); load(); }}
         />
       )}
-    </div>
+    </PageContainer>
   );
 }
 

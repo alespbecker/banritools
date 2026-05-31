@@ -349,9 +349,6 @@ function Page() {
                 <Button size="sm" variant="outline" onClick={() => navigate({ to: "/dashboard-v3" })}>
                   Ver início
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => navigate({ to: "/historico" })}>
-                  Ver histórico
-                </Button>
               </div>
             </div>
           </div>

@@ -211,41 +211,23 @@ function Page() {
 
   // Próxima melhor ação
   const nextAction =
-    overdueFollowups > 0
+    stats.todayQty === 0
       ? {
-          title: `Retomar ${overdueFollowups} contato${overdueFollowups === 1 ? "" : "s"}`,
-          description: "Follow-ups em atraso — recupere oportunidades hoje.",
-          icon: Clock,
-          tone: "danger" as const,
-          ctaLabel: "Abrir contatos",
-          onClick: () => navigate({ to: "/contacts-v3" }),
+          title: "Registrar produção do dia",
+          description: "Lance vendas e produtos para acompanhar sua meta.",
+          icon: FileText,
+          tone: "primary" as const,
+          ctaLabel: "Registrar agora",
+          onClick: () => navigate({ to: "/registrar-producao-v3" }),
         }
-      : stats.todayQty === 0
-        ? {
-            title: "Registrar produção do dia",
-            description: "Lance vendas e produtos para acompanhar sua meta.",
-            icon: FileText,
-            tone: "primary" as const,
-            ctaLabel: "Registrar agora",
-            onClick: () => navigate({ to: "/registrar-producao-v3" }),
-          }
-        : pendingContacts > 0
-          ? {
-              title: `Avançar ${pendingContacts} contato${pendingContacts === 1 ? "" : "s"} no funil`,
-              description: "Mova leads novos para a próxima etapa.",
-              icon: Users,
-              tone: "warning" as const,
-              ctaLabel: "Abrir contatos",
-              onClick: () => navigate({ to: "/contacts-v3" }),
-            }
-          : {
-              title: "Tudo em dia",
-              description: "Aproveite para revisar metas e novas oportunidades.",
-              icon: Sparkles,
-              tone: "success" as const,
-              ctaLabel: "Ver metas",
-              onClick: () => navigate({ to: "/metas" }),
-            };
+      : {
+          title: "Tudo em dia",
+          description: "Aproveite para revisar metas e novas oportunidades.",
+          icon: Sparkles,
+          tone: "success" as const,
+          ctaLabel: "Ver metas",
+          onClick: () => navigate({ to: "/metas" }),
+        };
 
   const heroProgress = dailyTarget > 0 ? dailyProgress : monthProgress;
   const heroProgressLabel = dailyTarget > 0 ? "Meta diária" : monthTarget > 0 ? "Meta mensal" : undefined;
@@ -279,23 +261,13 @@ function Page() {
       />
 
       {/* Bloco — Fila operacional */}
-      {priorityCount > 0 && (
+      {goalsAtRisk > 0 && (
         <InfoCard
           title="Ações para hoje"
-          description={`${priorityCount} oportunidade${priorityCount === 1 ? "" : "s"} aguardando você`}
-          actions={<Badge variant="warning">{priorityCount}</Badge>}
+          description={`${goalsAtRisk} oportunidade${goalsAtRisk === 1 ? "" : "s"} aguardando você`}
+          actions={<Badge variant="warning">{goalsAtRisk}</Badge>}
         >
           <div className="space-y-2">
-            {overdueFollowups > 0 && (
-              <PriorityItem
-                tone="danger"
-                count={overdueFollowups}
-                icon={Clock}
-                title="Contatos para retomar"
-                description="Follow-ups em atraso — retome ainda hoje"
-                onClick={() => navigate({ to: "/contacts-v3" })}
-              />
-            )}
             {goalsAtRisk > 0 && (
               <PriorityItem
                 tone="warning"
@@ -304,16 +276,6 @@ function Page() {
                 title="Acelere o ritmo da meta"
                 description="Aumente a produção para fechar o mês forte"
                 onClick={() => navigate({ to: "/metas" })}
-              />
-            )}
-            {pendingContacts > 0 && (
-              <PriorityItem
-                tone="info"
-                count={pendingContacts}
-                icon={ListChecks}
-                title="Próxima oportunidade"
-                description="Avance esses leads para a próxima etapa do funil"
-                onClick={() => navigate({ to: "/contacts-v3" })}
               />
             )}
           </div>
@@ -391,11 +353,11 @@ function Page() {
             onAction={() => navigate({ to: "/registrar-producao-v3" })}
           />
           <ActionCard
-            title="Contatos"
-            description="Gerenciar leads e follow-ups"
-            icon={UserPlus}
-            ctaLabel="Abrir"
-            onAction={() => navigate({ to: "/contacts-v3" })}
+            title="Ranking"
+            description="Sua posição e evolução no mês"
+            icon={Trophy}
+            ctaLabel="Ver"
+            onAction={() => navigate({ to: "/ranking-v3" })}
           />
           <ActionCard
             title="Campanhas"
@@ -418,11 +380,6 @@ function Page() {
       <InfoCard
         title="Últimos lançamentos"
         description={`${monthEntries.length} no mês`}
-        actions={
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/historico">Ver tudo</Link>
-          </Button>
-        }
         bodyless
       >
         {monthEntries.length === 0 ? (

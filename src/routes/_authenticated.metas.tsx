@@ -11,6 +11,10 @@ import { toast } from "sonner";
 import { Plus, Target, Trash2 } from "lucide-react";
 import { logAudit } from "@/features/audit/log";
 import { EmptyState } from "@/components/states/EmptyState";
+import {
+  PageContainer,
+  PageHeader,
+} from "@/components/ds";
 
 export const Route = createFileRoute("/_authenticated/metas")({
   head: () => ({ meta: [{ title: "Metas — BanriTools" }] }),
@@ -122,16 +126,19 @@ function Page() {
   if (loading) return <PageSkeleton kpis={0} rows={4} />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Target className="h-5 w-5 text-primary" />Metas</h1>
-          <p className="text-sm text-muted-foreground">Acompanhamento de metas individuais e da agência</p>
-        </div>
-        {isAdminOrManager && (
-          <Button onClick={() => setShowForm(!showForm)}><Plus className="h-4 w-4 mr-2" />Nova meta</Button>
-        )}
-      </div>
+    <PageContainer>
+      <PageHeader
+        icon={<Target className="h-5 w-5" />}
+        title="Metas"
+        description="Acompanhamento de metas individuais e da agência"
+        actions={
+          isAdminOrManager && (
+            <Button onClick={() => setShowForm(!showForm)}>
+              <Plus className="h-4 w-4 mr-2" />Nova meta
+            </Button>
+          )
+        }
+      />
 
       {showForm && (
         <form onSubmit={handleSave} className="rounded-lg border border-border bg-card p-4 space-y-3">
@@ -193,6 +200,6 @@ function Page() {
           );
         })}
       </div>
-    </div>
+    </PageContainer>
   );
 }

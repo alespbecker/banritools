@@ -3,6 +3,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Wrench } from "lucide-react";
 import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
+import {
+  PageContainer,
+  PageHeader,
+} from "@/components/ds";
 
 
 export const Route = createFileRoute("/_authenticated/tools")({
@@ -31,14 +35,12 @@ function ToolsPage() {
 
   return (
     <DataGate loading={loading} skeleton={<PageSkeleton kpis={0} rows={4} />}>
-      <div>
-        <div className="mb-6">
-          <h1 className="flex items-center gap-2 text-xl font-bold text-foreground">
-            <Wrench className="h-5 w-5 text-[var(--brand-teal)]" aria-hidden="true" />
-            Ferramentas
-          </h1>
-          <p className="text-sm text-muted-foreground">Acesse as ferramentas internas disponíveis</p>
-        </div>
+      <PageContainer>
+        <PageHeader
+          icon={<Wrench className="h-5 w-5" />}
+          title="Ferramentas"
+          description="Acesse as ferramentas internas disponíveis"
+        />
         {tools.length === 0 ? (
           <div className="rounded-lg border border-border bg-card p-6">
             <div className="flex h-32 items-center justify-center">
@@ -55,7 +57,7 @@ function ToolsPage() {
             ))}
           </div>
         )}
-      </div>
+      </PageContainer>
     </DataGate>
   );
 }
