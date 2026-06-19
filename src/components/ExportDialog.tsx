@@ -326,17 +326,18 @@ export function ExportDialog<T>({
     const bandH = 64;
     doc.setFillColor(...BRAND_RGB);
     doc.rect(0, 0, pageW, bandH, "F");
-    drawBrand(doc, margin, 16, 1);
+    const bandCenterY = bandH / 2;
+    drawBrand(doc, margin, bandCenterY, 1);
 
-    // Data à direita
+    // Data à direita — centralizada verticalmente na band
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(255, 255, 255);
     doc.text(
       `Gerado em ${new Date().toLocaleString("pt-BR")}`,
       pageW - margin,
-      bandH - 12,
-      { align: "right" }
+      bandCenterY,
+      { align: "right", baseline: "middle" }
     );
 
     // ===== Título =====
