@@ -63,8 +63,8 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
         isExpanded ? "w-60" : "w-16"
       )}
     >
-      <div className="flex h-14 items-center gap-1 border-b border-border/60 pl-[6px] pr-4">
-        {/* Logotipo BanriTools — centralizado verticalmente com a coluna dos ícones do menu (pl-4 + ícone 16px → centro 24px; logo 36px com pl-[6px] → centro 24px) */}
+      <div className="flex h-14 items-center gap-1 border-b border-border/60 pl-[14px] pr-4">
+        {/* Logotipo BanriTools — centralizado com a coluna dos ícones do menu (nav p-2=8px + link pl-4=16px + metade ícone 8px = 32px; logo 36px com pl-[14px] → centro 14+18=32px) */}
         <Logo size={36} ariaLabel="BanriTools" className="rounded-md" />
         {isExpanded && (
           <span
