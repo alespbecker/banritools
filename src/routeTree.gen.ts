@@ -13,6 +13,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ConviteCodeRouteImport } from './routes/convite.$code'
 import { Route as AuthenticatedToolsRouteImport } from './routes/_authenticated.tools'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
 import { Route as AuthenticatedRegistrarProducaoV3RouteImport } from './routes/_authenticated.registrar-producao-v3'
@@ -33,6 +34,7 @@ import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedCampanhasRouteImport } from './routes/_authenticated.campanhas'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as AuthenticatedAdminProdutosRouteImport } from './routes/_authenticated.admin_.produtos'
+import { Route as AuthenticatedAdminConvitesRouteImport } from './routes/_authenticated.admin_.convites'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -51,6 +53,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConviteCodeRoute = ConviteCodeRouteImport.update({
+  id: '/convite/$code',
+  path: '/convite/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedToolsRoute = AuthenticatedToolsRouteImport.update({
@@ -160,6 +167,12 @@ const AuthenticatedAdminProdutosRoute =
     path: '/admin/produtos',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminConvitesRoute =
+  AuthenticatedAdminConvitesRouteImport.update({
+    id: '/admin_/convites',
+    path: '/admin/convites',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -184,6 +197,8 @@ export interface FileRoutesByFullPath {
   '/registrar-producao-v3': typeof AuthenticatedRegistrarProducaoV3Route
   '/settings': typeof AuthenticatedSettingsRoute
   '/tools': typeof AuthenticatedToolsRoute
+  '/convite/$code': typeof ConviteCodeRoute
+  '/admin/convites': typeof AuthenticatedAdminConvitesRoute
   '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
 }
 export interface FileRoutesByTo {
@@ -209,6 +224,8 @@ export interface FileRoutesByTo {
   '/registrar-producao-v3': typeof AuthenticatedRegistrarProducaoV3Route
   '/settings': typeof AuthenticatedSettingsRoute
   '/tools': typeof AuthenticatedToolsRoute
+  '/convite/$code': typeof ConviteCodeRoute
+  '/admin/convites': typeof AuthenticatedAdminConvitesRoute
   '/admin/produtos': typeof AuthenticatedAdminProdutosRoute
 }
 export interface FileRoutesById {
@@ -236,6 +253,8 @@ export interface FileRoutesById {
   '/_authenticated/registrar-producao-v3': typeof AuthenticatedRegistrarProducaoV3Route
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tools': typeof AuthenticatedToolsRoute
+  '/convite/$code': typeof ConviteCodeRoute
+  '/_authenticated/admin_/convites': typeof AuthenticatedAdminConvitesRoute
   '/_authenticated/admin_/produtos': typeof AuthenticatedAdminProdutosRoute
 }
 export interface FileRouteTypes {
@@ -263,6 +282,8 @@ export interface FileRouteTypes {
     | '/registrar-producao-v3'
     | '/settings'
     | '/tools'
+    | '/convite/$code'
+    | '/admin/convites'
     | '/admin/produtos'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -288,6 +309,8 @@ export interface FileRouteTypes {
     | '/registrar-producao-v3'
     | '/settings'
     | '/tools'
+    | '/convite/$code'
+    | '/admin/convites'
     | '/admin/produtos'
   id:
     | '__root__'
@@ -314,6 +337,8 @@ export interface FileRouteTypes {
     | '/_authenticated/registrar-producao-v3'
     | '/_authenticated/settings'
     | '/_authenticated/tools'
+    | '/convite/$code'
+    | '/_authenticated/admin_/convites'
     | '/_authenticated/admin_/produtos'
   fileRoutesById: FileRoutesById
 }
@@ -322,6 +347,7 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ConviteCodeRoute: typeof ConviteCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -352,6 +378,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/convite/$code': {
+      id: '/convite/$code'
+      path: '/convite/$code'
+      fullPath: '/convite/$code'
+      preLoaderRoute: typeof ConviteCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/tools': {
@@ -494,6 +527,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminProdutosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin_/convites': {
+      id: '/_authenticated/admin_/convites'
+      path: '/admin/convites'
+      fullPath: '/admin/convites'
+      preLoaderRoute: typeof AuthenticatedAdminConvitesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -517,6 +557,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedRegistrarProducaoV3Route: typeof AuthenticatedRegistrarProducaoV3Route
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
+  AuthenticatedAdminConvitesRoute: typeof AuthenticatedAdminConvitesRoute
   AuthenticatedAdminProdutosRoute: typeof AuthenticatedAdminProdutosRoute
 }
 
@@ -540,6 +581,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedRegistrarProducaoV3Route: AuthenticatedRegistrarProducaoV3Route,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedToolsRoute: AuthenticatedToolsRoute,
+  AuthenticatedAdminConvitesRoute: AuthenticatedAdminConvitesRoute,
   AuthenticatedAdminProdutosRoute: AuthenticatedAdminProdutosRoute,
 }
 
@@ -552,6 +594,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ConviteCodeRoute: ConviteCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
