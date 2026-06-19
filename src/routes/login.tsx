@@ -175,6 +175,12 @@ function LoginPage() {
                 {isSignUp ? "Entrar" : "Criar conta"}
               </button>
             </p>
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              Recebeu um código de convite?{" "}
+              <a href="/convite" className="text-primary hover:underline" onClick={(e) => { e.preventDefault(); const c = prompt("Digite seu código de convite:"); if (c?.trim()) navigate({ to: "/convite/$code", params: { code: c.trim().toUpperCase() } }); }}>
+                Use seu convite
+              </a>
+            </p>
           </>
         )}
       </div>

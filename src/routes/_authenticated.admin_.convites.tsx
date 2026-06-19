@@ -1,0 +1,223 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { PageContainer, PageHeader, InfoCard } from "@/components/ds";
+import { PageSkeleton } from "@/components/PageSkeleton";
+import { UnauthorizedState } from "@/components/states/UnauthorizedState";
+import { Mail, Plus, Copy, Trash2, Link as LinkIcon, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
+import type { AppRole } from "@/features/auth/types";
+
+export const Route = createFileRoute("/_authenticated/admin_/convites")({
+  head: () => ({ meta: [{ title: "Convites — BanriTools" }] }),
+  component: Page,
+  pendingComponent: () => <PageSkeleton kpis={0} rows={6} />,
+});
+
+interface Invite {
+  id: string;
+  code: string;
+  agency_id: string;
+  role: AppRole;
+  name: string | null;
+  created_at: string;
+  expires_at: string;
+  used_at: string | null;
+}
+
+function status(inv: Invite): { label: string; tone: "success" | "warning" | "info" | "neutral" } {
+  if (inv.used_at) return { label: "Usado", tone: "neutral" };
+  if (new Date(inv.expires_at) < new Date()) return { label: "Expirado", tone: "warning" };
+  return { label: "Ativo", tone: "success" };
+}
+
+function Page() {
+  const { user, userRole, profile } = useAuth();
+  const [invites, setInvites] = useState<Invite[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [role, setRole] = useState<AppRole>("funcionario");
+  const [creating, setCreating] = useState(false);
+  const [justCreated, setJustCreated] = useState<Invite | null>(null);
+
+  const canManage = userRole === "admin" || userRole === "gerente";
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("user_invites")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error) setInvites((data ?? []) as unknown as Invite[]);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { if (canManage) load(); else setLoading(false); }, [canManage, load]);
+
+  if (loading) return <PageSkeleton kpis={0} rows={6} />;
+  if (!canManage) return <UnauthorizedState />;
+
+  const handleCreate = async () => {
+    if (!user || !profile?.agency_id) return;
+    setCreating(true);
+    const { data, error } = await supabase
+      .from("user_invites")
+      .insert({
+        agency_id: profile.agency_id,
+        role,
+        name: name.trim() || null,
+        created_by: user.id,
+      })
+      .select("*")
+      .single();
+    setCreating(false);
+    if (error) { toast.error(error.message); return; }
+    const inv = data as unknown as Invite;
+    setJustCreated(inv);
+    setInvites((prev) => [inv, ...prev]);
+    setName("");
+  };
+
+  const handleRevoke = async (id: string) => {
+    const { error } = await supabase.from("user_invites").delete().eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setInvites((prev) => prev.filter((i) => i.id !== id));
+    toast.success("Convite revogado");
+  };
+
+  const copy = (text: string, label = "Copiado") => {
+    navigator.clipboard.writeText(text).then(() => toast.success(label));
+  };
+
+  const inviteLink = (code: string) => `${window.location.origin}/convite/${code}`;
+
+  return (
+    <PageContainer>
+      <PageHeader
+        icon={<Mail className="h-5 w-5" />}
+        title="Convites"
+        description="Gere códigos para que novos funcionários criem suas próprias contas"
+        actions={
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setJustCreated(null); }}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4" /> Gerar convite</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{justCreated ? "Convite gerado" : "Novo convite"}</DialogTitle>
+              </DialogHeader>
+              {justCreated ? (
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-success/40 bg-success/10 p-4 text-center">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Código</p>
+                    <p className="mt-1 text-3xl font-bold tracking-[0.2em] text-foreground tabular-nums">
+                      {justCreated.code}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" onClick={() => copy(justCreated.code, "Código copiado")}>
+                      <Copy className="h-4 w-4" /> Copiar código
+                    </Button>
+                    <Button variant="outline" onClick={() => copy(inviteLink(justCreated.code), "Link copiado")}>
+                      <LinkIcon className="h-4 w-4" /> Copiar link
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Compartilhe com o funcionário. Ele criará a própria conta e será vinculado automaticamente à sua agência.
+                  </p>
+                  <DialogFooter>
+                    <Button onClick={() => { setJustCreated(null); setOpen(false); }}>Concluir</Button>
+                  </DialogFooter>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="inv-name">Nome (opcional)</Label>
+                    <Input id="inv-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Maria Silva" className="mt-1" />
+                    <p className="mt-1 text-xs text-muted-foreground">Pré-preenche o nome no cadastro.</p>
+                  </div>
+                  <div>
+                    <Label>Cargo</Label>
+                    <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="funcionario">Funcionário</SelectItem>
+                        <SelectItem value="gerente">Gerente</SelectItem>
+                        <SelectItem value="viewer">Apenas leitura</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+                    <Button onClick={handleCreate} disabled={creating}>
+                      {creating ? "Gerando..." : "Gerar convite"}
+                    </Button>
+                  </DialogFooter>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        }
+      />
+
+      <InfoCard title="Histórico de convites" description={`${invites.length} convite${invites.length === 1 ? "" : "s"}`} bodyless>
+        {invites.length === 0 ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">
+            Nenhum convite ainda. Clique em <strong>Gerar convite</strong> para começar.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40">
+                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <th className="p-3">Código</th>
+                  <th className="p-3">Nome</th>
+                  <th className="p-3">Cargo</th>
+                  <th className="p-3">Criado</th>
+                  <th className="p-3">Expira</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {invites.map((inv) => {
+                  const s = status(inv);
+                  return (
+                    <tr key={inv.id} className="border-t border-border">
+                      <td className="p-3 font-mono font-semibold tracking-wider tabular-nums">{inv.code}</td>
+                      <td className="p-3">{inv.name ?? <span className="text-muted-foreground">—</span>}</td>
+                      <td className="p-3 capitalize">{inv.role}</td>
+                      <td className="p-3 text-muted-foreground">{new Date(inv.created_at).toLocaleDateString("pt-BR")}</td>
+                      <td className="p-3 text-muted-foreground">{new Date(inv.expires_at).toLocaleDateString("pt-BR")}</td>
+                      <td className="p-3"><Badge variant={s.tone}>{s.label}</Badge></td>
+                      <td className="p-3">
+                        <div className="flex items-center justify-end gap-1">
+                          {!inv.used_at && (
+                            <>
+                              <Button variant="ghost" size="sm" onClick={() => copy(inv.code, "Código copiado")}><Copy className="h-3.5 w-3.5" /></Button>
+                              <Button variant="ghost" size="sm" onClick={() => copy(inviteLink(inv.code), "Link copiado")}><LinkIcon className="h-3.5 w-3.5" /></Button>
+                              <Button variant="ghost" size="sm" onClick={() => handleRevoke(inv.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                            </>
+                          )}
+                          {inv.used_at && <CheckCircle2 className="h-4 w-4 text-success" />}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </InfoCard>
+    </PageContainer>
+  );
+}
