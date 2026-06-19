@@ -68,7 +68,7 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
         <Logo size={32} ariaLabel="BanriTools" className="rounded-md" />
         {isExpanded && (
           <span
-            className="whitespace-nowrap text-base font-medium tracking-[0.06em] text-sidebar-foreground"
+            className="whitespace-nowrap text-base font-[450] tracking-[0.048em] text-sidebar-foreground"
             style={{ fontFamily: "Poppins, sans-serif" }}
           >
             banritools
