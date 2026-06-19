@@ -4,6 +4,7 @@ import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { Logo } from "@/components/Logo";
 import { useAuth } from "@/hooks/useAuth";
 
 interface TopbarProps {
@@ -44,7 +45,16 @@ export function Topbar({ userName, userRole, onMenuClick }: TopbarProps) {
   const initial = (userName || profile?.email || "U")[0]?.toUpperCase() ?? "U";
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-3 bg-background/60 px-4 backdrop-blur-md sm:px-6">
+    <header className="relative flex h-14 shrink-0 items-center justify-between gap-3 bg-background/60 px-4 backdrop-blur-md sm:px-6">
+      {/* MOBILE: logo centralizado absoluto */}
+      <Link
+        to="/dashboard-v3"
+        aria-label="BanriTools — Início"
+        className="pointer-events-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 sm:hidden"
+      >
+        <Logo size={28} />
+      </Link>
+
       {/* LEFT: menu + search (aligned with content) */}
       <div className="flex flex-1 items-center gap-3">
         {onMenuClick && (
