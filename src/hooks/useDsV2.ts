@@ -34,5 +34,5 @@ export function useDsV2() {
 /** Aplica a flag no boot (antes da árvore React montar valores), evita flash. */
 export function bootDsV2() {
   if (typeof window === "undefined") return;
-  apply(window.localStorage.getItem(STORAGE_KEY) === "1");
+  apply(window.localStorage.getItem(STORAGE_KEY) !== "0");
 }
