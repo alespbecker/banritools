@@ -1,4 +1,4 @@
-import { Bell, Menu, RefreshCw, Search } from "lucide-react";
+import { Menu, RefreshCw, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
