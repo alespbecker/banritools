@@ -60,31 +60,64 @@ function bufferToBase64(buf: ArrayBuffer): string {
 async function loadPoppins() {
   if (!poppinsPromise) {
     poppinsPromise = (async () => {
-      try {
-        const base = "https://cdn.jsdelivr.net/npm/@fontsource/poppins/files";
-        const [r, s] = await Promise.all([
-          fetch(`${base}/poppins-latin-400-normal.ttf`).then((r) => r.arrayBuffer()),
-          fetch(`${base}/poppins-latin-500-normal.ttf`).then((r) => r.arrayBuffer()),
-        ]);
-        return { regular: bufferToBase64(r), semibold: bufferToBase64(s) };
-      } catch {
-        return null;
+      // TTF completo do Google Fonts (com cmap unicode válido).
+      // Tenta jsdelivr primeiro, com fallback p/ raw.githubusercontent.
+      const sources = [
+        "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/poppins",
+        "https://raw.githubusercontent.com/google/fonts/main/ofl/poppins",
+      ];
+      for (const base of sources) {
+        try {
+          const [r, s] = await Promise.all([
+            fetch(`${base}/Poppins-Regular.ttf`).then((res) => {
+              if (!res.ok) throw new Error(`${res.status}`);
+              return res.arrayBuffer();
+            }),
+            fetch(`${base}/Poppins-Medium.ttf`).then((res) => {
+              if (!res.ok) throw new Error(`${res.status}`);
+              return res.arrayBuffer();
+            }),
+          ]);
+          return { regular: bufferToBase64(r), semibold: bufferToBase64(s) };
+        } catch {
+          // tenta próximo source
+        }
       }
+      return null;
     })();
   }
   return poppinsPromise;
 }
 function registerPoppins(doc: jsPDF, fonts: { regular: string; semibold: string } | null) {
   if (!fonts) return false;
+  // jsPDF emite erros via PubSub (não throw). Interceptamos para detectar falha real.
+  let failed = false;
+  const sub = (doc as unknown as {
+    internal: { events: { subscribe: (e: string, cb: (err: unknown) => void) => string; unsubscribe: (id: string) => void } };
+  }).internal.events.subscribe("addFont", (evt: unknown) => {
+    // qualquer evento dispara — ignoramos
+    void evt;
+  });
   try {
     doc.addFileToVFS("Poppins-Regular.ttf", fonts.regular);
     doc.addFont("Poppins-Regular.ttf", "Poppins", "normal");
     doc.addFileToVFS("Poppins-Medium.ttf", fonts.semibold);
     doc.addFont("Poppins-Medium.ttf", "Poppins", "bold");
-    return true;
+    // validação: tenta medir uma string com a fonte. Se quebrar, fallback.
+    doc.setFont("Poppins", "normal");
+    doc.getTextWidth("banritools");
+    doc.setFont("Poppins", "bold");
+    doc.getTextWidth("banritools");
   } catch {
-    return false;
+    failed = true;
+  } finally {
+    try {
+      (doc as unknown as { internal: { events: { unsubscribe: (id: string) => void } } }).internal.events.unsubscribe(sub);
+    } catch {
+      /* noop */
+    }
   }
+  return !failed;
 }
 
 function toCSV(headers: string[], rows: (string | number)[][], totals?: (string | number)[]) {
