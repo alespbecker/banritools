@@ -4,6 +4,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { Topbar } from "@/components/Topbar";
 import { RegisterFAB } from "@/components/RegisterFAB";
+import { ScrollToTopFAB } from "@/components/ScrollToTopFAB";
 import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -69,12 +70,13 @@ function AuthenticatedLayout() {
           userRole={userRole}
           onMenuClick={isMobile ? () => setSidebarOpen(true) : undefined}
         />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main data-app-scroll className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
       </div>
 
       <RegisterFAB />
+      <ScrollToTopFAB />
     </div>
   );
 }
