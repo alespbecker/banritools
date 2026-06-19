@@ -4,6 +4,7 @@ import { ArrowRight, Sparkles, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProgressWithLabel } from "./ProgressWithLabel";
+import { AnimatedNumber, AnimatedText } from "@/components/AnimatedNumber";
 
 interface HeroPerformanceProps {
   greeting: string;
@@ -86,7 +87,11 @@ export function HeroPerformance({
             </span>
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <span className="text-5xl font-bold tracking-tight text-foreground tabular-nums sm:text-6xl">
-                {primaryValue}
+                {typeof primaryValue === "number" ? (
+                  <AnimatedNumber value={primaryValue} />
+                ) : (
+                  <AnimatedText text={String(primaryValue)} />
+                )}
               </span>
               {primaryHint && (
                 <Badge variant="info" className="self-center">{primaryHint}</Badge>
