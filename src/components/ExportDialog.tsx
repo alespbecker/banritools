@@ -139,7 +139,7 @@ function drawHex(
 
 /** Desenha a marca "banritools" — 3 hexágonos + wordmark com letter spacing.
  *  Retorna a largura total aproximada (para alinhamento). */
-function drawBrand(doc: jsPDF, x: number, yCenter: number, scale = 1): number {
+function drawBrand(doc: jsPDF, x: number, yCenter: number, scale = 1, hasPoppins = false): number {
   const r = 7 * scale;
   const dx = 6.2 * scale;
   const dy = 9.5 * scale;
@@ -149,12 +149,16 @@ function drawBrand(doc: jsPDF, x: number, yCenter: number, scale = 1): number {
   drawHex(doc, x + dx, topY, r, BRAND_BLUE);
   drawHex(doc, x, topY + dy, r, BRAND_TEAL);
   drawHex(doc, x + dx * 2, topY + dy, r, BRAND_VIOLET);
-  // Wordmark — um pouco mais bold
-  doc.setFont("helvetica", "bold");
+  // Wordmark — Poppins medium (proporcional ao sidebar: peso 500, tracking leve)
+  if (hasPoppins) {
+    doc.setFont("Poppins", "bold");
+  } else {
+    doc.setFont("helvetica", "normal");
+  }
   doc.setFontSize(15 * scale);
   doc.setTextColor(255, 255, 255);
-  const textX = x + dx * 2 + r + 8 * scale;
-  doc.text("banritools", textX, yCenter, { charSpace: 0.5, baseline: "middle" });
+  const textX = x + dx * 2 + r + 4 * scale; // mais perto do logo
+  doc.text("banritools", textX, yCenter, { charSpace: 0.3, baseline: "middle" });
   const textW = doc.getTextWidth("banritools");
   return textX + textW - x;
 }
