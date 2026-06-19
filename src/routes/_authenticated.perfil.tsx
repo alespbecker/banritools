@@ -117,8 +117,7 @@ function PerfilPage() {
     }
   };
 
-  const initials = (name || authProfile?.name || user?.email || "U")
-    .split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
+  const avatarSrc = profile?.avatar_url || defaultAvatar;
 
   return (
     <DataGate loading={loading} skeleton={<PageSkeleton kpis={0} rows={3} />}>
