@@ -60,29 +60,55 @@ function bufferToBase64(buf: ArrayBuffer): string {
 async function loadPoppins() {
   if (!poppinsPromise) {
     poppinsPromise = (async () => {
-      try {
-        const base = "https://cdn.jsdelivr.net/npm/@fontsource/poppins/files";
-        const [r, s] = await Promise.all([
-          fetch(`${base}/poppins-latin-400-normal.ttf`).then((r) => r.arrayBuffer()),
-          fetch(`${base}/poppins-latin-500-normal.ttf`).then((r) => r.arrayBuffer()),
-        ]);
-        return { regular: bufferToBase64(r), semibold: bufferToBase64(s) };
-      } catch {
-        return null;
+      // TTF completo do Google Fonts (com cmap unicode válido).
+      // Tenta jsdelivr primeiro, com fallback p/ raw.githubusercontent.
+      const sources = [
+        "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/poppins",
+        "https://raw.githubusercontent.com/google/fonts/main/ofl/poppins",
+      ];
+      for (const base of sources) {
+        try {
+          const [r, s] = await Promise.all([
+            fetch(`${base}/Poppins-Regular.ttf`).then((res) => {
+              if (!res.ok) throw new Error(`${res.status}`);
+              return res.arrayBuffer();
+            }),
+            fetch(`${base}/Poppins-Medium.ttf`).then((res) => {
+              if (!res.ok) throw new Error(`${res.status}`);
+              return res.arrayBuffer();
+            }),
+          ]);
+          return { regular: bufferToBase64(r), semibold: bufferToBase64(s) };
+        } catch {
+          // tenta próximo source
+        }
       }
+      return null;
     })();
   }
   return poppinsPromise;
 }
 function registerPoppins(doc: jsPDF, fonts: { regular: string; semibold: string } | null) {
   if (!fonts) return false;
+  // jsPDF pode emitir erros via PubSub (ex.: "No unicode cmap for font") sem fazer throw.
+  // Validamos chamando getTextWidth — se a fonte não foi registrada de verdade, lança "widths".
   try {
     doc.addFileToVFS("Poppins-Regular.ttf", fonts.regular);
     doc.addFont("Poppins-Regular.ttf", "Poppins", "normal");
     doc.addFileToVFS("Poppins-Medium.ttf", fonts.semibold);
     doc.addFont("Poppins-Medium.ttf", "Poppins", "bold");
+    doc.setFont("Poppins", "normal");
+    doc.getTextWidth("banritools");
+    doc.setFont("Poppins", "bold");
+    doc.getTextWidth("banritools");
     return true;
   } catch {
+    // Reset p/ helvetica para não deixar font state quebrado
+    try {
+      doc.setFont("helvetica", "normal");
+    } catch {
+      /* noop */
+    }
     return false;
   }
 }
