@@ -48,7 +48,7 @@ function AuthenticatedLayout() {
       {/* Mobile sidebar overlay */}
       {isMobile && (
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side="left" className="w-60 p-0 border-0 bg-sidebar/70 backdrop-blur-md">
+          <SheetContent side="left" className="w-60 p-0 border-0 bg-sidebar/70 backdrop-blur-md top-2 bottom-2 left-2 rounded-2xl h-auto">
             <VisuallyHidden.Root>
               <SheetTitle>Menu de navegação</SheetTitle>
             </VisuallyHidden.Root>
