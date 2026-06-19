@@ -90,34 +90,27 @@ async function loadPoppins() {
 }
 function registerPoppins(doc: jsPDF, fonts: { regular: string; semibold: string } | null) {
   if (!fonts) return false;
-  // jsPDF emite erros via PubSub (não throw). Interceptamos para detectar falha real.
-  let failed = false;
-  const sub = (doc as unknown as {
-    internal: { events: { subscribe: (e: string, cb: (err: unknown) => void) => string; unsubscribe: (id: string) => void } };
-  }).internal.events.subscribe("addFont", (evt: unknown) => {
-    // qualquer evento dispara — ignoramos
-    void evt;
-  });
+  // jsPDF pode emitir erros via PubSub (ex.: "No unicode cmap for font") sem fazer throw.
+  // Validamos chamando getTextWidth — se a fonte não foi registrada de verdade, lança "widths".
   try {
     doc.addFileToVFS("Poppins-Regular.ttf", fonts.regular);
     doc.addFont("Poppins-Regular.ttf", "Poppins", "normal");
     doc.addFileToVFS("Poppins-Medium.ttf", fonts.semibold);
     doc.addFont("Poppins-Medium.ttf", "Poppins", "bold");
-    // validação: tenta medir uma string com a fonte. Se quebrar, fallback.
     doc.setFont("Poppins", "normal");
     doc.getTextWidth("banritools");
     doc.setFont("Poppins", "bold");
     doc.getTextWidth("banritools");
+    return true;
   } catch {
-    failed = true;
-  } finally {
+    // Reset p/ helvetica para não deixar font state quebrado
     try {
-      (doc as unknown as { internal: { events: { unsubscribe: (id: string) => void } } }).internal.events.unsubscribe(sub);
+      doc.setFont("helvetica", "normal");
     } catch {
       /* noop */
     }
+    return false;
   }
-  return !failed;
 }
 
 function toCSV(headers: string[], rows: (string | number)[][], totals?: (string | number)[]) {
