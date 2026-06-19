@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Logo } from "./Logo";
 
 const MESSAGES = [
   "Preparando seu painel…",

@@ -8,6 +8,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import type { AppRole } from "@/features/auth/types";
+import { Logo } from "@/components/Logo";
 
 // Navegação principal — experiência atual do produto.
 const navItems = [
