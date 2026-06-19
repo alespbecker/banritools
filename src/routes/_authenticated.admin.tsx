@@ -450,6 +450,12 @@ function AdminDashboardPage() {
             columns={rawColumns}
             rows={rawRows}
             triggerLabel="Exportar Relatórios"
+            summary={[
+              { label: "Engajamento", value: `${teamStats.engajamento}%`, hint: `${stats.activeUsers}/${profiles.length} ativos` },
+              { label: "Unidades do time", value: stats.totalUnits.toLocaleString("pt-BR"), hint: "Total no período" },
+              { label: "Vol. Crédito", value: fmtBRL(stats.volFinanceiro), hint: "Consignado" },
+              { label: "Recuperação", value: fmtBRL(stats.recuperado), hint: "E2 + E3" },
+            ]}
           />
           <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
             <SelectTrigger
