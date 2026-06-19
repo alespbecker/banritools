@@ -211,7 +211,7 @@ function AdminDashboardPage() {
     const engajamento = totalProfiles > 0 ? Math.round((stats.activeUsers / totalProfiles) * 100) : 0;
     const mediaUnitsAtivo = stats.activeUsers > 0 ? Math.round(stats.totalUnits / stats.activeUsers) : 0;
     const topPoints = ranking[0]?.points ?? 0;
-    const topName = ranking[0] ? (profileMap.get(ranking[0].user_id)?.name?.split(" ")[0] ?? "—") : "—";
+    const topName = ranking[0] ? (profileMap.get(ranking[0].user_id)?.name?.split(" ")[0] ?? "0") : "0";
     const lastPoints = ranking.length > 1 ? ranking[ranking.length - 1].points : topPoints;
     const gap = topPoints - lastPoints;
     return { engajamento, mediaUnitsAtivo, topPoints, topName, gap, totalProfiles };
@@ -450,6 +450,12 @@ function AdminDashboardPage() {
             columns={rawColumns}
             rows={rawRows}
             triggerLabel="Exportar Relatórios"
+            summary={[
+              { label: "Engajamento", value: `${teamStats.engajamento}%`, hint: `${stats.activeUsers}/${profiles.length} ativos` },
+              { label: "Unidades do time", value: stats.totalUnits.toLocaleString("pt-BR"), hint: "Total no período" },
+              { label: "Vol. Crédito", value: fmtBRL(stats.volFinanceiro), hint: "Consignado" },
+              { label: "Recuperação", value: fmtBRL(stats.recuperado), hint: "E2 + E3" },
+            ]}
           />
           <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
             <SelectTrigger
@@ -658,6 +664,12 @@ function AdminDashboardPage() {
             columns={exportColumns}
             rows={exportRows}
             triggerLabel="Exportar tabela"
+            summary={[
+              { label: "Colaboradores", value: String(exportRows.length), hint: `de ${profiles.length} no time` },
+              { label: "Top Performer", value: teamStats.topName, hint: `${teamStats.topPoints} pts` },
+              { label: "Média / ativo", value: String(teamStats.mediaUnitsAtivo), hint: "Unidades" },
+              { label: "Gap ranking", value: String(teamStats.gap), hint: "1º vs último" },
+            ]}
           />
         </div>
         {loading ? (
