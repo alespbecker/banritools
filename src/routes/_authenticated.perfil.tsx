@@ -6,6 +6,7 @@ import { User, Camera, Building2, Mail, Phone, Briefcase, Shield, Loader2 } from
 import { toast } from "sonner";
 import { PageContainer, PageHeader } from "@/components/ds";
 import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
+import defaultAvatar from "@/assets/default-avatar.png";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   head: () => ({
