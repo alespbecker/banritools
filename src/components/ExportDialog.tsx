@@ -364,18 +364,22 @@ export function ExportDialog<T>({
     XLSX.writeFile(wb, `${filenameBase}-${stamp()}.xlsx`);
   };
 
-  const handlePDF = () => {
+  const handlePDF = async () => {
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const margin = 32;
+
+    // Carrega Poppins p/ a marca (best-effort, cai p/ helvetica se falhar)
+    const fonts = await loadPoppins();
+    const hasPoppins = registerPoppins(doc, fonts);
 
     // ===== Header band com marca =====
     const bandH = 64;
     doc.setFillColor(...BRAND_RGB);
     doc.rect(0, 0, pageW, bandH, "F");
     const bandCenterY = bandH / 2;
-    drawBrand(doc, margin, bandCenterY, 1);
+    drawBrand(doc, margin, bandCenterY, 1, hasPoppins);
 
     // Data à direita — centralizada verticalmente na band
     doc.setFont("helvetica", "normal");
