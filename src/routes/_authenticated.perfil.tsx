@@ -6,6 +6,7 @@ import { User, Camera, Building2, Mail, Phone, Briefcase, Shield, Loader2 } from
 import { toast } from "sonner";
 import { PageContainer, PageHeader } from "@/components/ds";
 import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
+import defaultAvatar from "@/assets/default-avatar.png";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
   head: () => ({
@@ -116,8 +117,7 @@ function PerfilPage() {
     }
   };
 
-  const initials = (name || authProfile?.name || user?.email || "U")
-    .split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase();
+  const avatarSrc = profile?.avatar_url || defaultAvatar;
 
   return (
     <DataGate loading={loading} skeleton={<PageSkeleton kpis={0} rows={3} />}>
@@ -132,12 +132,8 @@ function PerfilPage() {
           {/* Avatar card */}
           <div className="rounded-xl border border-border bg-card p-6 text-center">
             <div className="relative mx-auto h-32 w-32">
-              <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border-2 border-border bg-muted text-3xl font-bold text-muted-foreground">
-                {profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Foto de perfil" className="h-full w-full object-cover" />
-                ) : (
-                  <span>{initials}</span>
-                )}
+              <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border-2 border-border bg-muted">
+                <img src={avatarSrc} alt="Foto de perfil" className="h-full w-full object-cover" />
               </div>
               <button
                 type="button"

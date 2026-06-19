@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { Logo } from "@/components/Logo";
 import { useAuth } from "@/hooks/useAuth";
+import defaultAvatar from "@/assets/default-avatar.png";
 
 interface TopbarProps {
   userName: string | null;
@@ -42,7 +43,7 @@ export function Topbar({ userName, userRole, onMenuClick }: TopbarProps) {
     }
   };
 
-  const initial = (userName || profile?.email || "U")[0]?.toUpperCase() ?? "U";
+  const avatarSrc = profile?.avatar_url || defaultAvatar;
 
   return (
     <header className="relative flex h-14 shrink-0 items-center justify-between gap-3 bg-background/60 px-4 backdrop-blur-md sm:px-6">
@@ -104,11 +105,7 @@ export function Topbar({ userName, userRole, onMenuClick }: TopbarProps) {
           title="Meu Perfil"
         >
           <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary text-xs font-bold text-primary-foreground">
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-            ) : (
-              initial
-            )}
+            <img src={avatarSrc} alt="" className="h-full w-full object-cover" />
           </div>
           <div className="hidden sm:block text-left">
             <p className="text-sm font-medium leading-tight text-foreground">{userName ?? "Usuário"}</p>
