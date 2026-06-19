@@ -31,7 +31,10 @@ function Digit({ d, duration = 700 }: { d: number; duration?: number }) {
 /** Tokenizes a string and animates only the digit characters. */
 function AnimatedTextInner({ text, duration = 700 }: { text: string; duration?: number }) {
   return (
-    <span className="inline-flex items-baseline tabular-nums">
+    <span
+      className="inline-flex items-baseline tabular-nums"
+      style={{ fontFamily: "var(--font-numeric)" }}
+    >
       {Array.from(text).map((c, i) =>
         /\d/.test(c) ? (
           <Digit key={i} d={Number(c)} duration={duration} />
@@ -98,7 +101,7 @@ function AnimatedNumberInner({ value, format, tween = false, maxDuration = 1200 
 
   const text = format ? format(tween ? display : value) : (tween ? Math.round(display) : value).toLocaleString("pt-BR");
   // When tweening, render as plain text to avoid wheel noise; otherwise use odometer.
-  if (tween) return <span className="tabular-nums">{text}</span>;
+  if (tween) return <span className="tabular-nums" style={{ fontFamily: "var(--font-numeric)" }}>{text}</span>;
   return <AnimatedText text={text} />;
 }
 
