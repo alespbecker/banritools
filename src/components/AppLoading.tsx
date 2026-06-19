@@ -57,7 +57,7 @@ export function AppLoading({ label, rotateMessages = true }: AppLoadingProps) {
       >
         {message}
       </p>
-      <p className="mt-1 text-sm font-medium text-muted-foreground font-['Poppins'] tracking-[0.06em]">banritools</p>
+      <p className="mt-1 text-sm font-medium text-muted-foreground tracking-[0.06em]" style={{ fontFamily: "Poppins, sans-serif" }}>banritools</p>
     </div>
   );
 }
