@@ -664,6 +664,12 @@ function AdminDashboardPage() {
             columns={exportColumns}
             rows={exportRows}
             triggerLabel="Exportar tabela"
+            summary={[
+              { label: "Colaboradores", value: String(exportRows.length), hint: `de ${profiles.length} no time` },
+              { label: "Top Performer", value: teamStats.topName, hint: `${teamStats.topPoints} pts` },
+              { label: "Média / ativo", value: String(teamStats.mediaUnitsAtivo), hint: "Unidades" },
+              { label: "Gap ranking", value: String(teamStats.gap), hint: "1º vs último" },
+            ]}
           />
         </div>
         {loading ? (
