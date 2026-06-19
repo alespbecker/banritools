@@ -190,7 +190,10 @@
     border-color: var(--color-border);
   }
 
-  html { scrollbar-gutter: stable; }
+  html { scrollbar-gutter: stable both-edges; }
+  @media (max-width: 767px) {
+    html { scrollbar-gutter: auto; }
+  }
   :root, .dark { color-scheme: dark; }
   .light { color-scheme: light; }
 
