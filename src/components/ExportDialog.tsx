@@ -497,8 +497,9 @@ export function ExportDialog<T>({
         doc.line(margin, pageH - 28, pageW - margin, pageH - 28);
         doc.setFontSize(8);
         doc.setTextColor(...MUTED_RGB);
-        doc.setFont("helvetica", "normal");
+        doc.setFont(hasPoppins ? "Poppins" : "helvetica", "normal");
         doc.text("banritools — Confidencial", margin, pageH - 16, { charSpace: 0.3 });
+        doc.setFont("helvetica", "normal");
         doc.text(`Página ${p} de ${total}`, pageW - margin, pageH - 16, { align: "right" });
       },
     });
