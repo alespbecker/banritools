@@ -163,6 +163,12 @@ function LoginPage() {
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="seu@email.com" />
               </div>
+
+              {isSignUp && (
+                <CargoSelect value={cargo} onChange={(v) => { setCargo(v); setCargoError(""); }} error={cargoError} required />
+              )}
+
+
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-foreground">Senha</label>
                 <div className="relative">
