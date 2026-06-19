@@ -192,7 +192,9 @@
 
   html { scrollbar-gutter: stable both-edges; }
   @media (max-width: 767px) {
-    html { scrollbar-gutter: auto; }
+    html { scrollbar-gutter: auto; scrollbar-width: none; }
+    html::-webkit-scrollbar { display: none; }
+    body::-webkit-scrollbar { display: none; }
   }
   :root, .dark { color-scheme: dark; }
   .light { color-scheme: light; }
