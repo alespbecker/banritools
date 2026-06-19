@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { z } from "zod";
+import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,9 @@ function Page() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [confirm, setConfirm] = useState("");
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -131,12 +134,46 @@ function Page() {
           </div>
           <div>
             <Label htmlFor="password">Senha</Label>
-            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1" autoComplete="new-password" />
+            <div className="relative mt-1">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pr-10"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
             {fieldErrors.password && <p className="mt-1 text-xs text-destructive">{fieldErrors.password}</p>}
           </div>
           <div>
             <Label htmlFor="confirm">Confirmar senha</Label>
-            <Input id="confirm" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="mt-1" autoComplete="new-password" />
+            <div className="relative mt-1">
+              <Input
+                id="confirm"
+                type={showConfirm ? "text" : "password"}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                className="pr-10"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label={showConfirm ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
             {fieldErrors.confirm && <p className="mt-1 text-xs text-destructive">{fieldErrors.confirm}</p>}
           </div>
 
