@@ -69,7 +69,7 @@ function AuthenticatedLayout() {
           userRole={userRole}
           onMenuClick={isMobile ? () => setSidebarOpen(true) : undefined}
         />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6" style={{ scrollbarGutter: "stable" }}>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
       </div>
