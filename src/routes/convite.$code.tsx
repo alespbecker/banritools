@@ -75,14 +75,23 @@ function Page() {
       return;
     }
 
+    // Valida cargo
+    if (!cargo.cargo) { setCargoError("Selecione seu cargo"); return; }
+    if (cargo.cargo === "gerente_mercado" && !cargo.especialidade) {
+      setCargoError("Selecione PJ ou PF"); return;
+    }
+    setCargoError("");
+
     setLoading(true);
     try {
+      const meta: Record<string, unknown> = { name: parsed.data.name, cargo: cargo.cargo };
+      if (cargo.especialidade) meta.cargo_especialidade = cargo.especialidade;
       const { error: signUpErr } = await supabase.auth.signUp({
         email: parsed.data.email,
         password: parsed.data.password,
         options: {
           emailRedirectTo: `${window.location.origin}/dashboard-v3`,
-          data: { name: parsed.data.name },
+          data: meta,
         },
       });
       if (signUpErr) throw signUpErr;
