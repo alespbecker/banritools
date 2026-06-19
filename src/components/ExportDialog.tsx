@@ -34,7 +34,7 @@ type Props<T> = {
 type Fmt = "pdf" | "xlsx" | "csv";
 
 // Paleta da marca (alinhada ao logo: azul, teal, violeta)
-const BRAND_RGB: [number, number, number] = [0, 71, 171];
+const BRAND_RGB: [number, number, number] = [15, 35, 80]; // navy escuro p/ contraste com logo colorido
 const BRAND_BLUE: [number, number, number] = [0, 148, 255];   // #0094FF
 const BRAND_TEAL: [number, number, number] = [28, 216, 202];  // #1CD8CA
 const BRAND_VIOLET: [number, number, number] = [147, 111, 250]; // #936FFA
@@ -93,22 +93,26 @@ function drawHex(
   doc.lines(rel, pts[0][0], pts[0][1], [1, 1], "F", true);
 }
 
-/** Desenha a marca "banritools" — 3 hexágonos + wordmark com letter spacing. */
-function drawBrand(doc: jsPDF, x: number, y: number, scale = 1) {
-  // Três hexágonos pequenos: topo, esquerda, direita
+/** Desenha a marca "banritools" — 3 hexágonos + wordmark com letter spacing.
+ *  Retorna a largura total aproximada (para alinhamento). */
+function drawBrand(doc: jsPDF, x: number, yCenter: number, scale = 1): number {
   const r = 7 * scale;
   const dx = 6.2 * scale;
   const dy = 9.5 * scale;
-  drawHex(doc, x + dx, y, r, BRAND_BLUE);
-  drawHex(doc, x, y + dy, r, BRAND_TEAL);
-  drawHex(doc, x + dx * 2, y + dy, r, BRAND_VIOLET);
-  // Wordmark
-  doc.setFont("helvetica", "normal");
+  // bloco do logo tem altura ~ dy + r*2; centralizar verticalmente em yCenter
+  const blockH = dy + r * 2;
+  const topY = yCenter - blockH / 2 + r; // centro do hex de cima
+  drawHex(doc, x + dx, topY, r, BRAND_BLUE);
+  drawHex(doc, x, topY + dy, r, BRAND_TEAL);
+  drawHex(doc, x + dx * 2, topY + dy, r, BRAND_VIOLET);
+  // Wordmark — um pouco mais bold
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(15 * scale);
   doc.setTextColor(255, 255, 255);
-  doc.text("banritools", x + dx * 2 + r + 6 * scale, y + dy + 2 * scale, {
-    charSpace: 0.6,
-  });
+  const textX = x + dx * 2 + r + 8 * scale;
+  doc.text("banritools", textX, yCenter, { charSpace: 0.5, baseline: "middle" });
+  const textW = doc.getTextWidth("banritools");
+  return textX + textW - x;
 }
 
 export function ExportDialog<T>({
@@ -322,17 +326,18 @@ export function ExportDialog<T>({
     const bandH = 64;
     doc.setFillColor(...BRAND_RGB);
     doc.rect(0, 0, pageW, bandH, "F");
-    drawBrand(doc, margin, 16, 1);
+    const bandCenterY = bandH / 2;
+    drawBrand(doc, margin, bandCenterY, 1);
 
-    // Data à direita
+    // Data à direita — centralizada verticalmente na band
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(255, 255, 255);
     doc.text(
       `Gerado em ${new Date().toLocaleString("pt-BR")}`,
       pageW - margin,
-      bandH - 12,
-      { align: "right" }
+      bandCenterY,
+      { align: "right", baseline: "middle" }
     );
 
     // ===== Título =====
