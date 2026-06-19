@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AnimatedNumber, AnimatedText } from "@/components/AnimatedNumber";
 
 type Tone = "primary" | "teal" | "violet" | "warning" | "success" | "destructive" | "muted";
 
@@ -63,7 +64,9 @@ export function StatCard({
           <Icon className={cn("h-4.5 w-4.5", t.text)} aria-hidden="true" />
         </span>
       </div>
-      <p className="mt-3 text-2xl font-bold tracking-tight text-card-foreground">{value}</p>
+      <p className="mt-3 text-2xl font-bold tracking-tight text-card-foreground">
+        {typeof value === "number" ? <AnimatedNumber value={value} /> : <AnimatedText text={String(value)} />}
+      </p>
       {description && (
         <p className="mt-1 text-xs text-muted-foreground">{description}</p>
       )}

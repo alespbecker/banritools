@@ -1,4 +1,4 @@
-import { Bell, Menu, RefreshCw, Search } from "lucide-react";
+import { Menu, RefreshCw, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
@@ -86,13 +86,6 @@ export function Topbar({ userName, userRole, onMenuClick }: TopbarProps) {
           aria-label="Sincronizar"
         >
           <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-        </button>
-        <button
-          className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
-          title="Notificações (em breve)"
-          aria-label="Notificações"
-        >
-          <Bell className="h-4 w-4" />
         </button>
         <Link
           to="/perfil"
