@@ -1,6 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { createFileRoute } from "@tanstack/react-router";
 import { useDsV2 } from "@/hooks/useDsV2";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,15 +50,7 @@ function Section({ title, children, description }: { title: string; description?
 }
 
 function DesignSystemPage() {
-  const { userRole, isLoading } = useAuth();
-  const navigate = useNavigate();
   const { enabled, toggle } = useDsV2();
-
-  useEffect(() => {
-    if (!isLoading && userRole && userRole !== "admin") {
-      navigate({ to: "/dashboard-v3" });
-    }
-  }, [isLoading, userRole, navigate]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-10 p-6">
