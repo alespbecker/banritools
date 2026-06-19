@@ -93,22 +93,26 @@ function drawHex(
   doc.lines(rel, pts[0][0], pts[0][1], [1, 1], "F", true);
 }
 
-/** Desenha a marca "banritools" — 3 hexágonos + wordmark com letter spacing. */
-function drawBrand(doc: jsPDF, x: number, y: number, scale = 1) {
-  // Três hexágonos pequenos: topo, esquerda, direita
+/** Desenha a marca "banritools" — 3 hexágonos + wordmark com letter spacing.
+ *  Retorna a largura total aproximada (para alinhamento). */
+function drawBrand(doc: jsPDF, x: number, yCenter: number, scale = 1): number {
   const r = 7 * scale;
   const dx = 6.2 * scale;
   const dy = 9.5 * scale;
-  drawHex(doc, x + dx, y, r, BRAND_BLUE);
-  drawHex(doc, x, y + dy, r, BRAND_TEAL);
-  drawHex(doc, x + dx * 2, y + dy, r, BRAND_VIOLET);
-  // Wordmark
-  doc.setFont("helvetica", "normal");
+  // bloco do logo tem altura ~ dy + r*2; centralizar verticalmente em yCenter
+  const blockH = dy + r * 2;
+  const topY = yCenter - blockH / 2 + r; // centro do hex de cima
+  drawHex(doc, x + dx, topY, r, BRAND_BLUE);
+  drawHex(doc, x, topY + dy, r, BRAND_TEAL);
+  drawHex(doc, x + dx * 2, topY + dy, r, BRAND_VIOLET);
+  // Wordmark — um pouco mais bold
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(15 * scale);
   doc.setTextColor(255, 255, 255);
-  doc.text("banritools", x + dx * 2 + r + 6 * scale, y + dy + 2 * scale, {
-    charSpace: 0.6,
-  });
+  const textX = x + dx * 2 + r + 8 * scale;
+  doc.text("banritools", textX, yCenter, { charSpace: 0.5, baseline: "middle" });
+  const textW = doc.getTextWidth("banritools");
+  return textX + textW - x;
 }
 
 export function ExportDialog<T>({
