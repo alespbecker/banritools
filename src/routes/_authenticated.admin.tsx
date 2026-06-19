@@ -211,7 +211,7 @@ function AdminDashboardPage() {
     const engajamento = totalProfiles > 0 ? Math.round((stats.activeUsers / totalProfiles) * 100) : 0;
     const mediaUnitsAtivo = stats.activeUsers > 0 ? Math.round(stats.totalUnits / stats.activeUsers) : 0;
     const topPoints = ranking[0]?.points ?? 0;
-    const topName = ranking[0] ? (profileMap.get(ranking[0].user_id)?.name?.split(" ")[0] ?? "—") : "—";
+    const topName = ranking[0] ? (profileMap.get(ranking[0].user_id)?.name?.split(" ")[0] ?? "0") : "0";
     const lastPoints = ranking.length > 1 ? ranking[ranking.length - 1].points : topPoints;
     const gap = topPoints - lastPoints;
     return { engajamento, mediaUnitsAtivo, topPoints, topName, gap, totalProfiles };
