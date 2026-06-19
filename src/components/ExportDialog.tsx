@@ -43,6 +43,50 @@ const TEXT_RGB: [number, number, number] = [30, 41, 59];
 const MUTED_RGB: [number, number, number] = [100, 116, 139];
 const BORDER_RGB: [number, number, number] = [226, 232, 240];
 
+// ===== Poppins font loader (para a marca no PDF) =====
+let poppinsPromise: Promise<{ regular: string; semibold: string } | null> | null = null;
+function bufferToBase64(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(
+      null,
+      Array.from(bytes.subarray(i, i + chunk)) as unknown as number[]
+    );
+  }
+  return btoa(binary);
+}
+async function loadPoppins() {
+  if (!poppinsPromise) {
+    poppinsPromise = (async () => {
+      try {
+        const base = "https://cdn.jsdelivr.net/npm/@fontsource/poppins/files";
+        const [r, s] = await Promise.all([
+          fetch(`${base}/poppins-latin-400-normal.ttf`).then((r) => r.arrayBuffer()),
+          fetch(`${base}/poppins-latin-500-normal.ttf`).then((r) => r.arrayBuffer()),
+        ]);
+        return { regular: bufferToBase64(r), semibold: bufferToBase64(s) };
+      } catch {
+        return null;
+      }
+    })();
+  }
+  return poppinsPromise;
+}
+function registerPoppins(doc: jsPDF, fonts: { regular: string; semibold: string } | null) {
+  if (!fonts) return false;
+  try {
+    doc.addFileToVFS("Poppins-Regular.ttf", fonts.regular);
+    doc.addFont("Poppins-Regular.ttf", "Poppins", "normal");
+    doc.addFileToVFS("Poppins-Medium.ttf", fonts.semibold);
+    doc.addFont("Poppins-Medium.ttf", "Poppins", "bold");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function toCSV(headers: string[], rows: (string | number)[][], totals?: (string | number)[]) {
   const escape = (v: string | number) => {
     const s = String(v ?? "");
