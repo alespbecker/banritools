@@ -12,33 +12,36 @@ import * as XLSX from "xlsx";
 export type ExportColumn<T> = {
   key: string;
   label: string;
-  /** value used for CSV/PDF/XLSX cells */
   accessor: (row: T) => string | number;
-  /** default checked */
   defaultChecked?: boolean;
-  /** column formatting hint — affects alignment, totals, number formats */
   format?: "text" | "integer" | "number" | "currency" | "date";
-  /** include this column in the totals/summary row */
   summable?: boolean;
 };
 
+export type ExportSummaryItem = { label: string; value: string; hint?: string };
+
 type Props<T> = {
   title?: string;
-  /** Optional secondary line shown on PDF header (e.g. period, agency name) */
   subtitle?: string;
   filenameBase: string;
   columns: ExportColumn<T>[];
   rows: T[];
   triggerLabel?: string;
+  /** KPIs do time renderizados como cards no topo do PDF/XLSX */
+  summary?: ExportSummaryItem[];
 };
 
 type Fmt = "pdf" | "xlsx" | "csv";
 
-// Brand primary (#0047AB) used in PDF header band.
+// Paleta da marca (alinhada ao logo: azul, teal, violeta)
 const BRAND_RGB: [number, number, number] = [0, 71, 171];
+const BRAND_BLUE: [number, number, number] = [0, 148, 255];   // #0094FF
+const BRAND_TEAL: [number, number, number] = [28, 216, 202];  // #1CD8CA
+const BRAND_VIOLET: [number, number, number] = [147, 111, 250]; // #936FFA
 const BRAND_SOFT_RGB: [number, number, number] = [239, 244, 252];
 const TEXT_RGB: [number, number, number] = [30, 41, 59];
 const MUTED_RGB: [number, number, number] = [100, 116, 139];
+const BORDER_RGB: [number, number, number] = [226, 232, 240];
 
 function toCSV(headers: string[], rows: (string | number)[][], totals?: (string | number)[]) {
   const escape = (v: string | number) => {
@@ -62,15 +65,50 @@ function formatCell<T>(col: ExportColumn<T>, raw: string | number): string {
   const n = typeof raw === "number" ? raw : Number(raw);
   const isNum = !Number.isNaN(n) && typeof raw !== "string";
   switch (col.format) {
-    case "currency":
-      return fmtBRL(isNum ? n : Number(raw) || 0);
-    case "integer":
-      return fmtInt(isNum ? n : Number(raw) || 0);
-    case "number":
-      return fmtNum(isNum ? n : Number(raw) || 0);
-    default:
-      return String(raw);
+    case "currency": return fmtBRL(isNum ? n : Number(raw) || 0);
+    case "integer":  return fmtInt(isNum ? n : Number(raw) || 0);
+    case "number":   return fmtNum(isNum ? n : Number(raw) || 0);
+    default: return String(raw);
   }
+}
+
+/** Desenha um hexágono preenchido via doc.lines (jsPDF). */
+function drawHex(
+  doc: jsPDF,
+  cx: number,
+  cy: number,
+  r: number,
+  color: [number, number, number]
+) {
+  const pts: [number, number][] = [];
+  for (let i = 0; i < 6; i++) {
+    const a = (Math.PI / 3) * i - Math.PI / 2; // ponta para cima
+    pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+  }
+  const rel: [number, number][] = [];
+  for (let i = 1; i < pts.length; i++) {
+    rel.push([pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]]);
+  }
+  doc.setFillColor(color[0], color[1], color[2]);
+  doc.lines(rel, pts[0][0], pts[0][1], [1, 1], "F", true);
+}
+
+/** Desenha a marca "banritools" — 3 hexágonos + wordmark com letter spacing. */
+function drawBrand(doc: jsPDF, x: number, y: number, scale = 1) {
+  // Três hexágonos pequenos: topo, esquerda, direita
+  const r = 7 * scale;
+  const dx = 6.2 * scale;
+  const dy = 9.5 * scale;
+  drawHex(doc, x + dx, y, r, BRAND_BLUE);
+  drawHex(doc, x, y + dy, r, BRAND_TEAL);
+  drawHex(doc, x + dx * 2, y + dy, r, BRAND_VIOLET);
+  // Wordmark
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(15 * scale);
+  doc.setTextColor(255, 255, 255);
+  doc.text("banritools", x + dx * 2 + r + 6 * scale, y + dy + 2 * scale, {
+    charSpace: 0.6,
+  });
 }
 
 export function ExportDialog<T>({
@@ -80,6 +118,7 @@ export function ExportDialog<T>({
   columns,
   rows,
   triggerLabel = "Exportar",
+  summary,
 }: Props<T>) {
   const [open, setOpen] = useState(false);
   const [format, setFormat] = useState<Fmt>("pdf");
@@ -98,13 +137,11 @@ export function ExportDialog<T>({
 
   const headers = activeColumns.map((c) => c.label);
 
-  // Raw numeric/string values per row (for XLSX precision)
   const rawBody = useMemo(
     () => rows.map((row) => activeColumns.map((c) => c.accessor(row))),
     [rows, activeColumns]
   );
 
-  // Pre-formatted strings (for PDF + CSV display)
   const formattedBody = useMemo(
     () => rows.map((row) => activeColumns.map((c) => formatCell(c, c.accessor(row)))),
     [rows, activeColumns]
@@ -123,7 +160,6 @@ export function ExportDialog<T>({
   }, [activeColumns, rows]);
 
   const hasTotals = activeColumns.some((c) => c.summable);
-  // Ensure first totals cell shows label even if first column isn't summable.
   if (hasTotals && totals[0] === "") totals[0] = `Total (${rows.length})`;
 
   const stamp = () => {
@@ -146,15 +182,73 @@ export function ExportDialog<T>({
   };
 
   const handleXLSX = () => {
+    const lastCol = Math.max(headers.length - 1, 0);
     const aoa: (string | number)[][] = [];
-    // Title rows
-    aoa.push([title]);
-    if (subtitle) aoa.push([subtitle]);
-    aoa.push([`Gerado em ${new Date().toLocaleString("pt-BR")}`]);
-    aoa.push([]);
+    const merges: XLSX.Range[] = [];
+    const cellStyles: Record<string, { fill?: string; color?: string; bold?: boolean; size?: number; align?: "left" | "right" | "center" }> = {};
+
+    // Header band
+    aoa.push(["banritools"]);                                              // row 0
+    merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: lastCol } });
+    cellStyles["A1"] = { bold: true, size: 18, color: "FFFFFF", fill: "0047AB", align: "left" };
+
+    aoa.push([title]);                                                      // row 1
+    merges.push({ s: { r: 1, c: 0 }, e: { r: 1, c: lastCol } });
+    cellStyles["A2"] = { bold: true, size: 12, color: "1E293B" };
+
+    const metaLine = `${subtitle ? subtitle + "  •  " : ""}Gerado em ${new Date().toLocaleString("pt-BR")}`;
+    aoa.push([metaLine]);                                                   // row 2
+    merges.push({ s: { r: 2, c: 0 }, e: { r: 2, c: lastCol } });
+    cellStyles["A3"] = { size: 9, color: "64748B" };
+
+    aoa.push([]);                                                           // row 3 spacer
+
+    // Summary KPI block — pares (Indicador | Valor) em 2 colunas
+    if (summary && summary.length > 0) {
+      aoa.push(["RESUMO DO TIME"]);
+      merges.push({ s: { r: aoa.length - 1, c: 0 }, e: { r: aoa.length - 1, c: lastCol } });
+      cellStyles[XLSX.utils.encode_cell({ r: aoa.length - 1, c: 0 })] = {
+        bold: true, size: 10, color: "FFFFFF", fill: "0094FF",
+      };
+
+      // Distribuir até 4 KPIs por linha
+      for (let i = 0; i < summary.length; i += 2) {
+        const left = summary[i];
+        const right = summary[i + 1];
+        const row: (string | number)[] = [left.label, left.value];
+        while (row.length < Math.floor(lastCol / 2) * 2) row.push("");
+        if (right) {
+          // posição: metade direita
+          const mid = Math.max(2, Math.floor((lastCol + 1) / 2));
+          while (row.length < mid) row.push("");
+          row.push(right.label, right.value);
+        }
+        aoa.push(row);
+        const rIdx = aoa.length - 1;
+        cellStyles[XLSX.utils.encode_cell({ r: rIdx, c: 0 })] = { bold: true, size: 9, color: "64748B" };
+        cellStyles[XLSX.utils.encode_cell({ r: rIdx, c: 1 })] = { bold: true, size: 11, color: "0047AB" };
+        if (right) {
+          const mid = Math.max(2, Math.floor((lastCol + 1) / 2));
+          cellStyles[XLSX.utils.encode_cell({ r: rIdx, c: mid })] = { bold: true, size: 9, color: "64748B" };
+          cellStyles[XLSX.utils.encode_cell({ r: rIdx, c: mid + 1 })] = { bold: true, size: 11, color: "0047AB" };
+        }
+      }
+      aoa.push([]); // spacer
+    }
+
+    // Table headers
+    const headerRowIdx = aoa.length;
     aoa.push(headers);
-    // Data rows — push raw values so Excel keeps numbers numeric
+    headers.forEach((_, c) => {
+      cellStyles[XLSX.utils.encode_cell({ r: headerRowIdx, c })] = {
+        bold: true, color: "FFFFFF", fill: "0047AB", size: 10,
+      };
+    });
+
+    // Data rows
     rawBody.forEach((r) => aoa.push(r));
+
+    // Totals
     if (hasTotals) {
       const totalsRaw = activeColumns.map((c, idx) => {
         if (!c.summable) return idx === 0 ? `Total (${rows.length})` : "";
@@ -167,23 +261,19 @@ export function ExportDialog<T>({
       });
       if (!activeColumns[0].summable) totalsRaw[0] = `Total (${rows.length})`;
       aoa.push(totalsRaw);
+      const totalsRowIdx = aoa.length - 1;
+      totalsRaw.forEach((_, c) => {
+        cellStyles[XLSX.utils.encode_cell({ r: totalsRowIdx, c })] = {
+          bold: true, color: "0047AB", fill: "EFF4FC",
+        };
+      });
     }
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!merges"] = merges;
+    ws["!cols"] = activeColumns.map((c) => ({ wch: Math.max(14, c.label.length + 6) }));
 
-    // Merge title rows across all columns
-    const lastCol = Math.max(headers.length - 1, 0);
-    ws["!merges"] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: lastCol } },
-      ...(subtitle ? [{ s: { r: 1, c: 0 }, e: { r: 1, c: lastCol } }] : []),
-      { s: { r: subtitle ? 2 : 1, c: 0 }, e: { r: subtitle ? 2 : 1, c: lastCol } },
-    ];
-
-    // Column widths
-    ws["!cols"] = activeColumns.map((c) => ({ wch: Math.max(12, c.label.length + 4) }));
-
-    // Number formats per cell
-    const headerRowIdx = subtitle ? 4 : 3;
+    // Aplicar number formats nas células de dados
     rawBody.forEach((row, r) => {
       row.forEach((val, c) => {
         const col = activeColumns[c];
@@ -197,6 +287,26 @@ export function ExportDialog<T>({
       });
     });
 
+    // Aplicar estilos (xlsx-js-style format)
+    for (const ref in cellStyles) {
+      const s = cellStyles[ref];
+      const cell = ws[ref];
+      if (!cell) continue;
+      cell.s = {
+        font: {
+          name: "Calibri",
+          sz: s.size ?? 10,
+          bold: !!s.bold,
+          color: { rgb: s.color ?? "1E293B" },
+        },
+        fill: s.fill ? { patternType: "solid", fgColor: { rgb: s.fill } } : undefined,
+        alignment: { horizontal: s.align ?? "left", vertical: "center" },
+      };
+    }
+
+    // Altura da primeira linha (header band)
+    ws["!rows"] = [{ hpt: 28 }];
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Relatório");
     XLSX.writeFile(wb, `${filenameBase}-${stamp()}.xlsx`);
@@ -208,56 +318,103 @@ export function ExportDialog<T>({
     const pageH = doc.internal.pageSize.getHeight();
     const margin = 32;
 
-    // Header band
+    // ===== Header band com marca =====
+    const bandH = 64;
     doc.setFillColor(...BRAND_RGB);
-    doc.rect(0, 0, pageW, 56, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.text("BanriTools", margin, 24);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text("Relatório executivo", margin, 40);
+    doc.rect(0, 0, pageW, bandH, "F");
+    drawBrand(doc, margin, 16, 1);
 
-    // Right-aligned generation date
+    // Data à direita
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
     doc.text(
       `Gerado em ${new Date().toLocaleString("pt-BR")}`,
       pageW - margin,
-      40,
+      bandH - 12,
       { align: "right" }
     );
 
-    // Title block
+    // ===== Título =====
+    let cursorY = bandH + 24;
     doc.setTextColor(...TEXT_RGB);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    doc.text(title, margin, 84);
+    doc.setFontSize(14);
+    doc.text(title, margin, cursorY);
+    cursorY += 14;
     if (subtitle) {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       doc.setTextColor(...MUTED_RGB);
-      doc.text(subtitle, margin, 100);
+      doc.text(subtitle, margin, cursorY);
+      cursorY += 12;
     }
     doc.setFontSize(9);
     doc.setTextColor(...MUTED_RGB);
     doc.text(
       `${rows.length} ${rows.length === 1 ? "registro" : "registros"} • ${activeColumns.length} ${activeColumns.length === 1 ? "coluna" : "colunas"}`,
       margin,
-      subtitle ? 114 : 100
+      cursorY
     );
+    cursorY += 10;
+
+    // ===== KPI cards (Resumo do Time) =====
+    if (summary && summary.length > 0) {
+      cursorY += 8;
+      const gap = 10;
+      const cardsPerRow = Math.min(4, summary.length);
+      const cardW = (pageW - margin * 2 - gap * (cardsPerRow - 1)) / cardsPerRow;
+      const cardH = 52;
+      const accents: Array<[number, number, number]> = [BRAND_BLUE, BRAND_TEAL, BRAND_VIOLET, BRAND_RGB];
+
+      summary.slice(0, cardsPerRow).forEach((kpi, i) => {
+        const x = margin + i * (cardW + gap);
+        const y = cursorY;
+        // sombra leve
+        doc.setFillColor(...BRAND_SOFT_RGB);
+        doc.roundedRect(x, y, cardW, cardH, 6, 6, "F");
+        // borda
+        doc.setDrawColor(...BORDER_RGB);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(x, y, cardW, cardH, 6, 6, "S");
+        // barra colorida lateral
+        const accent = accents[i % accents.length];
+        doc.setFillColor(...accent);
+        doc.rect(x, y, 3, cardH, "F");
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(...MUTED_RGB);
+        doc.text(kpi.label.toUpperCase(), x + 12, y + 16, { charSpace: 0.4 });
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(16);
+        doc.setTextColor(...TEXT_RGB);
+        doc.text(kpi.value, x + 12, y + 38);
+
+        if (kpi.hint) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(7);
+          doc.setTextColor(...MUTED_RGB);
+          doc.text(kpi.hint, x + 12, y + 48);
+        }
+      });
+      cursorY += cardH + 16;
+    } else {
+      cursorY += 8;
+    }
 
     autoTable(doc, {
       head: [headers],
       body: formattedBody,
       foot: hasTotals ? [totals.map((v) => String(v))] : undefined,
-      startY: subtitle ? 124 : 110,
+      startY: cursorY,
       margin: { left: margin, right: margin, bottom: 40 },
       styles: {
         fontSize: 8,
         cellPadding: 5,
         textColor: TEXT_RGB,
-        lineColor: [226, 232, 240],
+        lineColor: BORDER_RGB,
         lineWidth: 0.5,
       },
       headStyles: {
@@ -276,7 +433,6 @@ export function ExportDialog<T>({
         activeColumns.map((c, i) => [i, { halign: alignFor(c) }])
       ),
       didDrawPage: () => {
-        // Footer with page number + brand line
         const p = doc.getCurrentPageInfo().pageNumber;
         const total = doc.getNumberOfPages();
         doc.setDrawColor(...BRAND_RGB);
@@ -285,7 +441,7 @@ export function ExportDialog<T>({
         doc.setFontSize(8);
         doc.setTextColor(...MUTED_RGB);
         doc.setFont("helvetica", "normal");
-        doc.text("BanriTools — Confidencial", margin, pageH - 16);
+        doc.text("banritools — Confidencial", margin, pageH - 16, { charSpace: 0.3 });
         doc.text(`Página ${p} de ${total}`, pageW - margin, pageH - 16, { align: "right" });
       },
     });
@@ -320,11 +476,8 @@ export function ExportDialog<T>({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Format picker */}
         <div className="space-y-2">
-          <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Formato
-          </Label>
+          <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Formato</Label>
           <RadioGroup
             value={format}
             onValueChange={(v) => setFormat(v as Fmt)}
@@ -339,9 +492,7 @@ export function ExportDialog<T>({
                 key={v}
                 htmlFor={`fmt-${v}`}
                 className={`flex cursor-pointer flex-col items-center gap-1 rounded-md border p-3 text-center transition-colors ${
-                  format === v
-                    ? "border-primary bg-primary/5 text-primary"
-                    : "border-border hover:bg-accent"
+                  format === v ? "border-primary bg-primary/5 text-primary" : "border-border hover:bg-accent"
                 }`}
               >
                 <RadioGroupItem value={v} id={`fmt-${v}`} className="sr-only" />
@@ -372,19 +523,14 @@ export function ExportDialog<T>({
               key={c.key}
               className="flex cursor-pointer items-center gap-2 rounded-md border border-border p-2 hover:bg-accent transition-colors"
             >
-              <Checkbox
-                checked={!!selected[c.key]}
-                onCheckedChange={() => toggle(c.key)}
-              />
+              <Checkbox checked={!!selected[c.key]} onCheckedChange={() => toggle(c.key)} />
               <span className="text-sm">{c.label}</span>
             </Label>
           ))}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancelar
-          </Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
           <Button onClick={handleExport} disabled={noneChecked} className="gap-2">
             <Download className="h-4 w-4" />
             Exportar {format.toUpperCase()}
