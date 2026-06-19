@@ -43,7 +43,7 @@ export function Topbar({ userName, userRole, onMenuClick }: TopbarProps) {
     }
   };
 
-  const initial = (userName || profile?.email || "U")[0]?.toUpperCase() ?? "U";
+  const avatarSrc = profile?.avatar_url || defaultAvatar;
 
   return (
     <header className="relative flex h-14 shrink-0 items-center justify-between gap-3 bg-background/60 px-4 backdrop-blur-md sm:px-6">
