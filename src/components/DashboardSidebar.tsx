@@ -8,6 +8,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import type { AppRole } from "@/features/auth/types";
+import { Logo } from "@/components/Logo";
 
 // Navegação principal — experiência atual do produto.
 const navItems = [
@@ -59,14 +60,8 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
       )}
     >
       <div className="flex h-14 items-center gap-3 border-b border-border/60 px-4">
-        {/* Placeholder do logotipo do banco */}
-        <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-dashed border-border/70 bg-muted/30 text-[10px] font-medium text-muted-foreground"
-          aria-label="Logotipo (placeholder)"
-          title="Logotipo (placeholder)"
-        >
-          logo
-        </div>
+        {/* Logotipo BanriTools */}
+        <Logo size={32} ariaLabel="BanriTools" className="rounded-md" />
         {isExpanded && (
           <span className="whitespace-nowrap text-sm font-semibold tracking-tight text-sidebar-foreground">
             Banritools
