@@ -144,6 +144,7 @@ function Page() {
             <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1" autoComplete="email" />
             {fieldErrors.email && <p className="mt-1 text-xs text-destructive">{fieldErrors.email}</p>}
           </div>
+          <CargoSelect value={cargo} onChange={(v) => { setCargo(v); setCargoError(""); }} error={cargoError} required />
           <div>
             <Label htmlFor="password">Senha</Label>
             <div className="relative mt-1">
