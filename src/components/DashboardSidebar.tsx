@@ -11,17 +11,19 @@ import type { AppRole } from "@/features/auth/types";
 import { Logo } from "@/components/Logo";
 
 // Navegação principal — experiência atual do produto.
+// `adminOnly`: visível para admin OU gerente (gestão da agência)
+// `ownerOnly`: visível somente para admin (seções técnicas / internas)
 const navItems = [
-  { label: "Início", to: "/dashboard-v3", icon: LayoutDashboard, adminOnly: false },
-  { label: "Painel da Agência", to: "/admin", icon: Shield, adminOnly: true },
-  { label: "Registrar Produção", to: "/registrar-producao-v3", icon: FileText, adminOnly: false },
-  { label: "Ranking", to: "/ranking-v3", icon: Trophy, adminOnly: false },
-  { label: "Campanhas", to: "/campanhas", icon: Megaphone, adminOnly: false },
-  { label: "Metas", to: "/metas", icon: Target, adminOnly: false },
-  { label: "Ferramentas", to: "/tools", icon: Wrench, adminOnly: false },
-  { label: "Produtos", to: "/admin/produtos", icon: Package, adminOnly: true },
-  { label: "Convites", to: "/admin/convites", icon: Mail, adminOnly: true },
-  { label: "Design System", to: "/design-system", icon: Palette, adminOnly: true },
+  { label: "Início", to: "/dashboard-v3", icon: LayoutDashboard, adminOnly: false, ownerOnly: false },
+  { label: "Painel da Agência", to: "/admin", icon: Shield, adminOnly: true, ownerOnly: false },
+  { label: "Registrar Produção", to: "/registrar-producao-v3", icon: FileText, adminOnly: false, ownerOnly: false },
+  { label: "Ranking", to: "/ranking-v3", icon: Trophy, adminOnly: false, ownerOnly: false },
+  { label: "Campanhas", to: "/campanhas", icon: Megaphone, adminOnly: false, ownerOnly: false },
+  { label: "Metas", to: "/metas", icon: Target, adminOnly: false, ownerOnly: false },
+  { label: "Ferramentas", to: "/tools", icon: Wrench, adminOnly: false, ownerOnly: false },
+  { label: "Produtos", to: "/admin/produtos", icon: Package, adminOnly: true, ownerOnly: false },
+  { label: "Convites", to: "/admin/convites", icon: Mail, adminOnly: true, ownerOnly: false },
+  { label: "Design System", to: "/design-system", icon: Palette, adminOnly: true, ownerOnly: true },
 ] as const;
 
 interface DashboardSidebarProps {
@@ -75,7 +77,13 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
       </div>
 
       <nav aria-label="Menu" className="flex-1 overflow-y-auto space-y-1 p-2">
-        {navItems.filter((i) => !i.adminOnly || isAdminLike).map((item) => {
+        {navItems
+          .filter((i) => {
+            if (i.ownerOnly) return userRole === "admin";
+            if (i.adminOnly) return isAdminLike;
+            return true;
+          })
+          .map((item) => {
           const isActive = isRouteActive(item.to);
           return (
             <Link
