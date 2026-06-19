@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles, AlertCircle } from "lucide-react";
+import { CargoSelect, type CargoSelectValue } from "@/features/auth/CargoSelect";
 
 export const Route = createFileRoute("/convite/$code")({
   head: ({ params }) => ({
@@ -36,6 +37,8 @@ function Page() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [confirm, setConfirm] = useState("");
+  const [cargo, setCargo] = useState<CargoSelectValue>({ cargo: "", especialidade: "" });
+  const [cargoError, setCargoError] = useState<string>("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
