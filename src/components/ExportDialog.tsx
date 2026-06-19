@@ -43,6 +43,50 @@ const TEXT_RGB: [number, number, number] = [30, 41, 59];
 const MUTED_RGB: [number, number, number] = [100, 116, 139];
 const BORDER_RGB: [number, number, number] = [226, 232, 240];
 
+// ===== Poppins font loader (para a marca no PDF) =====
+let poppinsPromise: Promise<{ regular: string; semibold: string } | null> | null = null;
+function bufferToBase64(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(
+      null,
+      Array.from(bytes.subarray(i, i + chunk)) as unknown as number[]
+    );
+  }
+  return btoa(binary);
+}
+async function loadPoppins() {
+  if (!poppinsPromise) {
+    poppinsPromise = (async () => {
+      try {
+        const base = "https://cdn.jsdelivr.net/npm/@fontsource/poppins/files";
+        const [r, s] = await Promise.all([
+          fetch(`${base}/poppins-latin-400-normal.ttf`).then((r) => r.arrayBuffer()),
+          fetch(`${base}/poppins-latin-500-normal.ttf`).then((r) => r.arrayBuffer()),
+        ]);
+        return { regular: bufferToBase64(r), semibold: bufferToBase64(s) };
+      } catch {
+        return null;
+      }
+    })();
+  }
+  return poppinsPromise;
+}
+function registerPoppins(doc: jsPDF, fonts: { regular: string; semibold: string } | null) {
+  if (!fonts) return false;
+  try {
+    doc.addFileToVFS("Poppins-Regular.ttf", fonts.regular);
+    doc.addFont("Poppins-Regular.ttf", "Poppins", "normal");
+    doc.addFileToVFS("Poppins-Medium.ttf", fonts.semibold);
+    doc.addFont("Poppins-Medium.ttf", "Poppins", "bold");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function toCSV(headers: string[], rows: (string | number)[][], totals?: (string | number)[]) {
   const escape = (v: string | number) => {
     const s = String(v ?? "");
@@ -95,7 +139,7 @@ function drawHex(
 
 /** Desenha a marca "banritools" — 3 hexágonos + wordmark com letter spacing.
  *  Retorna a largura total aproximada (para alinhamento). */
-function drawBrand(doc: jsPDF, x: number, yCenter: number, scale = 1): number {
+function drawBrand(doc: jsPDF, x: number, yCenter: number, scale = 1, hasPoppins = false): number {
   const r = 7 * scale;
   const dx = 6.2 * scale;
   const dy = 9.5 * scale;
@@ -105,12 +149,16 @@ function drawBrand(doc: jsPDF, x: number, yCenter: number, scale = 1): number {
   drawHex(doc, x + dx, topY, r, BRAND_BLUE);
   drawHex(doc, x, topY + dy, r, BRAND_TEAL);
   drawHex(doc, x + dx * 2, topY + dy, r, BRAND_VIOLET);
-  // Wordmark — um pouco mais bold
-  doc.setFont("helvetica", "bold");
+  // Wordmark — Poppins medium (proporcional ao sidebar: peso 500, tracking leve)
+  if (hasPoppins) {
+    doc.setFont("Poppins", "bold");
+  } else {
+    doc.setFont("helvetica", "normal");
+  }
   doc.setFontSize(15 * scale);
   doc.setTextColor(255, 255, 255);
-  const textX = x + dx * 2 + r + 8 * scale;
-  doc.text("banritools", textX, yCenter, { charSpace: 0.5, baseline: "middle" });
+  const textX = x + dx * 2 + r + 4 * scale; // mais perto do logo
+  doc.text("banritools", textX, yCenter, { charSpace: 0.3, baseline: "middle" });
   const textW = doc.getTextWidth("banritools");
   return textX + textW - x;
 }
@@ -316,18 +364,22 @@ export function ExportDialog<T>({
     XLSX.writeFile(wb, `${filenameBase}-${stamp()}.xlsx`);
   };
 
-  const handlePDF = () => {
+  const handlePDF = async () => {
     const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const margin = 32;
+
+    // Carrega Poppins p/ a marca (best-effort, cai p/ helvetica se falhar)
+    const fonts = await loadPoppins();
+    const hasPoppins = registerPoppins(doc, fonts);
 
     // ===== Header band com marca =====
     const bandH = 64;
     doc.setFillColor(...BRAND_RGB);
     doc.rect(0, 0, pageW, bandH, "F");
     const bandCenterY = bandH / 2;
-    drawBrand(doc, margin, bandCenterY, 1);
+    drawBrand(doc, margin, bandCenterY, 1, hasPoppins);
 
     // Data à direita — centralizada verticalmente na band
     doc.setFont("helvetica", "normal");
@@ -445,8 +497,9 @@ export function ExportDialog<T>({
         doc.line(margin, pageH - 28, pageW - margin, pageH - 28);
         doc.setFontSize(8);
         doc.setTextColor(...MUTED_RGB);
-        doc.setFont("helvetica", "normal");
+        doc.setFont(hasPoppins ? "Poppins" : "helvetica", "normal");
         doc.text("banritools — Confidencial", margin, pageH - 16, { charSpace: 0.3 });
+        doc.setFont("helvetica", "normal");
         doc.text(`Página ${p} de ${total}`, pageW - margin, pageH - 16, { align: "right" });
       },
     });
