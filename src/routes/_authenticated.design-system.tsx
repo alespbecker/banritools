@@ -59,14 +59,14 @@ function DesignSystemPage() {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Design System</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Pré-visualização dos componentes com a paleta atual. Use o toggle para alternar entre o tema
-            antigo e o <strong>DS v2</strong> (paleta oficial do PDF — azul Banrisul, navy, turquesa, roxo).
+            Pré-visualização dos componentes com a paleta oficial (DS v2 ativo por padrão).
+            Use o toggle para alternar entre o <strong>DS v2</strong> e o tema legado.
           </p>
         </div>
         <label className="flex items-center gap-3 rounded-lg border border-border bg-background px-4 py-3">
           <div className="text-right">
             <div className="text-sm font-medium text-foreground">DS v2</div>
-            <div className="text-xs text-muted-foreground">{enabled ? "Ativo" : "Desligado"}</div>
+            <div className="text-xs text-muted-foreground">{enabled ? "Ativo" : "Legado"}</div>
           </div>
           <Switch checked={enabled} onCheckedChange={toggle} aria-label="Alternar DS v2" />
         </label>

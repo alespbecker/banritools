@@ -3,8 +3,8 @@ import { useCallback, useEffect, useState } from "react";
 const STORAGE_KEY = "ds:v2";
 
 function readInitial(): boolean {
-  if (typeof window === "undefined") return false;
-  return window.localStorage.getItem(STORAGE_KEY) === "1";
+  if (typeof window === "undefined") return true;
+  return window.localStorage.getItem(STORAGE_KEY) !== "0";
 }
 
 function apply(enabled: boolean) {
@@ -34,5 +34,5 @@ export function useDsV2() {
 /** Aplica a flag no boot (antes da árvore React montar valores), evita flash. */
 export function bootDsV2() {
   if (typeof window === "undefined") return;
-  apply(window.localStorage.getItem(STORAGE_KEY) === "1");
+  apply(window.localStorage.getItem(STORAGE_KEY) !== "0");
 }
