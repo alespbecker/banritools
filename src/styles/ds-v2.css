@@ -1,0 +1,120 @@
+/* ============================================================
+   Banritools — Design System v2 (override mapping)
+   Re-mapeia os tokens shadcn para a paleta do PDF oficial,
+   sem precisar trocar classes em componentes.
+   Ativação: classe `.ds-v2` aplicada no <html>.
+   ============================================================ */
+
+/* DARK (default da app) */
+.ds-v2:where(:root, .dark) {
+  --background: #0A0D14;            /* gray-950 */
+  --foreground: #F7F8FA;            /* gray-50  */
+
+  --card: #121620;                   /* gray-900 */
+  --card-foreground: #F7F8FA;
+
+  --popover: #121620;
+  --popover-foreground: #F7F8FA;
+
+  --primary: #0077DB;                /* botão sólido — primary-600 */
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #1F2530;              /* gray-800 */
+  --secondary-foreground: #EDF0F5;
+
+  --muted: #1F2530;
+  --muted-foreground: #98A2B5;       /* gray-400 */
+
+  --accent: #0094FF;                 /* acento — primary-500 */
+  --accent-foreground: #FFFFFF;
+
+  --destructive: #F0463C;            /* error-500 */
+  --destructive-foreground: #FFFFFF;
+
+  --border: #353D4B;                 /* gray-700 */
+  --input: #353D4B;
+  --ring: #0094FF;
+
+  --chart-1: #0094FF;
+  --chart-2: #1CD8CA;                /* turquoise-500 */
+  --chart-3: #936FFA;                /* purple-500   */
+  --chart-4: #F6B43C;                /* warning-400  */
+  --chart-5: #1FB866;                /* success-500  */
+
+  --sidebar: #0D0D5C;                /* navy-700 — destaque institucional */
+  --sidebar-foreground: #EDF0F5;
+  --sidebar-primary: #0094FF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #1A1A6E;         /* navy-600 */
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #1A1A6E;
+  --sidebar-ring: #0094FF;
+
+  --success: #1FB866;
+  --success-foreground: #04220F;
+  --warning: #F6B43C;
+  --warning-foreground: #3A2503;
+  --info: #0094FF;
+  --info-foreground: #FFFFFF;
+
+  --brand-teal: #1CD8CA;
+  --brand-violet: #936FFA;
+  --brand-deep: #000050;
+}
+
+/* LIGHT */
+.ds-v2.light {
+  --background: #F7F8FA;             /* gray-50 */
+  --foreground: #121620;             /* gray-900 */
+
+  --card: #FFFFFF;
+  --card-foreground: #121620;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #121620;
+
+  --primary: #0077DB;                /* primary-600 */
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #EDF0F5;              /* gray-100 */
+  --secondary-foreground: #1F2530;
+
+  --muted: #EDF0F5;
+  --muted-foreground: #4B5566;       /* gray-600 */
+
+  --accent: #0094FF;                 /* primary-500 */
+  --accent-foreground: #FFFFFF;
+
+  --destructive: #D32A20;            /* error-600 */
+  --destructive-foreground: #FFFFFF;
+
+  --border: #DEE3EC;                 /* gray-200 */
+  --input: #C5CCDA;                  /* gray-300 */
+  --ring: #0094FF;
+
+  --chart-1: #0077DB;
+  --chart-2: #12A99E;
+  --chart-3: #7544EE;
+  --chart-4: #E89510;
+  --chart-5: #138A4A;
+
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1F2530;
+  --sidebar-primary: #0061B0;        /* primary-700 — texto/ativo seguro em fundo claro */
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EDF0F5;
+  --sidebar-accent-foreground: #121620;
+  --sidebar-border: #DEE3EC;
+  --sidebar-ring: #0094FF;
+
+  --success: #0E6E3B;                /* success-700 */
+  --success-foreground: #FFFFFF;
+  --warning: #8A5808;                /* warning-700 */
+  --warning-foreground: #FFFFFF;
+  --info: #0061B0;
+  --info-foreground: #FFFFFF;
+
+  --brand-teal: #12A99E;
+  --brand-violet: #7544EE;
+  --brand-deep: #000050;
+}

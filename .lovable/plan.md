@@ -1,141 +1,69 @@
-# BanriTools — Etapa 1.5 (Completar Modelagem) + Etapa 2 (Funcionalidades)
 
-## Princípio
+## Diagnóstico rápido
 
-Sistema antigo (`daily_reports`, dashboard atual, ranking atual) **permanece intacto**. Tudo que for novo nasce em paralelo, em rotas dedicadas, marcadas como "(Novo)".
+Hoje convivem **dois sistemas de tokens** no projeto:
 
-Priorizar lógica e estrutura, não UI. As telas podem ser simples.
+1. `src/styles.css` — tokens shadcn (`--background`, `--card`, `--primary`, `--accent`, `--border`…). **Todas** as telas, componentes shadcn e rotas v2/v3 usam estas variáveis via classes `bg-card`, `text-foreground`, `bg-primary`, etc.
+2. `src/styles/tokens.css` — primitivos do novo Design System (Primary `#0094FF`, Navy `#000050`, Turquesa, Roxo, escala neutra própria, raios, sombras, motion) + semânticos próprios (`--bg`, `--surface`, `--text`, `--primary`, `--primary-strong`).
 
----
+Os dois arquivos declaram `@theme inline` com `--color-primary`, `--color-border` etc. **conflitando**. Hoje o `tokens.css` é importado *antes* do bloco `@theme` do `styles.css`, então o shadcn ganha e o novo DS fica "morto" — só os primitivos (`--primary-500`, `--navy-800`) e as fontes (`Exo 2` / `Source Sans 3` aplicadas via seletor global em `body, p, h1…`) estão de fato em uso.
 
-## PARTE A — Completar Modelagem (Etapa 1.5)
+Aplicar o DS "de uma vez" trocando classes em todos os componentes para `bg-surface`, `text-text`, `bg-primary-strong` etc. é o caminho arriscado — são centenas de pontos.
 
-### Migração SQL (uma única migration)
+## Estratégia: re-mapear, não reescrever
 
-**1. `products` — adicionar:**
+O atalho seguro é **manter os nomes shadcn** (`--background`, `--card`, `--primary`, `--accent`, `--border`, `--ring`, `--success`, `--warning`, `--destructive`…) e fazer com que apontem para a paleta nova do PDF. Assim, **zero componente precisa mudar de classe** e o look-and-feel migra inteiro.
 
-- `metric_type text not null default 'quantity'` — valores válidos: `quantity`, `amount`, `mixed` (validado por trigger, não CHECK)
-- `display_order integer not null default 0` — ordenação na UI
+Regra de ouro do PDF (acessibilidade): `#0094FF` (primary-500) é só acento/ícone/foco/títulos grandes. Botão sólido = `#0077DB` (600). Texto/links = `#0061B0` (700). Vou refletir isso no mapeamento:
 
-**2. `production_entries` — adicionar:**
+| Token shadcn          | Dark (novo)                     | Light (novo)                  |
+| --------------------- | ------------------------------- | ----------------------------- |
+| `--background`        | `--gray-950` #0A0D14            | `--gray-50` #F7F8FA           |
+| `--card` / `--popover`| `--gray-900` #121620            | `--gray-0` #FFFFFF            |
+| `--secondary`/`--muted`| `--gray-800` #1F2530           | `--gray-100` #EDF0F5          |
+| `--foreground`        | `--gray-50`                     | `--gray-900`                  |
+| `--muted-foreground`  | `--gray-400`                    | `--gray-500/600`              |
+| `--border` / `--input`| `--gray-700`                    | `--gray-200`                  |
+| `--primary` (botão)   | `--primary-600` #0077DB         | `--primary-600` #0077DB       |
+| `--accent` (foco/ícone)| `--primary-500` #0094FF        | `--primary-500` #0094FF       |
+| `--ring`              | `--primary-500`                 | `--primary-500`               |
+| `--destructive`       | `--error-500`                   | `--error-600`                 |
+| `--success`           | `--success-500`                 | `--success-700`               |
+| `--warning`           | `--warning-400`                 | `--warning-700`               |
+| `--sidebar`           | `--navy-900` / `--gray-900`     | `--gray-0`                    |
+| `--brand-deep`        | `--navy-800` #000050            | `--navy-800`                  |
+| `--brand-teal/violet` | turquoise-500 / purple-500      | turquoise-600 / purple-600    |
 
-- `status text not null default 'confirmed'` — valores válidos: `draft`, `confirmed`, `cancelled` (validado por trigger)
-- Índice em `(user_id, entry_date)` e `(agency_id, entry_date)` para dashboard
+Tipografia já está correta (logo Poppins, display Exo 2, corpo Source Sans 3) — não mexo.
 
-**3. `goals` — adicionar:**
+## Como reduzir o risco a quase zero
 
-- `period_type text not null default 'monthly'` — valores: `daily`, `weekly`, `monthly`, `quarterly`, `yearly` (trigger)
-- `scope text not null default 'individual'` — valores: `individual`, `agency` (trigger)
+1. **Página de preview do DS** — criar `/_authenticated/design-system` que renderiza, lado a lado, todos os primitivos shadcn em uso real: Buttons (default/secondary/destructive/outline/ghost), Badges, Inputs, Cards, Tabs, Alerts, Dialog, Toast, Skeleton, Progress, Chart de exemplo, ranking row, FAB. Serve de "olhômetro" antes/depois.
+2. **Feature flag por classe** — encapsular o novo mapeamento em `.ds-v2` aplicado no `<html>`, com toggle persistido em `localStorage` (`ds:v2`). Default: **off**. Ligando, o novo mapping vence; desligando, volta ao atual instantaneamente. Permite alternar in-place na própria página de preview.
+3. **Auditoria visual rápida** das telas críticas com a flag ligada: `/dashboard`, `/dashboard-v2`, `/dashboard-v3`, `/registrar-producao-v2`, `/ranking-v2`, `/metas`, `/campanhas`, `/admin/produtos`, sidebar, AppLoading, login. Marcar qualquer regressão visível.
+4. **Limpeza dos conflitos** — remover/ajustar o `@theme inline` duplicado em `tokens.css` para evitar que mapeamentos não-shadcn (ex.: `--color-border` apontando para a borda nova) interfiram fora do bloco de override.
+5. **Promoção** — quando a auditoria estiver verde, virar o default (`.ds-v2` aplicado por padrão no `__root.tsx`) e manter a flag por mais alguns dias para rollback fácil.
+6. **Pós-migração (opcional, depois)** — só então considerar substituir classes shadcn por tokens semânticos do DS novo (`bg-surface`, `text-text-muted`) onde fizer sentido. Isso é cosmético e pode ser incremental por feature.
 
-**4. Seed inicial de `products**` (insert tool, não migration): popular com as 10 métricas atuais de `daily_reports` (seguro_vida, seguro_ap_smart, capitalizacao, credito_minuto_aumento, pj_conta_empresarial, pj_maquina_vero, consignado_volume, credito_fidelidade_volume, recuperacao_estagio_2, recuperacao_estagio_3) com `points_per_unit` espelhando `calculate_report_points` e `metric_type` apropriado.
+## Entregáveis desta fase
 
-`daily_reports` **não é tocada**. Triggers de pontos antigos continuam ativos.
+- `src/styles/ds-v2.css` com os blocos `.ds-v2:root, .ds-v2.dark { … }` e `.ds-v2.light { … }` redefinindo os tokens shadcn conforme a tabela acima.
+- Import desse arquivo no fim de `src/styles.css` (depois do bloco `@theme inline`, para garantir precedência via classe `.ds-v2`).
+- Ajuste no `@theme inline` de `tokens.css` removendo mapeamentos que colidem com shadcn (`--color-primary`, `--color-border`) — manter só os exclusivos do DS novo (`--color-bg`, `--color-surface`, `--color-text`, `--color-brand-deep`, fontes, raios).
+- Novo arquivo `src/routes/_authenticated/design-system.tsx` (preview + toggle da flag) e link discreto no rodapé da sidebar **só para admins**.
+- Hook minúsculo `useDsV2()` que aplica/remove a classe em `document.documentElement` e persiste em `localStorage`.
 
----
+## Como você valida
 
-## PARTE B — Etapa 2: Funcionalidades
+1. Abre `/design-system`, alterna o toggle "DS v2" → vê tudo recolorir em tempo real, dark e light.
+2. Navega pelas rotas críticas com a flag ligada e me reporta qualquer regressão pontual.
+3. Quando aprovar, peço pra eu "tornar DS v2 o padrão" — viro um booleano no `__root.tsx` e pronto. Rollback = remover a classe.
 
-Cada feature vive em `src/features/<modulo>/` (componentes, hooks, server functions). Rotas em `src/routes/_authenticated.<rota>.tsx` apontando para os módulos.
+Sem migração big-bang, sem mexer em componentes, sem risco de derrubar tela.
 
-### 1. Registro de Produção (Novo)
+## Detalhes técnicos
 
-- Rota: `/registrar-producao-v2`
-- Form dinâmico baseado em `products` ativos (ordenados por `display_order`)
-- Cada produto renderiza inputs conforme `metric_type` (quantidade, valor, ou ambos)
-- Server fn cria `production_entries` com `status='confirmed'`
-- Item no menu: "Registrar Produção (Novo)"
-
-### 2. Dashboard (Novo, híbrido)
-
-- Rota: `/dashboard-v2`
-- KPIs agregados de `production_entries` (do mês corrente)
-- Ranking pessoal, evolução semanal, distribuição por categoria de produto
-- Toggle no topbar para alternar entre antigo/novo (preferência salva em localStorage)
-
-### 3. Admin de Produtos
-
-- Rota: `/admin/produtos` (admin-only)
-- CRUD: nome, categoria, unidade, `metric_type`, `points_per_unit`, `display_order`, `active`
-- Drag-to-reorder atualiza `display_order`
-
-### 4. CRM — melhorias incrementais
-
-- Mantém tela `/contacts` atual
-- Adiciona: filtro por status, busca por nome/telefone, badge de "follow-up atrasado"
-- Sem alterar schema de `contacts`
-
-### 5. Interações de Contato (Nova tabela)
-
-- Migration cria `contact_interactions` (id, contact_id FK, user_id, type [`call`,`message`,`meeting`,`note`], notes, occurred_at)
-- RLS: dono do contato vê/insere; admin vê da agência
-- UI: drawer no card do contato com timeline de interações + form de nova
-
-### 6. Campanhas (Novas tabelas)
-
-- Migration cria:
-  - `campaigns` (id, agency_id, name, description, product_id?, target_quantity, period_start, period_end, status, created_by)
-  - `campaign_contacts` (id, campaign_id, contact_id, status [`pending`,`contacted`,`converted`,`lost`], updated_at)
-- RLS: agency-scoped; admin/gerente cria; funcionario lê e atualiza status
-- Rota: `/campanhas` — listar, criar, ver detalhe com kanban de contatos
-
-### 7. Metas (Novo sistema)
-
-- Rota: `/metas`
-- Admin/gerente: cria metas usando `goals` (produto, período, target_quantity, target_amount, scope, period_type)
-- Funcionário: vê suas metas + agregação de `production_entries` para % de progresso
-
-### 8. Ranking (Novo)
-
-- Rota: `/ranking-v2`
-- Calcula pontos a partir de `production_entries` × `products.points_per_unit`
-- View materializável depois; nesta etapa, server fn agrega sob demanda
-- Mantém `/ranking` antigo funcionando
-
----
-
-## Estrutura de arquivos
-
-```text
-src/features/
-  production/{components,server,hooks}/  → registrar-producao-v2
-  dashboard/{components,server}/          → dashboard-v2
-  admin/products/                         → admin/produtos
-  contacts/{interactions,components}/     → drawer + timeline
-  campaigns/{components,server}/          → /campanhas
-  goals/{components,server}/              → /metas
-  ranking/{components,server}/            → /ranking-v2
-src/routes/
-  _authenticated.registrar-producao-v2.tsx
-  _authenticated.dashboard-v2.tsx
-  _authenticated.admin.produtos.tsx
-  _authenticated.campanhas.tsx
-  _authenticated.metas.tsx
-  _authenticated.ranking-v2.tsx
-```
-
-Sidebar ganha seção "Novo (beta)" agrupando rotas v2, sem remover as antigas.
-
----
-
-## Ordem de execução
-
-1. Migration: campos novos em `products`/`production_entries`/`goals` + tabelas `contact_interactions`, `campaigns`, `campaign_contacts` + índices + triggers de validação
-2. Seed de `products` (insert tool)
-3. Server functions por módulo (createServerFn com requireSupabaseAuth)
-4. Rotas + componentes na ordem: produtos admin → registrar-producao-v2 → dashboard-v2 → metas → ranking-v2 → contact_interactions → campanhas
-5. Sidebar atualizado por último
-
----
-
-## Fallback se créditos acabarem
-
-Ao final, se interromper, entrego lista clara: **feito** (com rotas funcionais) vs **não feito** (com próximo passo concreto). Prioridade decrescente: migration → produtos → registrar-v2 → dashboard-v2 → metas → ranking-v2 → interactions → campanhas.
-
----
-
-## Não fazer
-
-- Não remover/alterar `daily_reports`, `/dashboard`, `/registrar-producao`, `/ranking` antigos
-- Não mover arquivos legados
-- Não usar CHECK constraints (usar triggers para validação de enums em texto)
-- Não tocar em `auth`, `storage`, schemas reservados
+- Precedência CSS: a classe `.ds-v2` no `<html>` torna os seletores `.ds-v2:root.dark { … }` / `.ds-v2.light { … }` mais específicos que `:root, .dark` / `.light` atuais — sem `!important`.
+- `--color-border` no `@theme inline` do `styles.css` continua apontando para `var(--border)`; a regra `* { border-color: var(--color-border) }` segue funcionando.
+- A fonte do logo continua inline (`Poppins`) nos componentes `AppLoading` e `DashboardSidebar` — fora do escopo do DS.
+- Não toco em `src/integrations/supabase/*`, rotas existentes, nem em lógica de negócio.
