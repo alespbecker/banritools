@@ -1,8 +1,6 @@
-import { Menu, RefreshCw, Search } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { Logo } from "@/components/Logo";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,7 +13,6 @@ interface TopbarProps {
 }
 
 export function Topbar({ userName, userRole, onMenuClick }: TopbarProps) {
-  const [syncing, setSyncing] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { profile } = useAuth();
 
@@ -29,19 +26,6 @@ export function Topbar({ userName, userRole, onMenuClick }: TopbarProps) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-
-  const handleSync = async () => {
-    setSyncing(true);
-    try {
-      await supabase.from("daily_reports").select("id").limit(1);
-      toast.success("Dados atualizados!");
-      window.dispatchEvent(new CustomEvent("banritools:sync"));
-    } catch {
-      toast.error("Erro ao sincronizar");
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   const avatarSrc = profile?.avatar_url || defaultAvatar;
 
@@ -87,17 +71,8 @@ export function Topbar({ userName, userRole, onMenuClick }: TopbarProps) {
         </button>
       </div>
 
-      {/* RIGHT: actions + profile */}
+      {/* RIGHT: profile */}
       <div className="flex items-center gap-2 sm:gap-3">
-        <button
-          onClick={handleSync}
-          disabled={syncing}
-          className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground disabled:opacity-50"
-          title="Sincronizar"
-          aria-label="Sincronizar"
-        >
-          <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-        </button>
         <Link
           to="/perfil"
           className="flex items-center gap-3 rounded-full p-1 pr-2 transition-colors hover:bg-accent/60 sm:pr-3"
