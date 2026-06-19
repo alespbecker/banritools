@@ -1,69 +1,63 @@
+## 1. Odômetro em todos os KPIs (incluindo ranking)
 
-## Diagnóstico rápido
+- Auditar todos os lugares onde números são exibidos como KPI/contador e trocar por `AnimatedNumber` / `AnimatedText` (já criados):
+  - `src/components/ds/KpiCard.tsx` — usar `AnimatedNumber` quando `value` for número, `AnimatedText` quando vier formatado (string com "R$", "%", etc.).
+  - `src/components/ds/HeroPerformance.tsx` — pontos, totais.
+  - `src/components/GamificationWidgets.tsx` — pontos do usuário, nível.
+  - Rotas de dashboard: `dashboard.tsx`, `dashboard-v2.tsx`, `dashboard-v3.tsx`, `admin.tsx` — números avulsos exibidos diretamente.
+  - `_authenticated.ranking.tsx`, `ranking-v2.tsx`, `ranking-v3.tsx` — colunas de pontos.
+- Ajuste fino no `AnimatedNumber`:
+  - Suportar formatadores comuns (moeda BRL, percentual, "+N pts", abreviado "1,2k").
+  - Variante "compacta" para números grandes que não devem rolar dígito a dígito do 0 (ex.: 854.765) — usar duração proporcional à diferença e cap de 1.2s, para evitar rolagem visualmente caótica.
+- Ranking com **reordenação animada**:
+  - Refatorar a tabela/lista de ranking para usar `framer-motion` (`motion.div` + `layout` + `AnimatePresence`) em vez de `<tr>`s estáticos — uma lista de cards/linhas com `layoutId` por `user_id`.
+  - Quando a ordem mudar (ex.: alguém ultrapassa outro via realtime), as linhas deslizam suavemente para a nova posição enquanto os pontos rolam no odômetro.
+  - Habilitar realtime em `production_entries` (publication `supabase_realtime`) para que o ranking se atualize sem refresh, alimentando o efeito.
 
-Hoje convivem **dois sistemas de tokens** no projeto:
+## 2. Cadastro de usuários por código de convite (sem email real)
 
-1. `src/styles.css` — tokens shadcn (`--background`, `--card`, `--primary`, `--accent`, `--border`…). **Todas** as telas, componentes shadcn e rotas v2/v3 usam estas variáveis via classes `bg-card`, `text-foreground`, `bg-primary`, etc.
-2. `src/styles/tokens.css` — primitivos do novo Design System (Primary `#0094FF`, Navy `#000050`, Turquesa, Roxo, escala neutra própria, raios, sombras, motion) + semânticos próprios (`--bg`, `--surface`, `--text`, `--primary`, `--primary-strong`).
+Fluxo escolhido: **admin gera código de convite → funcionário usa o código para criar conta com email e senha próprios**.
 
-Os dois arquivos declaram `@theme inline` com `--color-primary`, `--color-border` etc. **conflitando**. Hoje o `tokens.css` é importado *antes* do bloco `@theme` do `styles.css`, então o shadcn ganha e o novo DS fica "morto" — só os primitivos (`--primary-500`, `--navy-800`) e as fontes (`Exo 2` / `Source Sans 3` aplicadas via seletor global em `body, p, h1…`) estão de fato em uso.
+### Banco
+Nova migration:
+- Tabela `public.user_invites`:
+  - `id uuid pk`, `code text unique` (8 chars alfanuméricos legíveis, sem 0/O/1/I), `agency_id uuid fk agencies`, `role app_role default 'funcionario'`, `name text` (nome opcional pré-preenchido), `created_by uuid fk auth.users`, `created_at`, `expires_at` (default now()+30 dias), `used_at`, `used_by uuid fk auth.users`.
+  - GRANTs para `authenticated` e `service_role` (sem `anon`).
+  - RLS: admin/gerente da mesma `agency_id` pode SELECT/INSERT/UPDATE/DELETE; demais sem acesso. A validação do código no signup é feita via server function `service_role`, não via SELECT do anon.
+- Função `gen_invite_code()` que gera código único, e default na coluna `code`.
 
-Aplicar o DS "de uma vez" trocando classes em todos os componentes para `bg-surface`, `text-text`, `bg-primary-strong` etc. é o caminho arriscado — são centenas de pontos.
+### Server functions (`src/lib/invites.functions.ts`)
+- `createInvite({ name?, role, agency_id? })` — `requireSupabaseAuth` + checagem de role admin/gerente. Insere e retorna `code`.
+- `listInvites()` — lista convites da agência do usuário (para a tela admin).
+- `revokeInvite({ id })` — soft delete (define `expires_at = now()`).
+- `redeemInvite({ code, email, password, name })` — **pública** (sem middleware), valida código, cria usuário via `supabaseAdmin.auth.admin.createUser` (`email_confirm: true` para não exigir verificação), cria/atualiza `profiles` com `agency_id` e `name`, insere `user_roles` com o `role` do convite, marca convite como `used_at/used_by`. Carrega `supabaseAdmin` via `await import` dentro do handler.
 
-## Estratégia: re-mapear, não reescrever
+### UI
+- Nova rota admin `src/routes/_authenticated.admin_.convites.tsx`:
+  - Botão "Gerar convite" → modal com `name` (opcional) e `role` (funcionario/gerente).
+  - Exibe código gerado com botão "copiar" e "copiar link" (`https://<app>/convite/<code>`).
+  - Tabela: código, nome, role, criado em, expira em, status (ativo/usado/expirado), ação revogar.
+- Nova rota pública `src/routes/convite.$code.tsx`:
+  - Lê `code` do path, mostra formulário "Crie sua conta": email, senha, confirmar senha, nome (pré-preenchido se houver).
+  - Validação Zod (email válido, senha ≥ 8, confirmação igual).
+  - Submete em `redeemInvite`, ao sucesso faz `supabase.auth.signInWithPassword` e redireciona para `/dashboard-v3`.
+  - Estados de erro: código inválido, expirado, já usado.
+- Link "Tenho um convite" na tela `/login`.
+- Sidebar admin: novo item "Convites" na seção admin.
 
-O atalho seguro é **manter os nomes shadcn** (`--background`, `--card`, `--primary`, `--accent`, `--border`, `--ring`, `--success`, `--warning`, `--destructive`…) e fazer com que apontem para a paleta nova do PDF. Assim, **zero componente precisa mudar de classe** e o look-and-feel migra inteiro.
+## 3. Confete ao salvar lançamento de produção
 
-Regra de ouro do PDF (acessibilidade): `#0094FF` (primary-500) é só acento/ícone/foco/títulos grandes. Botão sólido = `#0077DB` (600). Texto/links = `#0061B0` (700). Vou refletir isso no mapeamento:
+- `bun add canvas-confetti @types/canvas-confetti`.
+- Novo hook `src/hooks/useConfetti.ts` exportando `fireConfettiFromElement(el)` que dispara confete a partir do bounding rect do elemento (origem central do botão, cores do tema: primary/accent/success).
+- Disparar no `onSuccess` da submissão em:
+  - `src/routes/_authenticated.registrar-producao.tsx`
+  - `src/routes/_authenticated.registrar-producao-v2.tsx`
+  - `src/routes/_authenticated.registrar-producao-v3.tsx`
+- Respeitar `prefers-reduced-motion`: se o usuário tiver essa preferência ativa, não disparar confete.
 
-| Token shadcn          | Dark (novo)                     | Light (novo)                  |
-| --------------------- | ------------------------------- | ----------------------------- |
-| `--background`        | `--gray-950` #0A0D14            | `--gray-50` #F7F8FA           |
-| `--card` / `--popover`| `--gray-900` #121620            | `--gray-0` #FFFFFF            |
-| `--secondary`/`--muted`| `--gray-800` #1F2530           | `--gray-100` #EDF0F5          |
-| `--foreground`        | `--gray-50`                     | `--gray-900`                  |
-| `--muted-foreground`  | `--gray-400`                    | `--gray-500/600`              |
-| `--border` / `--input`| `--gray-700`                    | `--gray-200`                  |
-| `--primary` (botão)   | `--primary-600` #0077DB         | `--primary-600` #0077DB       |
-| `--accent` (foco/ícone)| `--primary-500` #0094FF        | `--primary-500` #0094FF       |
-| `--ring`              | `--primary-500`                 | `--primary-500`               |
-| `--destructive`       | `--error-500`                   | `--error-600`                 |
-| `--success`           | `--success-500`                 | `--success-700`               |
-| `--warning`           | `--warning-400`                 | `--warning-700`               |
-| `--sidebar`           | `--navy-900` / `--gray-900`     | `--gray-0`                    |
-| `--brand-deep`        | `--navy-800` #000050            | `--navy-800`                  |
-| `--brand-teal/violet` | turquoise-500 / purple-500      | turquoise-600 / purple-600    |
+## Notas técnicas
 
-Tipografia já está correta (logo Poppins, display Exo 2, corpo Source Sans 3) — não mexo.
-
-## Como reduzir o risco a quase zero
-
-1. **Página de preview do DS** — criar `/_authenticated/design-system` que renderiza, lado a lado, todos os primitivos shadcn em uso real: Buttons (default/secondary/destructive/outline/ghost), Badges, Inputs, Cards, Tabs, Alerts, Dialog, Toast, Skeleton, Progress, Chart de exemplo, ranking row, FAB. Serve de "olhômetro" antes/depois.
-2. **Feature flag por classe** — encapsular o novo mapeamento em `.ds-v2` aplicado no `<html>`, com toggle persistido em `localStorage` (`ds:v2`). Default: **off**. Ligando, o novo mapping vence; desligando, volta ao atual instantaneamente. Permite alternar in-place na própria página de preview.
-3. **Auditoria visual rápida** das telas críticas com a flag ligada: `/dashboard`, `/dashboard-v2`, `/dashboard-v3`, `/registrar-producao-v2`, `/ranking-v2`, `/metas`, `/campanhas`, `/admin/produtos`, sidebar, AppLoading, login. Marcar qualquer regressão visível.
-4. **Limpeza dos conflitos** — remover/ajustar o `@theme inline` duplicado em `tokens.css` para evitar que mapeamentos não-shadcn (ex.: `--color-border` apontando para a borda nova) interfiram fora do bloco de override.
-5. **Promoção** — quando a auditoria estiver verde, virar o default (`.ds-v2` aplicado por padrão no `__root.tsx`) e manter a flag por mais alguns dias para rollback fácil.
-6. **Pós-migração (opcional, depois)** — só então considerar substituir classes shadcn por tokens semânticos do DS novo (`bg-surface`, `text-text-muted`) onde fizer sentido. Isso é cosmético e pode ser incremental por feature.
-
-## Entregáveis desta fase
-
-- `src/styles/ds-v2.css` com os blocos `.ds-v2:root, .ds-v2.dark { … }` e `.ds-v2.light { … }` redefinindo os tokens shadcn conforme a tabela acima.
-- Import desse arquivo no fim de `src/styles.css` (depois do bloco `@theme inline`, para garantir precedência via classe `.ds-v2`).
-- Ajuste no `@theme inline` de `tokens.css` removendo mapeamentos que colidem com shadcn (`--color-primary`, `--color-border`) — manter só os exclusivos do DS novo (`--color-bg`, `--color-surface`, `--color-text`, `--color-brand-deep`, fontes, raios).
-- Novo arquivo `src/routes/_authenticated/design-system.tsx` (preview + toggle da flag) e link discreto no rodapé da sidebar **só para admins**.
-- Hook minúsculo `useDsV2()` que aplica/remove a classe em `document.documentElement` e persiste em `localStorage`.
-
-## Como você valida
-
-1. Abre `/design-system`, alterna o toggle "DS v2" → vê tudo recolorir em tempo real, dark e light.
-2. Navega pelas rotas críticas com a flag ligada e me reporta qualquer regressão pontual.
-3. Quando aprovar, peço pra eu "tornar DS v2 o padrão" — viro um booleano no `__root.tsx` e pronto. Rollback = remover a classe.
-
-Sem migração big-bang, sem mexer em componentes, sem risco de derrubar tela.
-
-## Detalhes técnicos
-
-- Precedência CSS: a classe `.ds-v2` no `<html>` torna os seletores `.ds-v2:root.dark { … }` / `.ds-v2.light { … }` mais específicos que `:root, .dark` / `.light` atuais — sem `!important`.
-- `--color-border` no `@theme inline` do `styles.css` continua apontando para `var(--border)`; a regra `* { border-color: var(--color-border) }` segue funcionando.
-- A fonte do logo continua inline (`Poppins`) nos componentes `AppLoading` e `DashboardSidebar` — fora do escopo do DS.
-- Não toco em `src/integrations/supabase/*`, rotas existentes, nem em lógica de negócio.
+- A migration de `user_invites` segue a ordem obrigatória: CREATE TABLE → GRANT → ENABLE RLS → CREATE POLICY.
+- `redeemInvite` precisa autorizar pelo próprio código (segredo), já que é endpoint público; aplicar rate limit simples por IP via header se necessário em iteração futura.
+- Realtime no ranking requer `ALTER PUBLICATION supabase_realtime ADD TABLE public.production_entries;` (se ainda não estiver).
+- Nenhuma mudança em `daily_reports` ou no modelo legado.

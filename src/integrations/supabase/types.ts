@@ -794,6 +794,53 @@ export type Database = {
           },
         ]
       }
+      user_invites: {
+        Row: {
+          agency_id: string
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          name: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          agency_id: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          name?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          agency_id?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          name?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_invites_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_points: {
         Row: {
           level: number
@@ -858,6 +905,7 @@ export type Database = {
         Returns: number
       }
       check_badges: { Args: { _user_id: string }; Returns: undefined }
+      gen_invite_code: { Args: never; Returns: string }
       get_level: { Args: { pts: number }; Returns: number }
       get_user_agency_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
@@ -867,6 +915,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      redeem_invite_code: { Args: { _code: string }; Returns: Json }
       update_monthly_ranking: {
         Args: { _agency_id: string; _month: string; _user_id: string }
         Returns: undefined

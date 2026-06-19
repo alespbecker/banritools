@@ -2,7 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, Trophy,
   Wrench, LogOut,
-  Sun, Moon, Shield, Package, Target, Megaphone, Palette,
+  Sun, Moon, Shield, Package, Target, Megaphone, Palette, Mail,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,7 @@ const navItems = [
   { label: "Metas", to: "/metas", icon: Target, adminOnly: false },
   { label: "Ferramentas", to: "/tools", icon: Wrench, adminOnly: false },
   { label: "Produtos", to: "/admin/produtos", icon: Package, adminOnly: true },
+  { label: "Convites", to: "/admin/convites", icon: Mail, adminOnly: true },
   { label: "Design System", to: "/design-system", icon: Palette, adminOnly: true },
 ] as const;
 

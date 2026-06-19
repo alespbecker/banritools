@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 import { FileText, Save, CheckCircle2, Sparkles, Package } from "lucide-react";
 import { logAudit } from "@/features/audit/log";
+import { fireConfettiFromElement } from "@/hooks/useConfetti";
 import {
   PageContainer,
   PageHeader,
@@ -184,6 +185,7 @@ function Page() {
     } catch { return {}; }
   });
   const [saving, setSaving] = useState(false);
+  const submitBtnRef = useRef<HTMLButtonElement>(null);
   const [lastSaved, setLastSaved] = useState<{
     count: number; points: number;
     items: { name: string; qty: number; amt: number; variantNames: string[] }[];
@@ -296,6 +298,7 @@ function Page() {
     if (error) return toast.error(error.message);
     await logAudit({ action: "production.create", entity: "production_entry", details: { count: entries.length, date } });
     toast.success(`${entries.length} lançamento(s) salvos`);
+    fireConfettiFromElement(submitBtnRef.current);
     setLastSaved({ count: entries.length, points: summary.points, items: summaryItems });
     setValues({});
     if (typeof window !== "undefined") {
@@ -444,7 +447,7 @@ function Page() {
                 "Preencha ao menos um produto para salvar"
               )}
             </div>
-            <Button type="submit" disabled={saving || summary.count === 0} size="lg" className="w-full min-w-[180px] bg-primary-foreground text-primary hover:bg-primary-foreground/90 sm:w-auto">
+            <Button ref={submitBtnRef} type="submit" disabled={saving || summary.count === 0} size="lg" className="w-full min-w-[180px] bg-primary-foreground text-primary hover:bg-primary-foreground/90 sm:w-auto">
               <Save className="h-4 w-4" />
               {saving ? "Salvando..." : `Salvar lançamento${summary.count === 1 ? "" : "s"}`}
             </Button>

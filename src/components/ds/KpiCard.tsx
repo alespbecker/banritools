@@ -2,6 +2,7 @@ import * as React from "react";
 import { ArrowDownRight, ArrowUpRight, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AnimatedNumber, AnimatedText } from "@/components/AnimatedNumber";
 
 type Tone = "primary" | "accent" | "success" | "warning" | "danger" | "muted";
 
@@ -79,7 +80,11 @@ export function KpiCard({
         )}
       </div>
       <p className="mt-3 text-3xl font-bold tracking-tight text-card-foreground tabular-nums">
-        {value}
+        {typeof value === "number" ? (
+          <AnimatedNumber value={value} />
+        ) : (
+          <AnimatedText text={String(value)} />
+        )}
       </p>
       <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
         {trend && (

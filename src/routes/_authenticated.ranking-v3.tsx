@@ -13,6 +13,8 @@ import {
   ProgressWithLabel,
 } from "@/components/ds";
 import { Badge } from "@/components/ui/badge";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { ErrorState } from "@/components/states/ErrorState";
 import { EmptyState } from "@/components/states/EmptyState";
@@ -36,9 +38,10 @@ function Page() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (showSpinner = true) => {
     if (!profile?.agency_id) { setLoading(false); return; }
-    setLoading(true); setError(null);
+    if (showSpinner) setLoading(true);
+    setError(null);
     const start = new Date(); start.setDate(1);
     const startStr = start.toISOString().split("T")[0];
 
@@ -78,7 +81,21 @@ function Page() {
     setLoading(false);
   }, [profile?.agency_id]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(true); }, [load]);
+
+  // Realtime: re-fetch silently on any production change in the agency
+  useEffect(() => {
+    if (!profile?.agency_id) return;
+    const channel = supabase
+      .channel(`ranking-v3-${profile.agency_id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "production_entries", filter: `agency_id=eq.${profile.agency_id}` },
+        () => { load(false); },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [profile?.agency_id, load]);
 
   const computed = useMemo(() => {
     const top = rows[0]?.pts ?? 0;
@@ -92,7 +109,7 @@ function Page() {
   }, [rows, user?.id]);
 
   if (loading) return <PageSkeleton kpis={3} rows={8} />;
-  if (error) return <ErrorState message={error} onRetry={load} />;
+  if (error) return <ErrorState message={error} onRetry={() => load(true)} />;
 
   const { top, myIndex, myRow, nextAhead, diffToNext, diffToLeader, totalPts } = computed;
 
@@ -105,13 +122,12 @@ function Page() {
 
   const monthName = new Date().toLocaleDateString("pt-BR", { month: "long" });
 
-  // mensagem motivadora
   const motivation = !myRow
     ? "Comece a registrar produção para entrar no ranking deste mês."
     : myIndex === 0
       ? "Você está liderando o mês. Continue no ritmo!"
       : diffToNext > 0
-        ? `Faltam ${diffToNext.toFixed(0)} pontos para subir para o ${myIndex}º lugar.`
+        ? `Faltam ${Math.round(diffToNext)} pontos para subir para o ${myIndex}º lugar.`
         : "Continue evoluindo neste mês.";
 
   return (
@@ -122,7 +138,6 @@ function Page() {
         description={`Sua evolução em ${monthName}`}
       />
 
-      {/* Card pessoal de destaque */}
       <section className="animate-fade-in-up overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/15 via-card to-card p-6">
         <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr] lg:items-center">
           <div className="space-y-3">
@@ -131,24 +146,24 @@ function Page() {
               Sua posição
             </div>
             <div className="flex items-baseline gap-3">
-              <span className="text-5xl font-bold tracking-tight text-foreground">
-                {myRow ? `${myIndex + 1}º` : "—"}
+              <span className="text-5xl font-bold tracking-tight text-foreground tabular-nums">
+                {myRow ? <><AnimatedNumber value={myIndex + 1} />º</> : "—"}
               </span>
               {myRow && (
                 <span className="text-sm text-muted-foreground">
-                  de {rows.length}
+                  de <AnimatedNumber value={rows.length} />
                 </span>
               )}
             </div>
             <p className="text-sm text-muted-foreground">{motivation}</p>
             {myRow && (
               <div className="flex flex-wrap gap-2 pt-1">
-                <Badge variant="info">{myRow.pts.toFixed(0)} pts</Badge>
+                <Badge variant="info"><AnimatedNumber value={Math.round(myRow.pts)} /> pts</Badge>
                 {diffToNext > 0 && (
-                  <Badge variant="warning">+{diffToNext.toFixed(0)} para subir</Badge>
+                  <Badge variant="warning">+<AnimatedNumber value={Math.round(diffToNext)} /> para subir</Badge>
                 )}
                 {diffToLeader > 0 && (
-                  <Badge variant="neutral">{diffToLeader.toFixed(0)} para o líder</Badge>
+                  <Badge variant="neutral"><AnimatedNumber value={Math.round(diffToLeader)} /> para o líder</Badge>
                 )}
               </div>
             )}
@@ -158,7 +173,7 @@ function Page() {
               <ProgressWithLabel
                 label="Sua evolução vs. líder"
                 value={(myRow.pts / top) * 100}
-                valueLabel={`${myRow.pts.toFixed(0)} / ${top.toFixed(0)} pts`}
+                valueLabel={`${Math.round(myRow.pts)} / ${Math.round(top)} pts`}
                 tone={myIndex === 0 ? "success" : "primary"}
                 size="lg"
               />
@@ -176,7 +191,7 @@ function Page() {
           value={rows[0]?.name ?? "—"}
           icon={Trophy}
           tone="warning"
-          description={rows[0] ? `${rows[0].pts.toFixed(0)} pts` : "—"}
+          description={rows[0] ? `${Math.round(rows[0].pts)} pts` : "—"}
         />
         <KpiCard
           label="Próxima posição"
@@ -184,19 +199,19 @@ function Page() {
           icon={TrendingUp}
           tone="accent"
           description={
-            nextAhead ? `+${diffToNext.toFixed(0)} pts à frente` : myIndex === 0 ? "Continue assim!" : "—"
+            nextAhead ? `+${Math.round(diffToNext)} pts à frente` : myIndex === 0 ? "Continue assim!" : "—"
           }
         />
         <KpiCard
           label="Total da agência"
-          value={totalPts.toFixed(0)}
+          value={Math.round(totalPts)}
           icon={Award}
           tone="success"
           description={`${rows.length} participante${rows.length === 1 ? "" : "s"}`}
         />
       </DashboardGrid>
 
-      <InfoCard title="Classificação" description="Pontuação acumulada no mês" bodyless>
+      <InfoCard title="Classificação" description="Pontuação acumulada no mês (atualiza em tempo real)" bodyless>
         {rows.length === 0 ? (
           <div className="p-6">
             <EmptyState
@@ -206,54 +221,64 @@ function Page() {
           </div>
         ) : (
           <ul className="divide-y divide-border">
-            {rows.map((r, i) => {
-              const isMe = r.user_id === user?.id;
-              const pct = top > 0 ? (r.pts / top) * 100 : 0;
-              const p = podium(i);
-              return (
-                <li
-                  key={r.user_id}
-                  className={cn(
-                    "flex items-center gap-3 px-5 py-3 transition-colors",
-                    isMe ? "bg-primary/5 ring-1 ring-inset ring-primary/20" : "hover:bg-accent/30",
-                    i < 3 && "bg-card",
-                  )}
-                >
-                  <div className="flex w-10 shrink-0 items-center justify-center">
-                    {p ? (
-                      <span className={cn("flex h-8 w-8 items-center justify-center rounded-full", p.bg)}>
-                        <p.Icon className={cn("h-4 w-4", p.color)} />
-                      </span>
-                    ) : (
-                      <span className="text-sm font-semibold text-muted-foreground tabular-nums">
-                        {i + 1}
-                      </span>
+            <AnimatePresence initial={false}>
+              {rows.map((r, i) => {
+                const isMe = r.user_id === user?.id;
+                const pct = top > 0 ? (r.pts / top) * 100 : 0;
+                const p = podium(i);
+                return (
+                  <motion.li
+                    key={r.user_id}
+                    layout
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ type: "spring", stiffness: 380, damping: 32, mass: 0.6 }}
+                    className={cn(
+                      "flex items-center gap-3 px-5 py-3",
+                      isMe ? "bg-primary/5 ring-1 ring-inset ring-primary/20" : "hover:bg-accent/30",
+                      i < 3 && "bg-card",
                     )}
-                  </div>
-                  <span className={cn(
-                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-                    isMe ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-                  )}>
-                    {initials(r.name) || "?"}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-medium text-foreground">{r.name}</span>
-                      {isMe && <Badge variant="info">Você</Badge>}
-                      {i === 0 && <Badge variant="warning">Líder</Badge>}
+                  >
+                    <div className="flex w-10 shrink-0 items-center justify-center">
+                      {p ? (
+                        <span className={cn("flex h-8 w-8 items-center justify-center rounded-full", p.bg)}>
+                          <p.Icon className={cn("h-4 w-4", p.color)} />
+                        </span>
+                      ) : (
+                        <span className="text-sm font-semibold text-muted-foreground tabular-nums">
+                          {i + 1}
+                        </span>
+                      )}
                     </div>
-                    <div className="mt-1.5">
-                      <ProgressWithLabel
-                        value={pct}
-                        valueLabel={`${r.pts.toFixed(0)} pts`}
-                        size="sm"
-                        tone={i === 0 ? "warning" : isMe ? "primary" : "muted"}
-                      />
+                    <span className={cn(
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                      isMe ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                    )}>
+                      {initials(r.name) || "?"}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-medium text-foreground">{r.name}</span>
+                        {isMe && <Badge variant="info">Você</Badge>}
+                        {i === 0 && <Badge variant="warning">Líder</Badge>}
+                      </div>
+                      <div className="mt-1.5">
+                        <ProgressWithLabel
+                          value={pct}
+                          valueLabel={`${Math.round(r.pts)} pts`}
+                          size="sm"
+                          tone={i === 0 ? "warning" : isMe ? "primary" : "muted"}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </li>
-              );
-            })}
+                    <div className="hidden sm:block text-right text-sm font-semibold text-foreground tabular-nums min-w-[60px]">
+                      <AnimatedNumber value={Math.round(r.pts)} />
+                    </div>
+                  </motion.li>
+                );
+              })}
+            </AnimatePresence>
           </ul>
         )}
       </InfoCard>
