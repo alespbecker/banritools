@@ -141,11 +141,11 @@ export function useAuth(): AuthContextValue {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       },
-      signUp: async (email, password, name) => {
+      signUp: async (email, password, name, extra) => {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { name }, emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined },
+          options: { data: { name, ...(extra ?? {}) }, emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined },
         });
         if (error) throw error;
       },
