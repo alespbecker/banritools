@@ -4,6 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { PageSkeleton } from "@/components/PageSkeleton";
+import { CargoSelect, type CargoSelectValue } from "@/features/auth/CargoSelect";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -22,6 +23,8 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
+  const [cargo, setCargo] = useState<CargoSelectValue>({ cargo: "", especialidade: "" });
+  const [cargoError, setCargoError] = useState<string>("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgot, setIsForgot] = useState(false);
   const [error, setError] = useState("");
