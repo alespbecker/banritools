@@ -87,13 +87,6 @@ export function Topbar({ userName, userRole, onMenuClick }: TopbarProps) {
         >
           <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
         </button>
-        <button
-          className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
-          title="Notificações (em breve)"
-          aria-label="Notificações"
-        >
-          <Bell className="h-4 w-4" />
-        </button>
         <Link
           to="/perfil"
           className="flex items-center gap-3 rounded-full p-1 pr-2 transition-colors hover:bg-accent/60 sm:pr-3"
