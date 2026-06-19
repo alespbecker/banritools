@@ -57,27 +57,22 @@ export function HeroPerformance({
   return (
     <section
       className={cn(
-        "animate-fade-in-up relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-primary/10 p-6 sm:p-7",
+        "animate-fade-in-up relative px-1 py-2 sm:px-2",
         className,
       )}
     >
-      {/* glow decorativo */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/20 blur-3xl"
-      />
-      <div className="relative grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-stretch">
+      <div className="relative grid gap-5 lg:grid-cols-[1.4fr_1fr] lg:items-stretch">
         <div className="flex flex-col gap-5">
           <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             <Sparkles className="h-3.5 w-3.5" />
             <span>Resumo de hoje</span>
           </div>
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
               {greeting}
             </h1>
             {subtitle && (
-              <p className="text-sm text-muted-foreground">{subtitle}</p>
+              <p className="text-base text-muted-foreground">{subtitle}</p>
             )}
           </div>
 
@@ -118,7 +113,7 @@ export function HeroPerformance({
             onClick={nextAction.onClick}
             aria-label={`Próxima melhor ação: ${nextAction.title}`}
             className={cn(
-              "card-hover group flex w-full flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all",
+              "card-hover group flex w-full flex-col items-start gap-3 rounded-xl border p-6 text-left transition-all",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               actionTone[tone],
             )}
@@ -134,7 +129,7 @@ export function HeroPerformance({
                 </span>
               )}
               <div className="space-y-1">
-                <p className="text-base font-semibold text-foreground">
+                <p className="text-lg font-semibold text-foreground">
                   {nextAction.title}
                 </p>
                 {nextAction.description && (

@@ -37,7 +37,7 @@ export function Topbar({ userName, userRole, onMenuClick }: TopbarProps) {
         aria-label="BanriTools — Início"
         className="pointer-events-auto absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 sm:hidden"
       >
-        <Logo size={28} />
+        <Logo size={36} />
       </Link>
 
       {/* LEFT: menu + search (aligned with content) */}

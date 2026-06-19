@@ -84,6 +84,7 @@
   --font-logo:    "Poppins", system-ui, sans-serif;       /* logotipo — ativo fixo */
   --font-display: "Exo 2", system-ui, sans-serif;        /* títulos e chamadas */
   --font-body:    "Source Sans 3", system-ui, sans-serif; /* corpo, tabelas, rótulos, dados */
+  --font-numeric: "IBM Plex Sans", "Source Sans 3", system-ui, sans-serif; /* números, KPIs, dados */
   --tracking-display: 0.01em;
 
   /* --- Raio --- */
