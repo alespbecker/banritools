@@ -1,6 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { createFileRoute } from "@tanstack/react-router";
 import { useDsV2 } from "@/hooks/useDsV2";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
