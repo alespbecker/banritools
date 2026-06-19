@@ -108,8 +108,14 @@ function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">BanriTools</h1>
+        <div className="mb-8 flex flex-col items-center text-center">
+          <Logo size={56} className="rounded-md" />
+          <h1
+            className="mt-3 text-2xl font-[450] tracking-[0.048em] text-foreground"
+            style={{ fontFamily: "Poppins, sans-serif" }}
+          >
+            banritools
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {isForgot ? "Recuperar senha" : isSignUp ? "Crie sua conta" : "Acesse sua conta"}
           </p>
