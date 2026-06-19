@@ -4,6 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { PageSkeleton } from "@/components/PageSkeleton";
+import { CargoSelect, type CargoSelectValue } from "@/features/auth/CargoSelect";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -22,6 +23,8 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
+  const [cargo, setCargo] = useState<CargoSelectValue>({ cargo: "", especialidade: "" });
+  const [cargoError, setCargoError] = useState<string>("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgot, setIsForgot] = useState(false);
   const [error, setError] = useState("");
@@ -74,7 +77,21 @@ function LoginPage() {
     );
     try {
       if (isSignUp) {
-        await Promise.race([signUp(email, password, name), timeout]);
+        // Valida cargo
+        if (!cargo.cargo) {
+          setCargoError("Selecione seu cargo");
+          setLoading(false);
+          return;
+        }
+        if (cargo.cargo === "gerente_mercado" && !cargo.especialidade) {
+          setCargoError("Selecione PJ ou PF");
+          setLoading(false);
+          return;
+        }
+        setCargoError("");
+        const extra: Record<string, unknown> = { cargo: cargo.cargo };
+        if (cargo.especialidade) extra.cargo_especialidade = cargo.especialidade;
+        await Promise.race([signUp(email, password, name, extra), timeout]);
         setSuccess("Conta criada! Verifique seu email para confirmar.");
       } else {
         await Promise.race([signIn(email, password), timeout]);
@@ -146,6 +163,12 @@ function LoginPage() {
                   className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                   placeholder="seu@email.com" />
               </div>
+
+              {isSignUp && (
+                <CargoSelect value={cargo} onChange={(v) => { setCargo(v); setCargoError(""); }} error={cargoError} required />
+              )}
+
+
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-foreground">Senha</label>
                 <div className="relative">

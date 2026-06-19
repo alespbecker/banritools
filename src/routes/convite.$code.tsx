@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles, AlertCircle } from "lucide-react";
+import { CargoSelect, type CargoSelectValue } from "@/features/auth/CargoSelect";
 
 export const Route = createFileRoute("/convite/$code")({
   head: ({ params }) => ({
@@ -36,6 +37,8 @@ function Page() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [confirm, setConfirm] = useState("");
+  const [cargo, setCargo] = useState<CargoSelectValue>({ cargo: "", especialidade: "" });
+  const [cargoError, setCargoError] = useState<string>("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -72,14 +75,23 @@ function Page() {
       return;
     }
 
+    // Valida cargo
+    if (!cargo.cargo) { setCargoError("Selecione seu cargo"); return; }
+    if (cargo.cargo === "gerente_mercado" && !cargo.especialidade) {
+      setCargoError("Selecione PJ ou PF"); return;
+    }
+    setCargoError("");
+
     setLoading(true);
     try {
+      const meta: Record<string, unknown> = { name: parsed.data.name, cargo: cargo.cargo };
+      if (cargo.especialidade) meta.cargo_especialidade = cargo.especialidade;
       const { error: signUpErr } = await supabase.auth.signUp({
         email: parsed.data.email,
         password: parsed.data.password,
         options: {
           emailRedirectTo: `${window.location.origin}/dashboard-v3`,
-          data: { name: parsed.data.name },
+          data: meta,
         },
       });
       if (signUpErr) throw signUpErr;
@@ -132,6 +144,7 @@ function Page() {
             <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1" autoComplete="email" />
             {fieldErrors.email && <p className="mt-1 text-xs text-destructive">{fieldErrors.email}</p>}
           </div>
+          <CargoSelect value={cargo} onChange={(v) => { setCargo(v); setCargoError(""); }} error={cargoError} required />
           <div>
             <Label htmlFor="password">Senha</Label>
             <div className="relative mt-1">

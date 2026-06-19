@@ -15,6 +15,8 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, AlertTriangle, Info, XCircle, Trophy, Sparkles } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { UnauthorizedState } from "@/components/states/UnauthorizedState";
 
 export const Route = createFileRoute("/_authenticated/design-system")({
   head: () => ({
@@ -51,6 +53,20 @@ function Section({ title, children, description }: { title: string; description?
 
 function DesignSystemPage() {
   const { enabled, toggle } = useDsV2();
+  const { userRole } = useAuth();
+
+  if (userRole !== "admin") {
+    return (
+      <div className="mx-auto max-w-3xl p-6">
+        <UnauthorizedState
+          title="Área restrita"
+          message="O Design System é uma seção técnica interna e está disponível apenas para o responsável técnico."
+        />
+      </div>
+    );
+  }
+
+
 
   return (
     <div className="mx-auto max-w-6xl space-y-10 p-6">

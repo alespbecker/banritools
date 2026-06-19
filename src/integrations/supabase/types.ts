@@ -646,6 +646,8 @@ export type Database = {
         Row: {
           agency_id: string | null
           avatar_url: string | null
+          cargo: string | null
+          cargo_especialidade: string | null
           created_at: string
           email: string | null
           id: string
@@ -656,6 +658,8 @@ export type Database = {
         Insert: {
           agency_id?: string | null
           avatar_url?: string | null
+          cargo?: string | null
+          cargo_especialidade?: string | null
           created_at?: string
           email?: string | null
           id: string
@@ -666,6 +670,8 @@ export type Database = {
         Update: {
           agency_id?: string | null
           avatar_url?: string | null
+          cargo?: string | null
+          cargo_especialidade?: string | null
           created_at?: string
           email?: string | null
           id?: string
