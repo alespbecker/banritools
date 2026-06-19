@@ -34,7 +34,7 @@ type Props<T> = {
 type Fmt = "pdf" | "xlsx" | "csv";
 
 // Paleta da marca (alinhada ao logo: azul, teal, violeta)
-const BRAND_RGB: [number, number, number] = [0, 71, 171];
+const BRAND_RGB: [number, number, number] = [15, 35, 80]; // navy escuro p/ contraste com logo colorido
 const BRAND_BLUE: [number, number, number] = [0, 148, 255];   // #0094FF
 const BRAND_TEAL: [number, number, number] = [28, 216, 202];  // #1CD8CA
 const BRAND_VIOLET: [number, number, number] = [147, 111, 250]; // #936FFA
