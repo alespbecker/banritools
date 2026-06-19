@@ -40,11 +40,9 @@ export function AppLoading({ label, rotateMessages = true }: AppLoadingProps) {
       className="flex min-h-screen flex-col items-center justify-center bg-background px-6"
     >
       {/* Logo pulsante */}
-      <div className="relative">
+      <div className="relative h-16 w-16">
         <div className="absolute inset-0 -z-10 rounded-3xl bg-primary/30 blur-2xl animate-pulse-soft" />
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30 animate-bounce-soft">
-          <Logo size={40} ariaLabel="BanriTools" />
-        </div>
+        <Logo size={64} ariaLabel="BanriTools" className="animate-bounce-soft" />
       </div>
 
       {/* Barra de progresso indeterminada */}
