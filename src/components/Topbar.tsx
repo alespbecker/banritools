@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { Logo } from "@/components/Logo";
 import { useAuth } from "@/hooks/useAuth";
+import defaultAvatar from "@/assets/default-avatar.png";
 
 interface TopbarProps {
   userName: string | null;
