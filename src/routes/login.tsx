@@ -77,7 +77,21 @@ function LoginPage() {
     );
     try {
       if (isSignUp) {
-        await Promise.race([signUp(email, password, name), timeout]);
+        // Valida cargo
+        if (!cargo.cargo) {
+          setCargoError("Selecione seu cargo");
+          setLoading(false);
+          return;
+        }
+        if (cargo.cargo === "gerente_mercado" && !cargo.especialidade) {
+          setCargoError("Selecione PJ ou PF");
+          setLoading(false);
+          return;
+        }
+        setCargoError("");
+        const extra: Record<string, unknown> = { cargo: cargo.cargo };
+        if (cargo.especialidade) extra.cargo_especialidade = cargo.especialidade;
+        await Promise.race([signUp(email, password, name, extra), timeout]);
         setSuccess("Conta criada! Verifique seu email para confirmar.");
       } else {
         await Promise.race([signIn(email, password), timeout]);
