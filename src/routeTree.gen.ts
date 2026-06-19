@@ -24,6 +24,7 @@ import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated.perfil'
 import { Route as AuthenticatedMetasRouteImport } from './routes/_authenticated.metas'
 import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated.historico'
+import { Route as AuthenticatedDesignSystemRouteImport } from './routes/_authenticated.design-system'
 import { Route as AuthenticatedDashboardV3RouteImport } from './routes/_authenticated.dashboard-v3'
 import { Route as AuthenticatedDashboardV2RouteImport } from './routes/_authenticated.dashboard-v2'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
@@ -110,6 +111,12 @@ const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
   path: '/historico',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedDesignSystemRoute =
+  AuthenticatedDesignSystemRouteImport.update({
+    id: '/design-system',
+    path: '/design-system',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedDashboardV3Route =
   AuthenticatedDashboardV3RouteImport.update({
     id: '/dashboard-v3',
@@ -165,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/dashboard-v2': typeof AuthenticatedDashboardV2Route
   '/dashboard-v3': typeof AuthenticatedDashboardV3Route
+  '/design-system': typeof AuthenticatedDesignSystemRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/metas': typeof AuthenticatedMetasRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -189,6 +197,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/dashboard-v2': typeof AuthenticatedDashboardV2Route
   '/dashboard-v3': typeof AuthenticatedDashboardV3Route
+  '/design-system': typeof AuthenticatedDesignSystemRoute
   '/historico': typeof AuthenticatedHistoricoRoute
   '/metas': typeof AuthenticatedMetasRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -215,6 +224,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/dashboard-v2': typeof AuthenticatedDashboardV2Route
   '/_authenticated/dashboard-v3': typeof AuthenticatedDashboardV3Route
+  '/_authenticated/design-system': typeof AuthenticatedDesignSystemRoute
   '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
   '/_authenticated/metas': typeof AuthenticatedMetasRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard-v2'
     | '/dashboard-v3'
+    | '/design-system'
     | '/historico'
     | '/metas'
     | '/perfil'
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard-v2'
     | '/dashboard-v3'
+    | '/design-system'
     | '/historico'
     | '/metas'
     | '/perfil'
@@ -290,6 +302,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/dashboard-v2'
     | '/_authenticated/dashboard-v3'
+    | '/_authenticated/design-system'
     | '/_authenticated/historico'
     | '/_authenticated/metas'
     | '/_authenticated/perfil'
@@ -418,6 +431,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHistoricoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/design-system': {
+      id: '/_authenticated/design-system'
+      path: '/design-system'
+      fullPath: '/design-system'
+      preLoaderRoute: typeof AuthenticatedDesignSystemRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/dashboard-v3': {
       id: '/_authenticated/dashboard-v3'
       path: '/dashboard-v3'
@@ -485,6 +505,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDashboardV2Route: typeof AuthenticatedDashboardV2Route
   AuthenticatedDashboardV3Route: typeof AuthenticatedDashboardV3Route
+  AuthenticatedDesignSystemRoute: typeof AuthenticatedDesignSystemRoute
   AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
   AuthenticatedMetasRoute: typeof AuthenticatedMetasRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
@@ -507,6 +528,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDashboardV2Route: AuthenticatedDashboardV2Route,
   AuthenticatedDashboardV3Route: AuthenticatedDashboardV3Route,
+  AuthenticatedDesignSystemRoute: AuthenticatedDesignSystemRoute,
   AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
   AuthenticatedMetasRoute: AuthenticatedMetasRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
