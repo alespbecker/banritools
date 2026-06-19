@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { PageSkeleton } from "@/components/PageSkeleton";
 import { toast } from "sonner";
 import { FileText, Save, CheckCircle2, Sparkles, Package } from "lucide-react";
 import { logAudit } from "@/features/audit/log";
+import { fireConfettiFromElement } from "@/hooks/useConfetti";
 import {
   PageContainer,
   PageHeader,
