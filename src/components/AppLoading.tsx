@@ -39,10 +39,18 @@ export function AppLoading({ label, rotateMessages = true }: AppLoadingProps) {
       aria-live="polite"
       className="flex min-h-screen flex-col items-center justify-center bg-background px-6"
     >
-      {/* Logo pulsante */}
-      <div className="relative h-16 w-16">
-        <div className="absolute inset-0 -z-10 rounded-3xl bg-primary/30 blur-2xl animate-pulse-soft" />
-        <Logo size={64} ariaLabel="BanriTools" className="animate-bounce-soft" />
+      {/* Logo + wordmark centralizados */}
+      <div className="flex items-center justify-center gap-4">
+        <div className="relative h-20 w-20">
+          <div className="absolute inset-0 -z-10 rounded-3xl bg-primary/30 blur-2xl animate-pulse-soft" />
+          <Logo size={80} ariaLabel="BanriTools" className="animate-bounce-soft" />
+        </div>
+        <span
+          className="text-2xl font-semibold text-foreground/90 tracking-[0.04em]"
+          style={{ fontFamily: "Poppins, sans-serif" }}
+        >
+          banritools
+        </span>
       </div>
 
       {/* Barra de progresso indeterminada */}
@@ -57,7 +65,6 @@ export function AppLoading({ label, rotateMessages = true }: AppLoadingProps) {
       >
         {message}
       </p>
-      <p className="mt-1 text-sm font-medium text-muted-foreground tracking-[0.06em]" style={{ fontFamily: "Poppins, sans-serif" }}>banritools</p>
     </div>
   );
 }
