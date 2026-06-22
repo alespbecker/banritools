@@ -55,6 +55,13 @@ type AgencyReport = {
 
 type ProfileLite = { id: string; name: string | null; email: string | null; agency_id: string | null };
 type AgencyRow = { id: string; name: string };
+type EntryRow = {
+  user_id: string;
+  entry_date: string;
+  quantity: number | null;
+  amount: number | null;
+  products: { slug: string | null; category: string | null } | null;
+};
 
 function fmtBRL(v: number) {
   return `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
