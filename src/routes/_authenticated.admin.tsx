@@ -202,6 +202,30 @@ function AdminDashboardPage() {
     return m;
   }, [profiles]);
 
+  // Agregação das entries (novo modelo) por usuário, traduzindo para o mesmo
+  // vocabulário do painel legado (units, volume, recuperado, seguros, dias).
+  const entriesAgg = useMemo(() => {
+    const map = new Map<string, {
+      units: number; volume: number; recuperado: number; seguros: number; dias: Set<string>;
+    }>();
+    for (const e of entries) {
+      const cur = map.get(e.user_id) ?? {
+        units: 0, volume: 0, recuperado: 0, seguros: 0, dias: new Set<string>(),
+      };
+      const qty = Number(e.quantity ?? 0);
+      const amt = Number(e.amount ?? 0);
+      const cat = e.products?.category ?? "";
+      const slug = e.products?.slug ?? "";
+      cur.units += qty;
+      if (cat === "Seguros") cur.seguros += qty;
+      if (slug === "consignado") cur.volume += amt;
+      if (cat === "Recuperação") cur.recuperado += amt;
+      cur.dias.add(e.entry_date);
+      map.set(e.user_id, cur);
+    }
+    return map;
+  }, [entries]);
+
   const stats = useMemo(() => {
     const totalUnits = reports.reduce(
       (s, r) =>
@@ -217,9 +241,24 @@ function AdminDashboardPage() {
     const segurosValor = reports.reduce(
       (s, r) => s + Number(r.seguro_vida_valor ?? 0) + Number(r.seguro_ap_smart_valor ?? 0) + Number(r.capitalizacao_valor ?? 0), 0
     );
-    const activeUsers = new Set(reports.map((r) => r.user_id)).size;
-    return { totalUnits, volFinanceiro, recuperado, segurosValor, activeUsers };
-  }, [reports]);
+    // Soma das entries (novo modelo)
+    let entriesUnits = 0, entriesVolume = 0, entriesRecuperado = 0;
+    for (const agg of entriesAgg.values()) {
+      entriesUnits += agg.units;
+      entriesVolume += agg.volume;
+      entriesRecuperado += agg.recuperado;
+    }
+    const activeIds = new Set<string>();
+    reports.forEach((r) => activeIds.add(r.user_id));
+    entries.forEach((e) => activeIds.add(e.user_id));
+    return {
+      totalUnits: totalUnits + entriesUnits,
+      volFinanceiro: volFinanceiro + entriesVolume,
+      recuperado: recuperado + entriesRecuperado,
+      segurosValor,
+      activeUsers: activeIds.size,
+    };
+  }, [reports, entries, entriesAgg]);
 
   // KPIs do TIME — diferentes do dashboard pessoal (que mostra totais individuais).
   // Aqui focamos em dinâmica do grupo: engajamento, média, top performer e gap.
@@ -234,7 +273,7 @@ function AdminDashboardPage() {
     return { engajamento, mediaUnitsAtivo, topPoints, topName, gap, totalProfiles };
   }, [profiles.length, stats.activeUsers, stats.totalUnits, ranking, profileMap]);
 
-  // Per-user aggregation
+  // Per-user aggregation (daily_reports + production_entries)
   const perUser = useMemo(() => {
     const map = new Map<string, {
       user_id: string;
@@ -256,8 +295,19 @@ function AdminDashboardPage() {
       cur.dias.add(r.report_date);
       map.set(r.user_id, cur);
     }
+    for (const [uid, agg] of entriesAgg.entries()) {
+      const cur = map.get(uid) ?? {
+        user_id: uid, units: 0, volume: 0, recuperado: 0, seguros: 0, dias: new Set<string>(),
+      };
+      cur.units += agg.units;
+      cur.volume += agg.volume;
+      cur.recuperado += agg.recuperado;
+      cur.seguros += agg.seguros;
+      agg.dias.forEach((d) => cur.dias.add(d));
+      map.set(uid, cur);
+    }
     return Array.from(map.values()).sort((a, b) => b.units - a.units);
-  }, [reports]);
+  }, [reports, entriesAgg]);
 
   const inactives = useMemo(() => {
     const activeIds = new Set(perUser.map((u) => u.user_id));
