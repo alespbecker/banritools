@@ -88,6 +88,7 @@ function AdminDashboardPage() {
   const { userRole, profile, user, isLoading } = useAuth();
   const navigate = useNavigate();
   const [reports, setReports] = useState<AgencyReport[]>([]);
+  const [entries, setEntries] = useState<EntryRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileLite[]>([]);
   const [roles, setRoles] = useState<Map<string, "admin" | "user">>(new Map());
   const [agencies, setAgencies] = useState<AgencyRow[]>([]);
