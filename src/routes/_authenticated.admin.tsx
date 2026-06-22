@@ -125,9 +125,12 @@ function AdminDashboardPage() {
   }, [isLoading, userRole, navigate]);
 
   const agencyId = profile?.agency_id ?? null;
+  const isAdmin = userRole === "admin";
 
   const fetchAll = useCallback(async (showLoader = false) => {
-    if (!agencyId) { setLoading(false); return; }
+    // Guard: não dispara nenhum fetch enquanto a role ainda não foi resolvida
+    // ou se o usuário não é admin (o redirect logo abaixo cuida da saída).
+    if (!agencyId || !isAdmin) { setLoading(false); return; }
     if (showLoader) setLoading(true);
     // 1) Buscar profiles da agência primeiro (rápido) para poder filtrar user_roles
     const profilesPromise = supabase
@@ -173,28 +176,35 @@ function AdminDashboardPage() {
     setAgencies((agenciesRes.data as AgencyRow[]) ?? []);
     setRanking((rankingRes.data as { user_id: string; points: number; position: number }[]) ?? []);
     setLoading(false);
-  }, [agencyId, monthRange.start, monthRange.end, monthRange.monthFirst]);
+  }, [agencyId, isAdmin, monthRange.start, monthRange.end, monthRange.monthFirst]);
 
   useEffect(() => { fetchAll(true); }, [fetchAll]);
 
-  // Realtime sync (single channel for everything we care about)
+  // Realtime sync — coalesce eventos em rajada (fechamento de mês pode disparar
+  // dezenas de mudanças/segundo em 5 tabelas; sem debounce isso refaria o
+  // fetchAll a cada evento individual).
   useEffect(() => {
-    if (!agencyId) return;
+    if (!agencyId || !isAdmin) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefetch = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => { timer = null; fetchAll(); }, 500);
+    };
     const channel = supabase
       .channel(`admin-dashboard-${user?.id ?? "anon"}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "daily_reports" }, () => fetchAll())
-      .on("postgres_changes", { event: "*", schema: "public", table: "production_entries" }, () => fetchAll())
-      .on("postgres_changes", { event: "*", schema: "public", table: "ranking_monthly" }, () => fetchAll())
-      .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, () => fetchAll())
-      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_reports" }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "production_entries" }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ranking_monthly" }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, scheduleRefetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, scheduleRefetch)
       .subscribe();
-    const handler = () => fetchAll();
-    window.addEventListener("banritools:sync", handler);
+    window.addEventListener("banritools:sync", scheduleRefetch);
     return () => {
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
-      window.removeEventListener("banritools:sync", handler);
+      window.removeEventListener("banritools:sync", scheduleRefetch);
     };
-  }, [agencyId, fetchAll]);
+  }, [agencyId, isAdmin, fetchAll, user?.id]);
 
   const profileMap = useMemo(() => {
     const m = new Map<string, ProfileLite>();
