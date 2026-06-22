@@ -165,6 +165,7 @@ function AdminDashboardPage() {
       : { data: [] as { user_id: string; role: "admin" | "user" }[] };
 
     setReports((reportsRes.data as AgencyReport[]) ?? []);
+    setEntries((entriesRes.data as unknown as EntryRow[]) ?? []);
     setProfiles(profilesData);
     const m = new Map<string, "admin" | "user">();
     for (const r of (rolesRes.data as { user_id: string; role: "admin" | "user" }[]) ?? []) m.set(r.user_id, r.role);
