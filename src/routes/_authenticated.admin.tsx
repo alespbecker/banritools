@@ -55,6 +55,13 @@ type AgencyReport = {
 
 type ProfileLite = { id: string; name: string | null; email: string | null; agency_id: string | null };
 type AgencyRow = { id: string; name: string };
+type EntryRow = {
+  user_id: string;
+  entry_date: string;
+  quantity: number | null;
+  amount: number | null;
+  products: { slug: string | null; category: string | null } | null;
+};
 
 function fmtBRL(v: number) {
   return `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -81,6 +88,7 @@ function AdminDashboardPage() {
   const { userRole, profile, user, isLoading } = useAuth();
   const navigate = useNavigate();
   const [reports, setReports] = useState<AgencyReport[]>([]);
+  const [entries, setEntries] = useState<EntryRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileLite[]>([]);
   const [roles, setRoles] = useState<Map<string, "admin" | "user">>(new Map());
   const [agencies, setAgencies] = useState<AgencyRow[]>([]);
@@ -129,13 +137,20 @@ function AdminDashboardPage() {
       .order("name");
 
     // Em paralelo, dispara o resto que não depende dos profiles
-    const [reportsRes, agenciesRes, rankingRes, profilesRes] = await Promise.all([
+    const [reportsRes, entriesRes, agenciesRes, rankingRes, profilesRes] = await Promise.all([
       supabase
         .from("daily_reports")
         .select("user_id, report_date, seguro_vida, seguro_ap_smart, capitalizacao, seguro_vida_valor, seguro_ap_smart_valor, capitalizacao_valor, credito_minuto_aumento, consignado_volume, recuperacao_estagio_2, recuperacao_estagio_3, pj_conta_empresarial, pj_maquina_vero")
         .eq("agency_id", agencyId)
         .gte("report_date", monthRange.start)
         .lte("report_date", monthRange.end),
+      supabase
+        .from("production_entries")
+        .select("user_id, entry_date, quantity, amount, products(slug, category)")
+        .eq("agency_id", agencyId)
+        .eq("status", "confirmed")
+        .gte("entry_date", monthRange.start)
+        .lte("entry_date", monthRange.end),
       supabase.from("agencies").select("id, name").order("name"),
       supabase.from("ranking_monthly").select("user_id, points, position").eq("agency_id", agencyId).eq("month", monthRange.monthFirst).order("position"),
       profilesPromise,
@@ -150,6 +165,7 @@ function AdminDashboardPage() {
       : { data: [] as { user_id: string; role: "admin" | "user" }[] };
 
     setReports((reportsRes.data as AgencyReport[]) ?? []);
+    setEntries((entriesRes.data as unknown as EntryRow[]) ?? []);
     setProfiles(profilesData);
     const m = new Map<string, "admin" | "user">();
     for (const r of (rolesRes.data as { user_id: string; role: "admin" | "user" }[]) ?? []) m.set(r.user_id, r.role);
@@ -167,6 +183,7 @@ function AdminDashboardPage() {
     const channel = supabase
       .channel(`admin-dashboard-${user?.id ?? "anon"}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "daily_reports" }, () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "production_entries" }, () => fetchAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "ranking_monthly" }, () => fetchAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, () => fetchAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => fetchAll())
@@ -185,6 +202,30 @@ function AdminDashboardPage() {
     return m;
   }, [profiles]);
 
+  // Agregação das entries (novo modelo) por usuário, traduzindo para o mesmo
+  // vocabulário do painel legado (units, volume, recuperado, seguros, dias).
+  const entriesAgg = useMemo(() => {
+    const map = new Map<string, {
+      units: number; volume: number; recuperado: number; seguros: number; dias: Set<string>;
+    }>();
+    for (const e of entries) {
+      const cur = map.get(e.user_id) ?? {
+        units: 0, volume: 0, recuperado: 0, seguros: 0, dias: new Set<string>(),
+      };
+      const qty = Number(e.quantity ?? 0);
+      const amt = Number(e.amount ?? 0);
+      const cat = e.products?.category ?? "";
+      const slug = e.products?.slug ?? "";
+      cur.units += qty;
+      if (cat === "Seguros") cur.seguros += qty;
+      if (slug === "consignado") cur.volume += amt;
+      if (cat === "Recuperação") cur.recuperado += amt;
+      cur.dias.add(e.entry_date);
+      map.set(e.user_id, cur);
+    }
+    return map;
+  }, [entries]);
+
   const stats = useMemo(() => {
     const totalUnits = reports.reduce(
       (s, r) =>
@@ -200,9 +241,24 @@ function AdminDashboardPage() {
     const segurosValor = reports.reduce(
       (s, r) => s + Number(r.seguro_vida_valor ?? 0) + Number(r.seguro_ap_smart_valor ?? 0) + Number(r.capitalizacao_valor ?? 0), 0
     );
-    const activeUsers = new Set(reports.map((r) => r.user_id)).size;
-    return { totalUnits, volFinanceiro, recuperado, segurosValor, activeUsers };
-  }, [reports]);
+    // Soma das entries (novo modelo)
+    let entriesUnits = 0, entriesVolume = 0, entriesRecuperado = 0;
+    for (const agg of entriesAgg.values()) {
+      entriesUnits += agg.units;
+      entriesVolume += agg.volume;
+      entriesRecuperado += agg.recuperado;
+    }
+    const activeIds = new Set<string>();
+    reports.forEach((r) => activeIds.add(r.user_id));
+    entries.forEach((e) => activeIds.add(e.user_id));
+    return {
+      totalUnits: totalUnits + entriesUnits,
+      volFinanceiro: volFinanceiro + entriesVolume,
+      recuperado: recuperado + entriesRecuperado,
+      segurosValor,
+      activeUsers: activeIds.size,
+    };
+  }, [reports, entries, entriesAgg]);
 
   // KPIs do TIME — diferentes do dashboard pessoal (que mostra totais individuais).
   // Aqui focamos em dinâmica do grupo: engajamento, média, top performer e gap.
@@ -217,7 +273,7 @@ function AdminDashboardPage() {
     return { engajamento, mediaUnitsAtivo, topPoints, topName, gap, totalProfiles };
   }, [profiles.length, stats.activeUsers, stats.totalUnits, ranking, profileMap]);
 
-  // Per-user aggregation
+  // Per-user aggregation (daily_reports + production_entries)
   const perUser = useMemo(() => {
     const map = new Map<string, {
       user_id: string;
@@ -239,8 +295,19 @@ function AdminDashboardPage() {
       cur.dias.add(r.report_date);
       map.set(r.user_id, cur);
     }
+    for (const [uid, agg] of entriesAgg.entries()) {
+      const cur = map.get(uid) ?? {
+        user_id: uid, units: 0, volume: 0, recuperado: 0, seguros: 0, dias: new Set<string>(),
+      };
+      cur.units += agg.units;
+      cur.volume += agg.volume;
+      cur.recuperado += agg.recuperado;
+      cur.seguros += agg.seguros;
+      agg.dias.forEach((d) => cur.dias.add(d));
+      map.set(uid, cur);
+    }
     return Array.from(map.values()).sort((a, b) => b.units - a.units);
-  }, [reports]);
+  }, [reports, entriesAgg]);
 
   const inactives = useMemo(() => {
     const activeIds = new Set(perUser.map((u) => u.user_id));
