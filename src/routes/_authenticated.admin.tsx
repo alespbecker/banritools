@@ -137,13 +137,20 @@ function AdminDashboardPage() {
       .order("name");
 
     // Em paralelo, dispara o resto que não depende dos profiles
-    const [reportsRes, agenciesRes, rankingRes, profilesRes] = await Promise.all([
+    const [reportsRes, entriesRes, agenciesRes, rankingRes, profilesRes] = await Promise.all([
       supabase
         .from("daily_reports")
         .select("user_id, report_date, seguro_vida, seguro_ap_smart, capitalizacao, seguro_vida_valor, seguro_ap_smart_valor, capitalizacao_valor, credito_minuto_aumento, consignado_volume, recuperacao_estagio_2, recuperacao_estagio_3, pj_conta_empresarial, pj_maquina_vero")
         .eq("agency_id", agencyId)
         .gte("report_date", monthRange.start)
         .lte("report_date", monthRange.end),
+      supabase
+        .from("production_entries")
+        .select("user_id, entry_date, quantity, amount, products(slug, category)")
+        .eq("agency_id", agencyId)
+        .eq("status", "confirmed")
+        .gte("entry_date", monthRange.start)
+        .lte("entry_date", monthRange.end),
       supabase.from("agencies").select("id, name").order("name"),
       supabase.from("ranking_monthly").select("user_id, points, position").eq("agency_id", agencyId).eq("month", monthRange.monthFirst).order("position"),
       profilesPromise,
