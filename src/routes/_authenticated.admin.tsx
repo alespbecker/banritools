@@ -183,6 +183,7 @@ function AdminDashboardPage() {
     const channel = supabase
       .channel(`admin-dashboard-${user?.id ?? "anon"}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "daily_reports" }, () => fetchAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "production_entries" }, () => fetchAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "ranking_monthly" }, () => fetchAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, () => fetchAll())
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => fetchAll())
