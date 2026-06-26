@@ -188,24 +188,35 @@ function AdminDashboardPage() {
     return m;
   }, [profiles]);
 
-  // Agregação das entries (novo modelo) por usuário, traduzindo para o mesmo
-  // vocabulário do painel legado (units, volume, recuperado, seguros, dias).
+  // Agregação por usuário a partir das entries (fonte única — modelo v3).
+  // Mantém o vocabulário herdado (units/volume/recuperado/seguros/dias) para
+  // não quebrar contratos de UI/export; campos novos (pjUnits, segurosValor)
+  // entram aqui também.
   const entriesAgg = useMemo(() => {
     const map = new Map<string, {
-      units: number; volume: number; recuperado: number; seguros: number; dias: Set<string>;
+      units: number;
+      volume: number;         // R$ Crédito
+      recuperado: number;     // R$ Recuperação
+      seguros: number;        // unidades Seguros + Capitalização
+      segurosValor: number;   // R$ Seguros + Capitalização
+      pjUnits: number;        // unidades PJ
+      dias: Set<string>;
     }>();
     for (const e of entries) {
       const cur = map.get(e.user_id) ?? {
-        units: 0, volume: 0, recuperado: 0, seguros: 0, dias: new Set<string>(),
+        units: 0, volume: 0, recuperado: 0, seguros: 0, segurosValor: 0, pjUnits: 0, dias: new Set<string>(),
       };
       const qty = Number(e.quantity ?? 0);
       const amt = Number(e.amount ?? 0);
       const cat = e.products?.category ?? "";
-      const slug = e.products?.slug ?? "";
       cur.units += qty;
-      if (cat === "Seguros") cur.seguros += qty;
-      if (slug === "consignado") cur.volume += amt;
+      if (cat === "Seguros" || cat === "Capitalização") {
+        cur.seguros += qty;
+        cur.segurosValor += amt;
+      }
+      if (cat === "Crédito") cur.volume += amt;
       if (cat === "Recuperação") cur.recuperado += amt;
+      if (cat === "PJ") cur.pjUnits += qty;
       cur.dias.add(e.entry_date);
       map.set(e.user_id, cur);
     }
@@ -213,38 +224,15 @@ function AdminDashboardPage() {
   }, [entries]);
 
   const stats = useMemo(() => {
-    const totalUnits = reports.reduce(
-      (s, r) =>
-        s + (r.seguro_vida ?? 0) + (r.seguro_ap_smart ?? 0) + (r.capitalizacao ?? 0) +
-        (r.credito_minuto_aumento ?? 0) + (r.pj_conta_empresarial ?? 0) + (r.pj_maquina_vero ?? 0), 0
-    );
-    const volFinanceiro = reports.reduce(
-      (s, r) => s + Number(r.consignado_volume ?? 0), 0
-    );
-    const recuperado = reports.reduce(
-      (s, r) => s + Number(r.recuperacao_estagio_2 ?? 0) + Number(r.recuperacao_estagio_3 ?? 0), 0
-    );
-    const segurosValor = reports.reduce(
-      (s, r) => s + Number(r.seguro_vida_valor ?? 0) + Number(r.seguro_ap_smart_valor ?? 0) + Number(r.capitalizacao_valor ?? 0), 0
-    );
-    // Soma das entries (novo modelo)
-    let entriesUnits = 0, entriesVolume = 0, entriesRecuperado = 0;
+    let totalUnits = 0, volFinanceiro = 0, recuperado = 0, segurosValor = 0;
     for (const agg of entriesAgg.values()) {
-      entriesUnits += agg.units;
-      entriesVolume += agg.volume;
-      entriesRecuperado += agg.recuperado;
+      totalUnits += agg.units;
+      volFinanceiro += agg.volume;
+      recuperado += agg.recuperado;
+      segurosValor += agg.segurosValor;
     }
-    const activeIds = new Set<string>();
-    reports.forEach((r) => activeIds.add(r.user_id));
-    entries.forEach((e) => activeIds.add(e.user_id));
-    return {
-      totalUnits: totalUnits + entriesUnits,
-      volFinanceiro: volFinanceiro + entriesVolume,
-      recuperado: recuperado + entriesRecuperado,
-      segurosValor,
-      activeUsers: activeIds.size,
-    };
-  }, [reports, entries, entriesAgg]);
+    return { totalUnits, volFinanceiro, recuperado, segurosValor, activeUsers: entriesAgg.size };
+  }, [entriesAgg]);
 
   // KPIs do TIME — diferentes do dashboard pessoal (que mostra totais individuais).
   // Aqui focamos em dinâmica do grupo: engajamento, média, top performer e gap.
@@ -259,41 +247,12 @@ function AdminDashboardPage() {
     return { engajamento, mediaUnitsAtivo, topPoints, topName, gap, totalProfiles };
   }, [profiles.length, stats.activeUsers, stats.totalUnits, ranking, profileMap]);
 
-  // Per-user aggregation (daily_reports + production_entries)
+  // Per-user — lista plana ordenada por unidades, derivada do entriesAgg.
   const perUser = useMemo(() => {
-    const map = new Map<string, {
-      user_id: string;
-      units: number;
-      volume: number;
-      recuperado: number;
-      seguros: number;
-      dias: Set<string>;
-    }>();
-    for (const r of reports) {
-      const cur = map.get(r.user_id) ?? {
-        user_id: r.user_id, units: 0, volume: 0, recuperado: 0, seguros: 0, dias: new Set<string>(),
-      };
-      cur.units += (r.seguro_vida ?? 0) + (r.seguro_ap_smart ?? 0) + (r.capitalizacao ?? 0) +
-        (r.credito_minuto_aumento ?? 0) + (r.pj_conta_empresarial ?? 0) + (r.pj_maquina_vero ?? 0);
-      cur.volume += Number(r.consignado_volume ?? 0);
-      cur.recuperado += Number(r.recuperacao_estagio_2 ?? 0) + Number(r.recuperacao_estagio_3 ?? 0);
-      cur.seguros += (r.seguro_vida ?? 0) + (r.seguro_ap_smart ?? 0) + (r.capitalizacao ?? 0);
-      cur.dias.add(r.report_date);
-      map.set(r.user_id, cur);
-    }
-    for (const [uid, agg] of entriesAgg.entries()) {
-      const cur = map.get(uid) ?? {
-        user_id: uid, units: 0, volume: 0, recuperado: 0, seguros: 0, dias: new Set<string>(),
-      };
-      cur.units += agg.units;
-      cur.volume += agg.volume;
-      cur.recuperado += agg.recuperado;
-      cur.seguros += agg.seguros;
-      agg.dias.forEach((d) => cur.dias.add(d));
-      map.set(uid, cur);
-    }
-    return Array.from(map.values()).sort((a, b) => b.units - a.units);
-  }, [reports, entriesAgg]);
+    return Array.from(entriesAgg.entries())
+      .map(([user_id, agg]) => ({ user_id, ...agg }))
+      .sort((a, b) => b.units - a.units);
+  }, [entriesAgg]);
 
   const inactives = useMemo(() => {
     const activeIds = new Set(perUser.map((u) => u.user_id));
@@ -316,17 +275,14 @@ function AdminDashboardPage() {
       if (productFilter === "seguros" && u.seguros <= 0) return false;
       if (productFilter === "credito" && u.volume <= 0) return false;
       if (productFilter === "recuperacao" && u.recuperado <= 0) return false;
-      if (productFilter === "pj") {
-        const hasPj = reports.some((r) => r.user_id === u.user_id && ((r.pj_conta_empresarial ?? 0) + (r.pj_maquina_vero ?? 0)) > 0);
-        if (!hasPj) return false;
-      }
+      if (productFilter === "pj" && u.pjUnits <= 0) return false;
       if (minP != null) {
         const pts = ranking.find((r) => r.user_id === u.user_id)?.points ?? 0;
         if (pts < minP) return false;
       }
       return true;
     });
-  }, [perUser, profiles, reports, ranking, search, minUnits, minVolume, minPoints, productFilter]);
+  }, [perUser, profiles, ranking, search, minUnits, minVolume, minPoints, productFilter]);
 
   const filteredInactives = useMemo(() => {
     const q = search.trim().toLowerCase();
