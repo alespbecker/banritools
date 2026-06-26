@@ -90,7 +90,7 @@ export async function listUserEntries(userId: string): Promise<ProductionEntryRo
 
 export interface EntryPatch {
   entry_date?: string;
-  quantity?: number | null;
+  quantity?: number;
   amount?: number | null;
   notes?: string | null;
   status?: string;
