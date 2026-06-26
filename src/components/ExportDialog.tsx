@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Download, FileText, FileSpreadsheet, FileType2 } from "lucide-react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx-js-style";
+import type jsPDF from "jspdf";
+import type * as XLSXType from "xlsx-js-style";
+// jsPDF, jspdf-autotable e xlsx-js-style são dinamicamente importados
+// dentro dos handlers para reduzir o bundle inicial da rota.
 
 export type ExportColumn<T> = {
   key: string;
@@ -259,10 +260,11 @@ export function ExportDialog<T>({
     URL.revokeObjectURL(url);
   };
 
-  const handleXLSX = () => {
+  const handleXLSX = async () => {
+    const XLSX = await import("xlsx-js-style");
     const lastCol = Math.max(headers.length - 1, 0);
     const aoa: (string | number)[][] = [];
-    const merges: XLSX.Range[] = [];
+    const merges: XLSXType.Range[] = [];
     const cellStyles: Record<string, { fill?: string; color?: string; bold?: boolean; size?: number; align?: "left" | "right" | "center" }> = {};
 
     // Header band
@@ -391,7 +393,11 @@ export function ExportDialog<T>({
   };
 
   const handlePDF = async () => {
-    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const [{ default: JsPDFCtor }, { default: autoTable }] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable"),
+    ]);
+    const doc = new JsPDFCtor({ orientation: "landscape", unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const margin = 32;
