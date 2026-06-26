@@ -15,17 +15,13 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ConviteCodeRouteImport } from './routes/convite.$code'
 import { Route as AuthenticatedToolsRouteImport } from './routes/_authenticated.tools'
-import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
 import { Route as AuthenticatedRegistrarProducaoV3RouteImport } from './routes/_authenticated.registrar-producao-v3'
-import { Route as AuthenticatedRegistrarProducaoRouteImport } from './routes/_authenticated.registrar-producao'
 import { Route as AuthenticatedRankingV3RouteImport } from './routes/_authenticated.ranking-v3'
 import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated.ranking'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated.perfil'
 import { Route as AuthenticatedMetasRouteImport } from './routes/_authenticated.metas'
-import { Route as AuthenticatedHistoricoRouteImport } from './routes/_authenticated.historico'
 import { Route as AuthenticatedDesignSystemRouteImport } from './routes/_authenticated.design-system'
 import { Route as AuthenticatedDashboardV3RouteImport } from './routes/_authenticated.dashboard-v3'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedContactsRouteImport } from './routes/_authenticated.contacts'
 import { Route as AuthenticatedCampanhasRouteImport } from './routes/_authenticated.campanhas'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
@@ -61,21 +57,10 @@ const AuthenticatedToolsRoute = AuthenticatedToolsRouteImport.update({
   path: '/tools',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedRegistrarProducaoV3Route =
   AuthenticatedRegistrarProducaoV3RouteImport.update({
     id: '/registrar-producao-v3',
     path: '/registrar-producao-v3',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedRegistrarProducaoRoute =
-  AuthenticatedRegistrarProducaoRouteImport.update({
-    id: '/registrar-producao',
-    path: '/registrar-producao',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedRankingV3Route = AuthenticatedRankingV3RouteImport.update({
@@ -98,11 +83,6 @@ const AuthenticatedMetasRoute = AuthenticatedMetasRouteImport.update({
   path: '/metas',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedHistoricoRoute = AuthenticatedHistoricoRouteImport.update({
-  id: '/historico',
-  path: '/historico',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedDesignSystemRoute =
   AuthenticatedDesignSystemRouteImport.update({
     id: '/design-system',
@@ -115,11 +95,6 @@ const AuthenticatedDashboardV3Route =
     path: '/dashboard-v3',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedContactsRoute = AuthenticatedContactsRouteImport.update({
   id: '/contacts',
   path: '/contacts',
@@ -155,17 +130,13 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/campanhas': typeof AuthenticatedCampanhasRoute
   '/contacts': typeof AuthenticatedContactsRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
   '/dashboard-v3': typeof AuthenticatedDashboardV3Route
   '/design-system': typeof AuthenticatedDesignSystemRoute
-  '/historico': typeof AuthenticatedHistoricoRoute
   '/metas': typeof AuthenticatedMetasRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/ranking': typeof AuthenticatedRankingRoute
   '/ranking-v3': typeof AuthenticatedRankingV3Route
-  '/registrar-producao': typeof AuthenticatedRegistrarProducaoRoute
   '/registrar-producao-v3': typeof AuthenticatedRegistrarProducaoV3Route
-  '/settings': typeof AuthenticatedSettingsRoute
   '/tools': typeof AuthenticatedToolsRoute
   '/convite/$code': typeof ConviteCodeRoute
   '/admin/convites': typeof AuthenticatedAdminConvitesRoute
@@ -178,17 +149,13 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/campanhas': typeof AuthenticatedCampanhasRoute
   '/contacts': typeof AuthenticatedContactsRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
   '/dashboard-v3': typeof AuthenticatedDashboardV3Route
   '/design-system': typeof AuthenticatedDesignSystemRoute
-  '/historico': typeof AuthenticatedHistoricoRoute
   '/metas': typeof AuthenticatedMetasRoute
   '/perfil': typeof AuthenticatedPerfilRoute
   '/ranking': typeof AuthenticatedRankingRoute
   '/ranking-v3': typeof AuthenticatedRankingV3Route
-  '/registrar-producao': typeof AuthenticatedRegistrarProducaoRoute
   '/registrar-producao-v3': typeof AuthenticatedRegistrarProducaoV3Route
-  '/settings': typeof AuthenticatedSettingsRoute
   '/tools': typeof AuthenticatedToolsRoute
   '/convite/$code': typeof ConviteCodeRoute
   '/admin/convites': typeof AuthenticatedAdminConvitesRoute
@@ -203,17 +170,13 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/campanhas': typeof AuthenticatedCampanhasRoute
   '/_authenticated/contacts': typeof AuthenticatedContactsRoute
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/dashboard-v3': typeof AuthenticatedDashboardV3Route
   '/_authenticated/design-system': typeof AuthenticatedDesignSystemRoute
-  '/_authenticated/historico': typeof AuthenticatedHistoricoRoute
   '/_authenticated/metas': typeof AuthenticatedMetasRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
   '/_authenticated/ranking': typeof AuthenticatedRankingRoute
   '/_authenticated/ranking-v3': typeof AuthenticatedRankingV3Route
-  '/_authenticated/registrar-producao': typeof AuthenticatedRegistrarProducaoRoute
   '/_authenticated/registrar-producao-v3': typeof AuthenticatedRegistrarProducaoV3Route
-  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/tools': typeof AuthenticatedToolsRoute
   '/convite/$code': typeof ConviteCodeRoute
   '/_authenticated/admin_/convites': typeof AuthenticatedAdminConvitesRoute
@@ -228,17 +191,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/campanhas'
     | '/contacts'
-    | '/dashboard'
     | '/dashboard-v3'
     | '/design-system'
-    | '/historico'
     | '/metas'
     | '/perfil'
     | '/ranking'
     | '/ranking-v3'
-    | '/registrar-producao'
     | '/registrar-producao-v3'
-    | '/settings'
     | '/tools'
     | '/convite/$code'
     | '/admin/convites'
@@ -251,17 +210,13 @@ export interface FileRouteTypes {
     | '/admin'
     | '/campanhas'
     | '/contacts'
-    | '/dashboard'
     | '/dashboard-v3'
     | '/design-system'
-    | '/historico'
     | '/metas'
     | '/perfil'
     | '/ranking'
     | '/ranking-v3'
-    | '/registrar-producao'
     | '/registrar-producao-v3'
-    | '/settings'
     | '/tools'
     | '/convite/$code'
     | '/admin/convites'
@@ -275,17 +230,13 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/campanhas'
     | '/_authenticated/contacts'
-    | '/_authenticated/dashboard'
     | '/_authenticated/dashboard-v3'
     | '/_authenticated/design-system'
-    | '/_authenticated/historico'
     | '/_authenticated/metas'
     | '/_authenticated/perfil'
     | '/_authenticated/ranking'
     | '/_authenticated/ranking-v3'
-    | '/_authenticated/registrar-producao'
     | '/_authenticated/registrar-producao-v3'
-    | '/_authenticated/settings'
     | '/_authenticated/tools'
     | '/convite/$code'
     | '/_authenticated/admin_/convites'
@@ -344,25 +295,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedToolsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/settings': {
-      id: '/_authenticated/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/registrar-producao-v3': {
       id: '/_authenticated/registrar-producao-v3'
       path: '/registrar-producao-v3'
       fullPath: '/registrar-producao-v3'
       preLoaderRoute: typeof AuthenticatedRegistrarProducaoV3RouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/registrar-producao': {
-      id: '/_authenticated/registrar-producao'
-      path: '/registrar-producao'
-      fullPath: '/registrar-producao'
-      preLoaderRoute: typeof AuthenticatedRegistrarProducaoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/ranking-v3': {
@@ -393,13 +330,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMetasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/historico': {
-      id: '/_authenticated/historico'
-      path: '/historico'
-      fullPath: '/historico'
-      preLoaderRoute: typeof AuthenticatedHistoricoRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/design-system': {
       id: '/_authenticated/design-system'
       path: '/design-system'
@@ -412,13 +342,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard-v3'
       fullPath: '/dashboard-v3'
       preLoaderRoute: typeof AuthenticatedDashboardV3RouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/contacts': {
@@ -463,17 +386,13 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedCampanhasRoute: typeof AuthenticatedCampanhasRoute
   AuthenticatedContactsRoute: typeof AuthenticatedContactsRoute
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDashboardV3Route: typeof AuthenticatedDashboardV3Route
   AuthenticatedDesignSystemRoute: typeof AuthenticatedDesignSystemRoute
-  AuthenticatedHistoricoRoute: typeof AuthenticatedHistoricoRoute
   AuthenticatedMetasRoute: typeof AuthenticatedMetasRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
   AuthenticatedRankingRoute: typeof AuthenticatedRankingRoute
   AuthenticatedRankingV3Route: typeof AuthenticatedRankingV3Route
-  AuthenticatedRegistrarProducaoRoute: typeof AuthenticatedRegistrarProducaoRoute
   AuthenticatedRegistrarProducaoV3Route: typeof AuthenticatedRegistrarProducaoV3Route
-  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
   AuthenticatedAdminConvitesRoute: typeof AuthenticatedAdminConvitesRoute
   AuthenticatedAdminProdutosRoute: typeof AuthenticatedAdminProdutosRoute
@@ -483,17 +402,13 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedCampanhasRoute: AuthenticatedCampanhasRoute,
   AuthenticatedContactsRoute: AuthenticatedContactsRoute,
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDashboardV3Route: AuthenticatedDashboardV3Route,
   AuthenticatedDesignSystemRoute: AuthenticatedDesignSystemRoute,
-  AuthenticatedHistoricoRoute: AuthenticatedHistoricoRoute,
   AuthenticatedMetasRoute: AuthenticatedMetasRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
   AuthenticatedRankingRoute: AuthenticatedRankingRoute,
   AuthenticatedRankingV3Route: AuthenticatedRankingV3Route,
-  AuthenticatedRegistrarProducaoRoute: AuthenticatedRegistrarProducaoRoute,
   AuthenticatedRegistrarProducaoV3Route: AuthenticatedRegistrarProducaoV3Route,
-  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedToolsRoute: AuthenticatedToolsRoute,
   AuthenticatedAdminConvitesRoute: AuthenticatedAdminConvitesRoute,
   AuthenticatedAdminProdutosRoute: AuthenticatedAdminProdutosRoute,
