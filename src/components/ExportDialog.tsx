@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Download, FileText, FileSpreadsheet, FileType2 } from "lucide-react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx-js-style";
+import type jsPDF from "jspdf";
+import type * as XLSXType from "xlsx-js-style";
+// jsPDF, jspdf-autotable e xlsx-js-style são dinamicamente importados
+// dentro dos handlers para reduzir o bundle inicial da rota.
 
 export type ExportColumn<T> = {
   key: string;
