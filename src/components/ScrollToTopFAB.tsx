@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { useLocation } from "@tanstack/react-router";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 /**
@@ -11,11 +12,13 @@ import { cn } from "@/lib/utils";
 export function ScrollToTopFAB() {
   const [visible, setVisible] = useState(false);
   const location = useLocation();
+  const isMobile = useIsMobile();
 
   // Espaço maior quando o FAB Plus está visível (todas as rotas exceto /registrar-producao*)
   const hasPlusFab = !location.pathname.startsWith("/registrar-producao");
 
   useEffect(() => {
+    if (!isMobile) return;
     // O scroll real acontece dentro do <main> em _authenticated.tsx
     const scroller =
       (document.querySelector("[data-app-scroll]") as HTMLElement | null) ?? null;
@@ -34,7 +37,9 @@ export function ScrollToTopFAB() {
       target.removeEventListener("scroll", check);
       window.removeEventListener("resize", check);
     };
-  }, [location.pathname]);
+  }, [location.pathname, isMobile]);
+
+  if (!isMobile) return null;
 
   const handleClick = () => {
     const scroller = document.querySelector("[data-app-scroll]") as HTMLElement | null;
