@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, Award, Shield, Trophy, Target, Activity, Gauge,
-  Search, SlidersHorizontal, X, Pencil, Check,
+  Search, SlidersHorizontal, X,
 } from "lucide-react";
 import {
   ChartContainer, ChartTooltip, ChartTooltipContent,
@@ -18,7 +18,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageSkeleton, DataGate } from "@/components/PageSkeleton";
 import { Users2 } from "lucide-react";
@@ -37,7 +36,6 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 type ProfileLite = { id: string; name: string | null; email: string | null; agency_id: string | null };
-type AgencyRow = { id: string; name: string };
 type EntryRow = {
   user_id: string;
   entry_date: string;
@@ -73,14 +71,9 @@ function AdminDashboardPage() {
   // Fonte única: production_entries (modelo v3). daily_reports foi descontinuado.
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileLite[]>([]);
-  const [roles, setRoles] = useState<Map<string, "admin" | "user">>(new Map());
-  const [agencies, setAgencies] = useState<AgencyRow[]>([]);
   const [ranking, setRanking] = useState<{ user_id: string; points: number; position: number }[]>([]);
   const [monthOffset, setMonthOffset] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [editingNameId, setEditingNameId] = useState<string | null>(null);
-  const [nameDraft, setNameDraft] = useState("");
   const monthRange = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
 
   // Search & advanced filters
@@ -122,8 +115,7 @@ function AdminDashboardPage() {
       .eq("agency_id", agencyId)
       .order("name");
 
-    // Em paralelo, dispara o resto que não depende dos profiles
-    const [entriesRes, agenciesRes, rankingRes, profilesRes] = await Promise.all([
+    const [entriesRes, rankingRes, profilesRes] = await Promise.all([
       supabase
         .from("production_entries")
         .select("user_id, entry_date, quantity, amount, products(name, slug, category, points_per_unit)")
@@ -131,25 +123,14 @@ function AdminDashboardPage() {
         .eq("status", "confirmed")
         .gte("entry_date", monthRange.start)
         .lte("entry_date", monthRange.end),
-      supabase.from("agencies").select("id, name").order("name"),
       supabase.from("ranking_monthly").select("user_id, points, position").eq("agency_id", agencyId).eq("month", monthRange.monthFirst).order("position"),
       profilesPromise,
     ]);
 
     const profilesData = (profilesRes.data as ProfileLite[]) ?? [];
-    const profileIds = profilesData.map((p) => p.id);
-
-    // user_roles: filtrar apenas pelos usuários da agência (antes buscava o banco inteiro)
-    const rolesRes = profileIds.length > 0
-      ? await supabase.from("user_roles").select("user_id, role").in("user_id", profileIds)
-      : { data: [] as { user_id: string; role: "admin" | "user" }[] };
 
     setEntries((entriesRes.data as unknown as EntryRow[]) ?? []);
     setProfiles(profilesData);
-    const m = new Map<string, "admin" | "user">();
-    for (const r of (rolesRes.data as { user_id: string; role: "admin" | "user" }[]) ?? []) m.set(r.user_id, r.role);
-    setRoles(m);
-    setAgencies((agenciesRes.data as AgencyRow[]) ?? []);
     setRanking((rankingRes.data as { user_id: string; points: number; position: number }[]) ?? []);
     setLoading(false);
   }, [agencyId, isAdmin, monthRange.start, monthRange.end, monthRange.monthFirst]);
@@ -171,7 +152,6 @@ function AdminDashboardPage() {
       
       .on("postgres_changes", { event: "*", schema: "public", table: "production_entries" }, scheduleRefetch)
       .on("postgres_changes", { event: "*", schema: "public", table: "ranking_monthly" }, scheduleRefetch)
-      .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, scheduleRefetch)
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, scheduleRefetch)
       .subscribe();
     window.addEventListener("banritools:sync", scheduleRefetch);
@@ -301,48 +281,6 @@ function AdminDashboardPage() {
       total: r.points,
     }));
   }, [ranking, profileMap]);
-
-  // ====== User management actions ======
-  const handleToggleRole = async (targetId: string, makeAdmin: boolean) => {
-    if (targetId === user?.id) {
-      toast.error("Você não pode alterar sua própria função.");
-      return;
-    }
-    setSavingId(targetId);
-    const newRole: "admin" | "user" = makeAdmin ? "admin" : "user";
-    setRoles((prev) => new Map(prev).set(targetId, newRole));
-    const { error } = await supabase.rpc("admin_set_user_role", {
-      _target_user_id: targetId, _new_role: newRole,
-    });
-    setSavingId(null);
-    if (error) { toast.error(error.message); fetchAll(); }
-    else {
-      await logAudit({ action: "role.update", entity: "user_role", entity_id: targetId, details: { new_role: newRole } });
-      toast.success(`Usuário agora é ${newRole === "admin" ? "Administrador" : "Usuário"}.`);
-    }
-  };
-
-  const handleAgencyChange = async (targetId: string, newAgency: string) => {
-    setSavingId(targetId);
-    const { error } = await supabase.from("profiles").update({ agency_id: newAgency }).eq("id", targetId);
-    setSavingId(null);
-    if (error) toast.error("Erro ao atualizar agência");
-    else { toast.success("Agência atualizada"); fetchAll(); }
-  };
-
-  const startEditName = (p: ProfileLite) => {
-    setEditingNameId(p.id);
-    setNameDraft(p.name ?? "");
-  };
-
-  const saveName = async (targetId: string) => {
-    setSavingId(targetId);
-    const { error } = await supabase.from("profiles").update({ name: nameDraft.trim() }).eq("id", targetId);
-    setSavingId(null);
-    setEditingNameId(null);
-    if (error) toast.error("Erro ao atualizar nome");
-    else { toast.success("Nome atualizado"); fetchAll(); }
-  };
 
   // ==== Export ====
   type ExportRow = {
@@ -746,154 +684,6 @@ function AdminDashboardPage() {
         )}
       </section>
 
-      {/* ===== Gestão integrada de usuários ===== */}
-      <section className="card-hover rounded-xl border border-border bg-card overflow-hidden" aria-label="Gestão de usuários da agência">
-        <header className="flex items-center justify-between gap-3 border-b border-border p-5">
-          <div>
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-card-foreground">
-              <Users className="h-5 w-5 text-primary" aria-hidden="true" />
-              Equipe da Agência
-            </h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Edite nomes, agência e permissão de cada colaborador.
-            </p>
-          </div>
-          <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground" title="Total de usuários cadastrados">
-            {profiles.length} usuários
-          </span>
-        </header>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/30 text-left">
-                <th className="p-3 font-medium text-muted-foreground">Usuário</th>
-                <th className="p-3 font-medium text-muted-foreground">Agência</th>
-                <th className="p-3 font-medium text-muted-foreground text-center">Administrador</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && profiles.length === 0 && (
-                <>
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <tr key={i} className="border-b border-border/50">
-                      <td className="p-3"><Skeleton className="h-9 w-48" /></td>
-                      <td className="p-3"><Skeleton className="h-9 w-44" /></td>
-                      <td className="p-3 text-center"><Skeleton className="mx-auto h-6 w-10" /></td>
-                    </tr>
-                  ))}
-                </>
-              )}
-              {!loading && profiles.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="p-6 text-center text-muted-foreground">
-                    Nenhum usuário encontrado nesta agência.
-                  </td>
-                </tr>
-              )}
-              {profiles.map((p) => {
-                const isMe = p.id === user?.id;
-                const isAdmin = roles.get(p.id) === "admin";
-                const isSaving = savingId === p.id;
-                return (
-                  <tr key={p.id} className="border-b border-border/50 transition-colors hover:bg-accent/20">
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                          {p.name?.[0]?.toUpperCase() ?? "U"}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          {editingNameId === p.id ? (
-                            <div className="flex items-center gap-1">
-                              <input
-                                value={nameDraft}
-                                onChange={(e) => setNameDraft(e.target.value)}
-                                className="h-8 w-48 rounded-md border border-input bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                                autoFocus
-                                aria-label={`Novo nome para ${p.name ?? "usuário"}`}
-                              />
-                              <button
-                                onClick={() => saveName(p.id)}
-                                disabled={isSaving}
-                                className="rounded p-1 text-success hover:bg-success/10"
-                                title="Salvar nome"
-                                aria-label="Salvar novo nome do usuário"
-                              >
-                                <Check className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => setEditingNameId(null)}
-                                className="rounded p-1 text-muted-foreground hover:bg-muted"
-                                title="Cancelar edição"
-                                aria-label="Cancelar edição do nome"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 text-foreground">
-                              <span className="truncate font-medium">{p.name ?? "Sem nome"}</span>
-                              {isMe && <span className="text-xs text-muted-foreground">(você)</span>}
-                              {isAdmin && (
-                                <Shield
-                                  className="h-3.5 w-3.5 text-primary"
-                                  aria-label="Administrador"
-                                />
-                              )}
-                              <button
-                                onClick={() => startEditName(p)}
-                                className="rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                                title="Editar nome do colaborador"
-                                aria-label={`Editar nome de ${p.name ?? "usuário"}`}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          )}
-                          <div className="text-xs text-muted-foreground truncate">{p.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <Select
-                        value={p.agency_id ?? ""}
-                        onValueChange={(v) => handleAgencyChange(p.id, v)}
-                        disabled={isSaving}
-                      >
-                        <SelectTrigger
-                          className="w-56"
-                          aria-label={`Agência atribuída a ${p.name ?? "usuário"}`}
-                          title="Trocar agência deste colaborador"
-                        >
-                          <SelectValue placeholder="Sem agência" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {agencies.map((a) => (
-                            <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="p-3 text-center">
-                      <Switch
-                        checked={isAdmin}
-                        disabled={isMe || isSaving}
-                        onCheckedChange={(v) => handleToggleRole(p.id, v)}
-                        aria-label={`${isAdmin ? "Remover" : "Conceder"} permissão de administrador para ${p.name ?? "usuário"}`}
-                        title={isMe ? "Você não pode alterar sua própria função" : isAdmin ? "Clique para rebaixar para usuário" : "Clique para promover a administrador"}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="border-t border-border bg-muted/20 p-3 text-xs text-muted-foreground">
-          <p>Você não pode alterar a sua própria função. Pelo menos um administrador deve permanecer na agência.</p>
-        </div>
-      </section>
 
       {/* Inactive members callout */}
       {inactives.length > 0 && (
