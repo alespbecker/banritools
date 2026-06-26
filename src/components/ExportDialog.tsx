@@ -393,7 +393,11 @@ export function ExportDialog<T>({
   };
 
   const handlePDF = async () => {
-    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const [{ default: JsPDFCtor }, { default: autoTable }] = await Promise.all([
+      import("jspdf"),
+      import("jspdf-autotable"),
+    ]);
+    const doc = new JsPDFCtor({ orientation: "landscape", unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
     const margin = 32;
