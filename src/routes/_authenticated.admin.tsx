@@ -387,35 +387,42 @@ function AdminDashboardPage() {
     { key: "points", label: "Pontos do mês", accessor: (r) => r.points, defaultChecked: true, format: "integer", summable: true },
   ], []);
 
-  type RawRow = AgencyReport & { name: string; email: string };
+  // Export "bruto": uma linha por lançamento (production_entries).
+  type RawRow = {
+    entry_date: string;
+    name: string;
+    email: string;
+    category: string;
+    product: string;
+    quantity: number;
+    amount: number;
+  };
   const rawRows: RawRow[] = useMemo(() => {
-    const allowedIds = new Set(filteredPerUser.map((u) => u.user_id));
-    const filtered = activeFilterCount > 0 && !showInactivesAsRows
-      ? reports.filter((r) => allowedIds.has(r.user_id))
-      : reports;
-    return filtered.map((r) => ({
-      ...r,
-      name: profileMap.get(r.user_id)?.name ?? "Sem nome",
-      email: profileMap.get(r.user_id)?.email ?? "",
-    }));
-  }, [reports, profileMap, filteredPerUser, activeFilterCount, showInactivesAsRows]);
-  const num = (v: number | null | undefined) => Number(v ?? 0);
+    const allowedIds = activeFilterCount > 0 && !showInactivesAsRows
+      ? new Set(filteredPerUser.map((u) => u.user_id))
+      : null;
+    const source = allowedIds ? entries.filter((e) => allowedIds.has(e.user_id)) : entries;
+    return source.map((e) => {
+      const p = profileMap.get(e.user_id);
+      return {
+        entry_date: e.entry_date,
+        name: p?.name ?? "Sem nome",
+        email: p?.email ?? "",
+        category: e.products?.category ?? "—",
+        product: e.products?.name ?? "—",
+        quantity: Number(e.quantity ?? 0),
+        amount: Number(e.amount ?? 0),
+      };
+    });
+  }, [entries, profileMap, filteredPerUser, activeFilterCount, showInactivesAsRows]);
   const rawColumns: ExportColumn<RawRow>[] = useMemo(() => [
-    { key: "report_date", label: "Data", accessor: (r) => r.report_date, defaultChecked: true, format: "date" },
+    { key: "entry_date", label: "Data", accessor: (r) => r.entry_date, defaultChecked: true, format: "date" },
     { key: "name", label: "Colaborador", accessor: (r) => r.name, defaultChecked: true, format: "text" },
     { key: "email", label: "Email", accessor: (r) => r.email, defaultChecked: false, format: "text" },
-    { key: "seguro_vida", label: "Seguro Vida (qtd)", accessor: (r) => num(r.seguro_vida), defaultChecked: true, format: "integer", summable: true },
-    { key: "seguro_vida_valor", label: "Seguro Vida (R$)", accessor: (r) => num(r.seguro_vida_valor), defaultChecked: true, format: "currency", summable: true },
-    { key: "seguro_ap_smart", label: "AP Smart (qtd)", accessor: (r) => num(r.seguro_ap_smart), defaultChecked: true, format: "integer", summable: true },
-    { key: "seguro_ap_smart_valor", label: "AP Smart (R$)", accessor: (r) => num(r.seguro_ap_smart_valor), defaultChecked: true, format: "currency", summable: true },
-    { key: "capitalizacao", label: "Capitalização (qtd)", accessor: (r) => num(r.capitalizacao), defaultChecked: true, format: "integer", summable: true },
-    { key: "capitalizacao_valor", label: "Capitalização (R$)", accessor: (r) => num(r.capitalizacao_valor), defaultChecked: true, format: "currency", summable: true },
-    { key: "credito_minuto_aumento", label: "Crédito Minuto", accessor: (r) => num(r.credito_minuto_aumento), defaultChecked: true, format: "integer", summable: true },
-    { key: "consignado_volume", label: "Consignado (R$)", accessor: (r) => num(r.consignado_volume), defaultChecked: true, format: "currency", summable: true },
-    { key: "recuperacao_estagio_2", label: "Recuperação E2 (R$)", accessor: (r) => num(r.recuperacao_estagio_2), defaultChecked: true, format: "currency", summable: true },
-    { key: "recuperacao_estagio_3", label: "Recuperação E3 (R$)", accessor: (r) => num(r.recuperacao_estagio_3), defaultChecked: true, format: "currency", summable: true },
-    { key: "pj_conta_empresarial", label: "PJ Conta Empresarial", accessor: (r) => num(r.pj_conta_empresarial), defaultChecked: true, format: "integer", summable: true },
-    { key: "pj_maquina_vero", label: "PJ Máquina Vero", accessor: (r) => num(r.pj_maquina_vero), defaultChecked: true, format: "integer", summable: true },
+    { key: "category", label: "Categoria", accessor: (r) => r.category, defaultChecked: true, format: "text" },
+    { key: "product", label: "Produto", accessor: (r) => r.product, defaultChecked: true, format: "text" },
+    { key: "quantity", label: "Quantidade", accessor: (r) => r.quantity, defaultChecked: true, format: "integer", summable: true },
+    { key: "amount", label: "Valor (R$)", accessor: (r) => r.amount, defaultChecked: true, format: "currency", summable: true },
   ], []);
 
   if (isLoading || (userRole && userRole !== "admin")) {
