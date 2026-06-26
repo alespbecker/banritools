@@ -260,10 +260,11 @@ export function ExportDialog<T>({
     URL.revokeObjectURL(url);
   };
 
-  const handleXLSX = () => {
+  const handleXLSX = async () => {
+    const XLSX = await import("xlsx-js-style");
     const lastCol = Math.max(headers.length - 1, 0);
     const aoa: (string | number)[][] = [];
-    const merges: XLSX.Range[] = [];
+    const merges: XLSXType.Range[] = [];
     const cellStyles: Record<string, { fill?: string; color?: string; bold?: boolean; size?: number; align?: "left" | "right" | "center" }> = {};
 
     // Header band
