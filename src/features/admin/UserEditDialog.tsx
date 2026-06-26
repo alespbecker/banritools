@@ -283,7 +283,7 @@ function EntryEditDialog({ entry, onClose, onSaved }: { entry: ProductionEntryRo
     try {
       await updateEntry(entry.id, {
         entry_date: entryDate,
-        quantity: quantity === "" ? null : Number(quantity),
+        quantity: quantity === "" ? undefined : Number(quantity),
         amount: amount === "" ? null : Number(amount),
         notes: notes.trim() || null,
         status,
