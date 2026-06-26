@@ -22,7 +22,7 @@ const navItems = [
   { label: "Metas", to: "/metas", icon: Target, adminOnly: false, ownerOnly: false },
   { label: "Ferramentas", to: "/tools", icon: Wrench, adminOnly: false, ownerOnly: false },
   { label: "Produtos", to: "/admin/produtos", icon: Package, adminOnly: true, ownerOnly: false },
-  { label: "Convites", to: "/admin/convites", icon: Mail, adminOnly: true, ownerOnly: false },
+  { label: "Usuários", to: "/admin/convites", icon: Users, adminOnly: true, ownerOnly: false },
   { label: "Design System", to: "/design-system", icon: Palette, adminOnly: true, ownerOnly: true },
 ] as const;
 
