@@ -429,7 +429,7 @@ function AdminDashboardPage() {
     return <PageSkeleton kpis={4} rows={6} />;
   }
 
-  const initialLoading = loading && reports.length === 0 && profiles.length === 0;
+  const initialLoading = loading && entries.length === 0 && profiles.length === 0;
 
   return (
     <DataGate
