@@ -120,7 +120,7 @@ function AdminDashboardPage() {
   // Guard: only admins
   useEffect(() => {
     if (!isLoading && userRole && userRole !== "admin") {
-      navigate({ to: "/dashboard" });
+      navigate({ to: "/dashboard-v3" });
     }
   }, [isLoading, userRole, navigate]);
 
