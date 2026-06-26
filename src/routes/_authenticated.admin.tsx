@@ -36,23 +36,6 @@ export const Route = createFileRoute("/_authenticated/admin")({
   pendingComponent: () => <PageSkeleton kpis={4} rows={8} />,
 });
 
-type AgencyReport = {
-  user_id: string;
-  report_date: string;
-  seguro_vida: number | null;
-  seguro_ap_smart: number | null;
-  capitalizacao: number | null;
-  seguro_vida_valor: number | null;
-  seguro_ap_smart_valor: number | null;
-  capitalizacao_valor: number | null;
-  credito_minuto_aumento: number | null;
-  consignado_volume: number | null;
-  recuperacao_estagio_2: number | null;
-  recuperacao_estagio_3: number | null;
-  pj_conta_empresarial: number | null;
-  pj_maquina_vero: number | null;
-};
-
 type ProfileLite = { id: string; name: string | null; email: string | null; agency_id: string | null };
 type AgencyRow = { id: string; name: string };
 type EntryRow = {
@@ -60,7 +43,7 @@ type EntryRow = {
   entry_date: string;
   quantity: number | null;
   amount: number | null;
-  products: { slug: string | null; category: string | null } | null;
+  products: { name: string | null; slug: string | null; category: string | null; points_per_unit: number | null } | null;
 };
 
 function fmtBRL(v: number) {
@@ -87,7 +70,7 @@ const chartConfig: ChartConfig = {
 function AdminDashboardPage() {
   const { userRole, profile, user, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [reports, setReports] = useState<AgencyReport[]>([]);
+  // Fonte única: production_entries (modelo v3). daily_reports foi descontinuado.
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileLite[]>([]);
   const [roles, setRoles] = useState<Map<string, "admin" | "user">>(new Map());
@@ -140,16 +123,10 @@ function AdminDashboardPage() {
       .order("name");
 
     // Em paralelo, dispara o resto que não depende dos profiles
-    const [reportsRes, entriesRes, agenciesRes, rankingRes, profilesRes] = await Promise.all([
-      supabase
-        .from("daily_reports")
-        .select("user_id, report_date, seguro_vida, seguro_ap_smart, capitalizacao, seguro_vida_valor, seguro_ap_smart_valor, capitalizacao_valor, credito_minuto_aumento, consignado_volume, recuperacao_estagio_2, recuperacao_estagio_3, pj_conta_empresarial, pj_maquina_vero")
-        .eq("agency_id", agencyId)
-        .gte("report_date", monthRange.start)
-        .lte("report_date", monthRange.end),
+    const [entriesRes, agenciesRes, rankingRes, profilesRes] = await Promise.all([
       supabase
         .from("production_entries")
-        .select("user_id, entry_date, quantity, amount, products(slug, category)")
+        .select("user_id, entry_date, quantity, amount, products(name, slug, category, points_per_unit)")
         .eq("agency_id", agencyId)
         .eq("status", "confirmed")
         .gte("entry_date", monthRange.start)
@@ -167,7 +144,6 @@ function AdminDashboardPage() {
       ? await supabase.from("user_roles").select("user_id, role").in("user_id", profileIds)
       : { data: [] as { user_id: string; role: "admin" | "user" }[] };
 
-    setReports((reportsRes.data as AgencyReport[]) ?? []);
     setEntries((entriesRes.data as unknown as EntryRow[]) ?? []);
     setProfiles(profilesData);
     const m = new Map<string, "admin" | "user">();
@@ -181,7 +157,7 @@ function AdminDashboardPage() {
   useEffect(() => { fetchAll(true); }, [fetchAll]);
 
   // Realtime sync — coalesce eventos em rajada (fechamento de mês pode disparar
-  // dezenas de mudanças/segundo em 5 tabelas; sem debounce isso refaria o
+  // dezenas de mudanças/segundo em 4 tabelas; sem debounce isso refaria o
   // fetchAll a cada evento individual).
   useEffect(() => {
     if (!agencyId || !isAdmin) return;
@@ -192,7 +168,7 @@ function AdminDashboardPage() {
     };
     const channel = supabase
       .channel(`admin-dashboard-${user?.id ?? "anon"}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "daily_reports" }, scheduleRefetch)
+      
       .on("postgres_changes", { event: "*", schema: "public", table: "production_entries" }, scheduleRefetch)
       .on("postgres_changes", { event: "*", schema: "public", table: "ranking_monthly" }, scheduleRefetch)
       .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, scheduleRefetch)
