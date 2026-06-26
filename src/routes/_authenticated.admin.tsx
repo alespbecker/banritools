@@ -36,23 +36,6 @@ export const Route = createFileRoute("/_authenticated/admin")({
   pendingComponent: () => <PageSkeleton kpis={4} rows={8} />,
 });
 
-type AgencyReport = {
-  user_id: string;
-  report_date: string;
-  seguro_vida: number | null;
-  seguro_ap_smart: number | null;
-  capitalizacao: number | null;
-  seguro_vida_valor: number | null;
-  seguro_ap_smart_valor: number | null;
-  capitalizacao_valor: number | null;
-  credito_minuto_aumento: number | null;
-  consignado_volume: number | null;
-  recuperacao_estagio_2: number | null;
-  recuperacao_estagio_3: number | null;
-  pj_conta_empresarial: number | null;
-  pj_maquina_vero: number | null;
-};
-
 type ProfileLite = { id: string; name: string | null; email: string | null; agency_id: string | null };
 type AgencyRow = { id: string; name: string };
 type EntryRow = {
@@ -60,7 +43,7 @@ type EntryRow = {
   entry_date: string;
   quantity: number | null;
   amount: number | null;
-  products: { slug: string | null; category: string | null } | null;
+  products: { name: string | null; slug: string | null; category: string | null; points_per_unit: number | null } | null;
 };
 
 function fmtBRL(v: number) {
@@ -87,7 +70,7 @@ const chartConfig: ChartConfig = {
 function AdminDashboardPage() {
   const { userRole, profile, user, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [reports, setReports] = useState<AgencyReport[]>([]);
+  // Fonte única: production_entries (modelo v3). daily_reports foi descontinuado.
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileLite[]>([]);
   const [roles, setRoles] = useState<Map<string, "admin" | "user">>(new Map());
@@ -120,7 +103,7 @@ function AdminDashboardPage() {
   // Guard: only admins
   useEffect(() => {
     if (!isLoading && userRole && userRole !== "admin") {
-      navigate({ to: "/dashboard" });
+      navigate({ to: "/dashboard-v3" });
     }
   }, [isLoading, userRole, navigate]);
 
@@ -140,16 +123,10 @@ function AdminDashboardPage() {
       .order("name");
 
     // Em paralelo, dispara o resto que não depende dos profiles
-    const [reportsRes, entriesRes, agenciesRes, rankingRes, profilesRes] = await Promise.all([
-      supabase
-        .from("daily_reports")
-        .select("user_id, report_date, seguro_vida, seguro_ap_smart, capitalizacao, seguro_vida_valor, seguro_ap_smart_valor, capitalizacao_valor, credito_minuto_aumento, consignado_volume, recuperacao_estagio_2, recuperacao_estagio_3, pj_conta_empresarial, pj_maquina_vero")
-        .eq("agency_id", agencyId)
-        .gte("report_date", monthRange.start)
-        .lte("report_date", monthRange.end),
+    const [entriesRes, agenciesRes, rankingRes, profilesRes] = await Promise.all([
       supabase
         .from("production_entries")
-        .select("user_id, entry_date, quantity, amount, products(slug, category)")
+        .select("user_id, entry_date, quantity, amount, products(name, slug, category, points_per_unit)")
         .eq("agency_id", agencyId)
         .eq("status", "confirmed")
         .gte("entry_date", monthRange.start)
@@ -167,7 +144,6 @@ function AdminDashboardPage() {
       ? await supabase.from("user_roles").select("user_id, role").in("user_id", profileIds)
       : { data: [] as { user_id: string; role: "admin" | "user" }[] };
 
-    setReports((reportsRes.data as AgencyReport[]) ?? []);
     setEntries((entriesRes.data as unknown as EntryRow[]) ?? []);
     setProfiles(profilesData);
     const m = new Map<string, "admin" | "user">();
@@ -181,7 +157,7 @@ function AdminDashboardPage() {
   useEffect(() => { fetchAll(true); }, [fetchAll]);
 
   // Realtime sync — coalesce eventos em rajada (fechamento de mês pode disparar
-  // dezenas de mudanças/segundo em 5 tabelas; sem debounce isso refaria o
+  // dezenas de mudanças/segundo em 4 tabelas; sem debounce isso refaria o
   // fetchAll a cada evento individual).
   useEffect(() => {
     if (!agencyId || !isAdmin) return;
@@ -192,7 +168,7 @@ function AdminDashboardPage() {
     };
     const channel = supabase
       .channel(`admin-dashboard-${user?.id ?? "anon"}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "daily_reports" }, scheduleRefetch)
+      
       .on("postgres_changes", { event: "*", schema: "public", table: "production_entries" }, scheduleRefetch)
       .on("postgres_changes", { event: "*", schema: "public", table: "ranking_monthly" }, scheduleRefetch)
       .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, scheduleRefetch)
@@ -212,24 +188,35 @@ function AdminDashboardPage() {
     return m;
   }, [profiles]);
 
-  // Agregação das entries (novo modelo) por usuário, traduzindo para o mesmo
-  // vocabulário do painel legado (units, volume, recuperado, seguros, dias).
+  // Agregação por usuário a partir das entries (fonte única — modelo v3).
+  // Mantém o vocabulário herdado (units/volume/recuperado/seguros/dias) para
+  // não quebrar contratos de UI/export; campos novos (pjUnits, segurosValor)
+  // entram aqui também.
   const entriesAgg = useMemo(() => {
     const map = new Map<string, {
-      units: number; volume: number; recuperado: number; seguros: number; dias: Set<string>;
+      units: number;
+      volume: number;         // R$ Crédito
+      recuperado: number;     // R$ Recuperação
+      seguros: number;        // unidades Seguros + Capitalização
+      segurosValor: number;   // R$ Seguros + Capitalização
+      pjUnits: number;        // unidades PJ
+      dias: Set<string>;
     }>();
     for (const e of entries) {
       const cur = map.get(e.user_id) ?? {
-        units: 0, volume: 0, recuperado: 0, seguros: 0, dias: new Set<string>(),
+        units: 0, volume: 0, recuperado: 0, seguros: 0, segurosValor: 0, pjUnits: 0, dias: new Set<string>(),
       };
       const qty = Number(e.quantity ?? 0);
       const amt = Number(e.amount ?? 0);
       const cat = e.products?.category ?? "";
-      const slug = e.products?.slug ?? "";
       cur.units += qty;
-      if (cat === "Seguros") cur.seguros += qty;
-      if (slug === "consignado") cur.volume += amt;
+      if (cat === "Seguros" || cat === "Capitalização") {
+        cur.seguros += qty;
+        cur.segurosValor += amt;
+      }
+      if (cat === "Crédito") cur.volume += amt;
       if (cat === "Recuperação") cur.recuperado += amt;
+      if (cat === "PJ") cur.pjUnits += qty;
       cur.dias.add(e.entry_date);
       map.set(e.user_id, cur);
     }
@@ -237,38 +224,15 @@ function AdminDashboardPage() {
   }, [entries]);
 
   const stats = useMemo(() => {
-    const totalUnits = reports.reduce(
-      (s, r) =>
-        s + (r.seguro_vida ?? 0) + (r.seguro_ap_smart ?? 0) + (r.capitalizacao ?? 0) +
-        (r.credito_minuto_aumento ?? 0) + (r.pj_conta_empresarial ?? 0) + (r.pj_maquina_vero ?? 0), 0
-    );
-    const volFinanceiro = reports.reduce(
-      (s, r) => s + Number(r.consignado_volume ?? 0), 0
-    );
-    const recuperado = reports.reduce(
-      (s, r) => s + Number(r.recuperacao_estagio_2 ?? 0) + Number(r.recuperacao_estagio_3 ?? 0), 0
-    );
-    const segurosValor = reports.reduce(
-      (s, r) => s + Number(r.seguro_vida_valor ?? 0) + Number(r.seguro_ap_smart_valor ?? 0) + Number(r.capitalizacao_valor ?? 0), 0
-    );
-    // Soma das entries (novo modelo)
-    let entriesUnits = 0, entriesVolume = 0, entriesRecuperado = 0;
+    let totalUnits = 0, volFinanceiro = 0, recuperado = 0, segurosValor = 0;
     for (const agg of entriesAgg.values()) {
-      entriesUnits += agg.units;
-      entriesVolume += agg.volume;
-      entriesRecuperado += agg.recuperado;
+      totalUnits += agg.units;
+      volFinanceiro += agg.volume;
+      recuperado += agg.recuperado;
+      segurosValor += agg.segurosValor;
     }
-    const activeIds = new Set<string>();
-    reports.forEach((r) => activeIds.add(r.user_id));
-    entries.forEach((e) => activeIds.add(e.user_id));
-    return {
-      totalUnits: totalUnits + entriesUnits,
-      volFinanceiro: volFinanceiro + entriesVolume,
-      recuperado: recuperado + entriesRecuperado,
-      segurosValor,
-      activeUsers: activeIds.size,
-    };
-  }, [reports, entries, entriesAgg]);
+    return { totalUnits, volFinanceiro, recuperado, segurosValor, activeUsers: entriesAgg.size };
+  }, [entriesAgg]);
 
   // KPIs do TIME — diferentes do dashboard pessoal (que mostra totais individuais).
   // Aqui focamos em dinâmica do grupo: engajamento, média, top performer e gap.
@@ -283,41 +247,12 @@ function AdminDashboardPage() {
     return { engajamento, mediaUnitsAtivo, topPoints, topName, gap, totalProfiles };
   }, [profiles.length, stats.activeUsers, stats.totalUnits, ranking, profileMap]);
 
-  // Per-user aggregation (daily_reports + production_entries)
+  // Per-user — lista plana ordenada por unidades, derivada do entriesAgg.
   const perUser = useMemo(() => {
-    const map = new Map<string, {
-      user_id: string;
-      units: number;
-      volume: number;
-      recuperado: number;
-      seguros: number;
-      dias: Set<string>;
-    }>();
-    for (const r of reports) {
-      const cur = map.get(r.user_id) ?? {
-        user_id: r.user_id, units: 0, volume: 0, recuperado: 0, seguros: 0, dias: new Set<string>(),
-      };
-      cur.units += (r.seguro_vida ?? 0) + (r.seguro_ap_smart ?? 0) + (r.capitalizacao ?? 0) +
-        (r.credito_minuto_aumento ?? 0) + (r.pj_conta_empresarial ?? 0) + (r.pj_maquina_vero ?? 0);
-      cur.volume += Number(r.consignado_volume ?? 0);
-      cur.recuperado += Number(r.recuperacao_estagio_2 ?? 0) + Number(r.recuperacao_estagio_3 ?? 0);
-      cur.seguros += (r.seguro_vida ?? 0) + (r.seguro_ap_smart ?? 0) + (r.capitalizacao ?? 0);
-      cur.dias.add(r.report_date);
-      map.set(r.user_id, cur);
-    }
-    for (const [uid, agg] of entriesAgg.entries()) {
-      const cur = map.get(uid) ?? {
-        user_id: uid, units: 0, volume: 0, recuperado: 0, seguros: 0, dias: new Set<string>(),
-      };
-      cur.units += agg.units;
-      cur.volume += agg.volume;
-      cur.recuperado += agg.recuperado;
-      cur.seguros += agg.seguros;
-      agg.dias.forEach((d) => cur.dias.add(d));
-      map.set(uid, cur);
-    }
-    return Array.from(map.values()).sort((a, b) => b.units - a.units);
-  }, [reports, entriesAgg]);
+    return Array.from(entriesAgg.entries())
+      .map(([user_id, agg]) => ({ user_id, ...agg }))
+      .sort((a, b) => b.units - a.units);
+  }, [entriesAgg]);
 
   const inactives = useMemo(() => {
     const activeIds = new Set(perUser.map((u) => u.user_id));
@@ -340,17 +275,14 @@ function AdminDashboardPage() {
       if (productFilter === "seguros" && u.seguros <= 0) return false;
       if (productFilter === "credito" && u.volume <= 0) return false;
       if (productFilter === "recuperacao" && u.recuperado <= 0) return false;
-      if (productFilter === "pj") {
-        const hasPj = reports.some((r) => r.user_id === u.user_id && ((r.pj_conta_empresarial ?? 0) + (r.pj_maquina_vero ?? 0)) > 0);
-        if (!hasPj) return false;
-      }
+      if (productFilter === "pj" && u.pjUnits <= 0) return false;
       if (minP != null) {
         const pts = ranking.find((r) => r.user_id === u.user_id)?.points ?? 0;
         if (pts < minP) return false;
       }
       return true;
     });
-  }, [perUser, profiles, reports, ranking, search, minUnits, minVolume, minPoints, productFilter]);
+  }, [perUser, profiles, ranking, search, minUnits, minVolume, minPoints, productFilter]);
 
   const filteredInactives = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -455,42 +387,49 @@ function AdminDashboardPage() {
     { key: "points", label: "Pontos do mês", accessor: (r) => r.points, defaultChecked: true, format: "integer", summable: true },
   ], []);
 
-  type RawRow = AgencyReport & { name: string; email: string };
+  // Export "bruto": uma linha por lançamento (production_entries).
+  type RawRow = {
+    entry_date: string;
+    name: string;
+    email: string;
+    category: string;
+    product: string;
+    quantity: number;
+    amount: number;
+  };
   const rawRows: RawRow[] = useMemo(() => {
-    const allowedIds = new Set(filteredPerUser.map((u) => u.user_id));
-    const filtered = activeFilterCount > 0 && !showInactivesAsRows
-      ? reports.filter((r) => allowedIds.has(r.user_id))
-      : reports;
-    return filtered.map((r) => ({
-      ...r,
-      name: profileMap.get(r.user_id)?.name ?? "Sem nome",
-      email: profileMap.get(r.user_id)?.email ?? "",
-    }));
-  }, [reports, profileMap, filteredPerUser, activeFilterCount, showInactivesAsRows]);
-  const num = (v: number | null | undefined) => Number(v ?? 0);
+    const allowedIds = activeFilterCount > 0 && !showInactivesAsRows
+      ? new Set(filteredPerUser.map((u) => u.user_id))
+      : null;
+    const source = allowedIds ? entries.filter((e) => allowedIds.has(e.user_id)) : entries;
+    return source.map((e) => {
+      const p = profileMap.get(e.user_id);
+      return {
+        entry_date: e.entry_date,
+        name: p?.name ?? "Sem nome",
+        email: p?.email ?? "",
+        category: e.products?.category ?? "—",
+        product: e.products?.name ?? "—",
+        quantity: Number(e.quantity ?? 0),
+        amount: Number(e.amount ?? 0),
+      };
+    });
+  }, [entries, profileMap, filteredPerUser, activeFilterCount, showInactivesAsRows]);
   const rawColumns: ExportColumn<RawRow>[] = useMemo(() => [
-    { key: "report_date", label: "Data", accessor: (r) => r.report_date, defaultChecked: true, format: "date" },
+    { key: "entry_date", label: "Data", accessor: (r) => r.entry_date, defaultChecked: true, format: "date" },
     { key: "name", label: "Colaborador", accessor: (r) => r.name, defaultChecked: true, format: "text" },
     { key: "email", label: "Email", accessor: (r) => r.email, defaultChecked: false, format: "text" },
-    { key: "seguro_vida", label: "Seguro Vida (qtd)", accessor: (r) => num(r.seguro_vida), defaultChecked: true, format: "integer", summable: true },
-    { key: "seguro_vida_valor", label: "Seguro Vida (R$)", accessor: (r) => num(r.seguro_vida_valor), defaultChecked: true, format: "currency", summable: true },
-    { key: "seguro_ap_smart", label: "AP Smart (qtd)", accessor: (r) => num(r.seguro_ap_smart), defaultChecked: true, format: "integer", summable: true },
-    { key: "seguro_ap_smart_valor", label: "AP Smart (R$)", accessor: (r) => num(r.seguro_ap_smart_valor), defaultChecked: true, format: "currency", summable: true },
-    { key: "capitalizacao", label: "Capitalização (qtd)", accessor: (r) => num(r.capitalizacao), defaultChecked: true, format: "integer", summable: true },
-    { key: "capitalizacao_valor", label: "Capitalização (R$)", accessor: (r) => num(r.capitalizacao_valor), defaultChecked: true, format: "currency", summable: true },
-    { key: "credito_minuto_aumento", label: "Crédito Minuto", accessor: (r) => num(r.credito_minuto_aumento), defaultChecked: true, format: "integer", summable: true },
-    { key: "consignado_volume", label: "Consignado (R$)", accessor: (r) => num(r.consignado_volume), defaultChecked: true, format: "currency", summable: true },
-    { key: "recuperacao_estagio_2", label: "Recuperação E2 (R$)", accessor: (r) => num(r.recuperacao_estagio_2), defaultChecked: true, format: "currency", summable: true },
-    { key: "recuperacao_estagio_3", label: "Recuperação E3 (R$)", accessor: (r) => num(r.recuperacao_estagio_3), defaultChecked: true, format: "currency", summable: true },
-    { key: "pj_conta_empresarial", label: "PJ Conta Empresarial", accessor: (r) => num(r.pj_conta_empresarial), defaultChecked: true, format: "integer", summable: true },
-    { key: "pj_maquina_vero", label: "PJ Máquina Vero", accessor: (r) => num(r.pj_maquina_vero), defaultChecked: true, format: "integer", summable: true },
+    { key: "category", label: "Categoria", accessor: (r) => r.category, defaultChecked: true, format: "text" },
+    { key: "product", label: "Produto", accessor: (r) => r.product, defaultChecked: true, format: "text" },
+    { key: "quantity", label: "Quantidade", accessor: (r) => r.quantity, defaultChecked: true, format: "integer", summable: true },
+    { key: "amount", label: "Valor (R$)", accessor: (r) => r.amount, defaultChecked: true, format: "currency", summable: true },
   ], []);
 
   if (isLoading || (userRole && userRole !== "admin")) {
     return <PageSkeleton kpis={4} rows={6} />;
   }
 
-  const initialLoading = loading && reports.length === 0 && profiles.length === 0;
+  const initialLoading = loading && entries.length === 0 && profiles.length === 0;
 
   return (
     <DataGate

@@ -70,7 +70,7 @@ function ResetPasswordPage() {
         <div className="w-full max-w-sm text-center">
           <h1 className="text-2xl font-bold text-foreground">Senha redefinida!</h1>
           <p className="mt-2 text-sm text-muted-foreground">Sua senha foi atualizada com sucesso.</p>
-          <Link to="/dashboard" className="mt-4 inline-block text-sm text-primary hover:underline">
+          <Link to="/dashboard-v3" className="mt-4 inline-block text-sm text-primary hover:underline">
             Ir para o Dashboard
           </Link>
         </div>
