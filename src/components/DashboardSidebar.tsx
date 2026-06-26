@@ -2,7 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   LayoutDashboard, FileText, Trophy,
   Wrench, LogOut,
-  Sun, Moon, Shield, Package, Target, Megaphone, Palette, Mail,
+  Sun, Moon, Shield, Package, Target, Megaphone, Palette, Users,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,7 @@ const navItems = [
   { label: "Metas", to: "/metas", icon: Target, adminOnly: false, ownerOnly: false },
   { label: "Ferramentas", to: "/tools", icon: Wrench, adminOnly: false, ownerOnly: false },
   { label: "Produtos", to: "/admin/produtos", icon: Package, adminOnly: true, ownerOnly: false },
-  { label: "Convites", to: "/admin/convites", icon: Mail, adminOnly: true, ownerOnly: false },
+  { label: "Usuários", to: "/admin/convites", icon: Users, adminOnly: true, ownerOnly: false },
   { label: "Design System", to: "/design-system", icon: Palette, adminOnly: true, ownerOnly: true },
 ] as const;
 
@@ -59,8 +59,11 @@ export function DashboardSidebar({ onSignOut, theme, onToggleTheme, onNavigate, 
       aria-label="Navegação principal"
       aria-expanded={isExpanded}
       className={cn(
-        "flex h-full flex-col border border-border/60 bg-sidebar/70 backdrop-blur-md rounded-2xl shadow-2xl shadow-black/20 overflow-hidden transition-[width] duration-200 ease-out",
-        isExpanded ? "w-60" : "w-16"
+        "flex h-full flex-col border border-border/60 rounded-2xl shadow-2xl shadow-black/20 overflow-hidden",
+        forceExpanded
+          ? "w-full bg-sidebar"
+          : "bg-sidebar/70 backdrop-blur-md transition-[width] duration-200 ease-out",
+        !forceExpanded && (isExpanded ? "w-60" : "w-16")
       )}
     >
       <div className="flex h-14 items-center gap-1 border-b border-border/60 pl-[14px] pr-4">

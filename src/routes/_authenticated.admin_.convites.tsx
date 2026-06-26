@@ -11,12 +11,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { PageContainer, PageHeader, InfoCard } from "@/components/ds";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { UnauthorizedState } from "@/components/states/UnauthorizedState";
-import { Mail, Plus, Copy, Trash2, Link as LinkIcon, CheckCircle2 } from "lucide-react";
+import { Users, Plus, Copy, Trash2, Link as LinkIcon, CheckCircle2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import type { AppRole } from "@/features/auth/types";
+import { listAgencyUsers, type AgencyUserRow } from "@/features/admin/users";
+import { UserEditDialog } from "@/features/admin/UserEditDialog";
+import { cargoLabel } from "@/features/auth/cargos";
 
 export const Route = createFileRoute("/_authenticated/admin_/convites")({
-  head: () => ({ meta: [{ title: "Convites — BanriTools" }] }),
+  head: () => ({ meta: [{ title: "Usuários — BanriTools" }] }),
   component: Page,
   pendingComponent: () => <PageSkeleton kpis={0} rows={6} />,
 });
@@ -41,24 +44,29 @@ function status(inv: Invite): { label: string; tone: "success" | "warning" | "in
 function Page() {
   const { user, userRole, profile } = useAuth();
   const [invites, setInvites] = useState<Invite[]>([]);
+  const [users, setUsers] = useState<AgencyUserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [role, setRole] = useState<AppRole>("funcionario");
   const [creating, setCreating] = useState(false);
   const [justCreated, setJustCreated] = useState<Invite | null>(null);
+  const [editingUser, setEditingUser] = useState<AgencyUserRow | null>(null);
 
   const canManage = userRole === "admin" || userRole === "gerente";
+  const isOwner = userRole === "admin";
 
   const load = useCallback(async () => {
+    if (!profile?.agency_id) { setLoading(false); return; }
     setLoading(true);
-    const { data, error } = await supabase
-      .from("user_invites")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (!error) setInvites((data ?? []) as unknown as Invite[]);
+    const [{ data: invData }, agencyUsers] = await Promise.all([
+      supabase.from("user_invites").select("*").order("created_at", { ascending: false }),
+      listAgencyUsers(profile.agency_id),
+    ]);
+    setInvites((invData ?? []) as unknown as Invite[]);
+    setUsers(agencyUsers);
     setLoading(false);
-  }, []);
+  }, [profile?.agency_id]);
 
   useEffect(() => { if (canManage) load(); else setLoading(false); }, [canManage, load]);
 
@@ -102,9 +110,9 @@ function Page() {
   return (
     <PageContainer>
       <PageHeader
-        icon={<Mail className="h-5 w-5" />}
-        title="Convites"
-        description="Gere códigos para que novos funcionários criem suas próprias contas"
+        icon={<Users className="h-5 w-5" />}
+        title="Usuários"
+        description="Gerencie a equipe da sua agência e gere convites de cadastro"
         actions={
           <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setJustCreated(null); }}>
             <DialogTrigger asChild>
@@ -168,6 +176,47 @@ function Page() {
         }
       />
 
+      <InfoCard title="Equipe" description={`${users.length} usuário${users.length === 1 ? "" : "s"} na agência`} bodyless>
+        {users.length === 0 ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">Nenhum usuário cadastrado ainda.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40">
+                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <th className="p-3">Nome</th>
+                  <th className="p-3">Email</th>
+                  <th className="p-3">Cargo</th>
+                  <th className="p-3">Função</th>
+                  <th className="p-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.id} className="border-t border-border">
+                    <td className="p-3 font-medium">{u.name ?? <span className="text-muted-foreground">—</span>}</td>
+                    <td className="p-3 text-muted-foreground">{u.email}</td>
+                    <td className="p-3">{cargoLabel(u.cargo, u.cargo_especialidade)}</td>
+                    <td className="p-3 capitalize">{u.role ?? "—"}</td>
+                    <td className="p-3">
+                      <div className="flex justify-end">
+                        {isOwner ? (
+                          <Button variant="ghost" size="sm" onClick={() => setEditingUser(u)} aria-label="Editar usuário">
+                            <Pencil className="h-3.5 w-3.5" /> Editar
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Somente admin</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </InfoCard>
+
       <InfoCard title="Histórico de convites" description={`${invites.length} convite${invites.length === 1 ? "" : "s"}`} bodyless>
         {invites.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">
@@ -218,6 +267,16 @@ function Page() {
           </div>
         )}
       </InfoCard>
+
+      {user && (
+        <UserEditDialog
+          user={editingUser}
+          open={!!editingUser}
+          onOpenChange={(v) => !v && setEditingUser(null)}
+          onChanged={load}
+          currentAdminId={user.id}
+        />
+      )}
     </PageContainer>
   );
 }
