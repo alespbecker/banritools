@@ -8,13 +8,26 @@ import {
   type MotionValue,
 } from "framer-motion";
 import { Logo } from "@/components/Logo";
-import { ArrowRight, BarChart3, Trophy, FileText, Sparkles, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  Trophy,
+  FileText,
+  Sparkles,
+  Zap,
+  Target,
+  Award,
+} from "lucide-react";
 
 /**
- * Landing pública estilo "AirPods Pro" — cada seção pinada com sticky,
- * animando elementos conforme o scroll. Sem dependências novas: usa
- * framer-motion (já no projeto) e respeita `prefers-reduced-motion`.
+ * Landing pública estilo "AirPods Pro" — cada seção pinada com sticky.
+ * Offset canônico ["start start", "end end"] casa o progresso 0→1 com o
+ * período em que a seção está pinada, então as animações sempre começam
+ * e terminam dentro da viewport. Fundo único (ambient-glow) atravessa
+ * toda a página; cada seção apenas adiciona conteúdo.
  */
+
+const STICKY_OFFSET = ["start start", "end end"] as const;
 
 function Wordmark({ size = 64, weight = 350 }: { size?: number; weight?: number }) {
   return (
@@ -25,7 +38,6 @@ function Wordmark({ size = 64, weight = 350 }: { size?: number; weight?: number 
         fontWeight: weight,
         fontSize: size,
         lineHeight: 1,
-        // Suaviza levemente os cantos da tipografia
         WebkitFontSmoothing: "antialiased",
         textRendering: "geometricPrecision",
       }}
@@ -49,10 +61,7 @@ function TopBar() {
           </span>
         </Link>
         <nav className="flex items-center gap-3">
-          <Link
-            to="/login"
-            className="text-sm text-muted-foreground hover:text-foreground transition"
-          >
+          <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground transition">
             Entrar
           </Link>
           <Link
@@ -67,29 +76,31 @@ function TopBar() {
   );
 }
 
+function SectionEyebrow({ icon: Icon, label }: { icon: React.ComponentType<{ className?: string }>; label: string }) {
+  return (
+    <div className="inline-flex items-center gap-2 text-xs font-medium text-primary uppercase tracking-wider mb-4">
+      <Icon className="h-4 w-4" /> {label}
+    </div>
+  );
+}
+
 /* ---------- 1. HERO ---------- */
 function Hero() {
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
+  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
   const reduced = useReducedMotion();
 
-  const scale = useTransform(scrollYProgress, [0, 1], reduced ? [1, 1] : [1, 1.8]);
-  const rotate = useTransform(scrollYProgress, [0, 1], reduced ? [0, 0] : [0, 60]);
-  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const scale = useTransform(scrollYProgress, [0, 1], reduced ? [1, 1] : [1, 1.6]);
+  const rotate = useTransform(scrollYProgress, [0, 1], reduced ? [0, 0] : [0, 45]);
+  const opacity = useTransform(scrollYProgress, [0, 0.85], [1, 0]);
 
   return (
-    <section ref={ref} className="relative h-[180vh]">
+    <section ref={ref} className="relative h-[140vh]">
       <div className="sticky top-0 h-screen flex flex-col items-center justify-center overflow-hidden">
-        <motion.div
-          style={{ scale, rotate, opacity }}
-          className="will-change-transform"
-        >
+        <motion.div style={{ scale, rotate, opacity }} className="will-change-transform">
           <Logo size={120} />
         </motion.div>
-        <motion.div
-          style={{ opacity }}
-          className="mt-3 flex flex-col items-center text-center px-6 max-w-3xl"
-        >
+        <motion.div style={{ opacity }} className="mt-3 flex flex-col items-center text-center px-6 max-w-3xl">
           <Wordmark size={48} weight={350} />
           <p className="mt-16 text-xl md:text-2xl text-muted-foreground font-light">
             Sua produção, em tempo real.
@@ -112,22 +123,20 @@ function Hero() {
 /* ---------- 2. REGISTRO RÁPIDO ---------- */
 function SectionRegistro() {
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
   const reduced = useReducedMotion();
 
-  const x = useTransform(scrollYProgress, [0.2, 0.7], reduced ? [0, 0] : [120, 0]);
-  const op = useTransform(scrollYProgress, [0.2, 0.5], [0, 1]);
-  const qty = useTransform(scrollYProgress, [0.3, 0.9], [0, 27]);
-  const pts = useTransform(scrollYProgress, [0.3, 0.9], [0, 1350]);
+  const x = useTransform(scrollYProgress, [0, 0.7], reduced ? [0, 0] : [120, 0]);
+  const op = useTransform(scrollYProgress, [0, 0.4], [0, 1]);
+  const qty = useTransform(scrollYProgress, [0.1, 0.9], [0, 27]);
+  const pts = useTransform(scrollYProgress, [0.1, 0.9], [0, 1350]);
 
   return (
-    <section ref={ref} className="relative h-[160vh] bg-gradient-to-b from-background to-muted/30">
+    <section ref={ref} className="relative h-[150vh]">
       <div className="sticky top-0 h-screen flex items-center">
         <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
           <motion.div style={{ opacity: op }}>
-            <div className="inline-flex items-center gap-2 text-xs font-medium text-primary uppercase tracking-wider mb-4">
-              <Zap className="h-4 w-4" /> Registro rápido
-            </div>
+            <SectionEyebrow icon={Zap} label="Registro rápido" />
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
               Lance a venda no
               <br />
@@ -152,7 +161,7 @@ function SectionRegistro() {
 
 function MockRegistro({ qty, pts }: { qty: MotionValue<number>; pts: MotionValue<number> }) {
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-2xl shadow-primary/10 p-5 max-w-md mx-auto">
+    <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm shadow-2xl shadow-primary/10 p-5 max-w-md mx-auto">
       <div className="flex items-center justify-between mb-3">
         <div>
           <div className="font-medium">Seguro Vida</div>
@@ -169,7 +178,7 @@ function MockRegistro({ qty, pts }: { qty: MotionValue<number>; pts: MotionValue
         </div>
         <div>
           <div className="text-xs text-muted-foreground mb-1">Valor (R$)</div>
-          <div className="h-10 rounded-md border border-border bg-background flex items-center px-3 text-muted-foreground">—</div>
+          <div className="h-10 rounded-md border border-border bg-background/60 flex items-center px-3 text-muted-foreground">—</div>
         </div>
       </div>
       <button className="mt-4 w-full h-10 rounded-md bg-primary text-primary-foreground font-medium text-sm">
@@ -187,23 +196,21 @@ function MotionInt({ value }: { value: MotionValue<number> }) {
 /* ---------- 3. PAINEL DA AGÊNCIA ---------- */
 function SectionPainel() {
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
   const reduced = useReducedMotion();
 
-  const k1 = useTransform(scrollYProgress, [0.2, 0.5], [0, 847]);
-  const k2 = useTransform(scrollYProgress, [0.25, 0.55], [0, 2_341_900]);
-  const k3 = useTransform(scrollYProgress, [0.3, 0.6], [0, 12]);
-  const k4 = useTransform(scrollYProgress, [0.35, 0.65], [0, 36_540]);
-  const draw = useTransform(scrollYProgress, [0.3, 0.8], reduced ? [1, 1] : [0, 1]);
+  const k1 = useTransform(scrollYProgress, [0.05, 0.45], [0, 847]);
+  const k2 = useTransform(scrollYProgress, [0.10, 0.50], [0, 2_341_900]);
+  const k3 = useTransform(scrollYProgress, [0.15, 0.55], [0, 12]);
+  const k4 = useTransform(scrollYProgress, [0.20, 0.60], [0, 36_540]);
+  const draw = useTransform(scrollYProgress, [0.25, 0.85], reduced ? [1, 1] : [0, 1]);
 
   return (
-    <section ref={ref} className="relative h-[180vh]">
+    <section ref={ref} className="relative h-[160vh]">
       <div className="sticky top-0 h-screen flex items-center">
         <div className="mx-auto max-w-6xl w-full px-6">
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 text-xs font-medium text-primary uppercase tracking-wider mb-3">
-              <BarChart3 className="h-4 w-4" /> Painel da agência
-            </div>
+            <SectionEyebrow icon={BarChart3} label="Painel da agência" />
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
               Tudo o que o gerente precisa,
               <br />
@@ -218,7 +225,7 @@ function SectionPainel() {
             <Kpi label="Pontos do mês" value={k4} fmt={(n) => n.toLocaleString("pt-BR")} />
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6">
             <div className="text-sm font-medium mb-4">Top 10 — Produção (pts)</div>
             <svg viewBox="0 0 600 180" className="w-full h-44">
               {[8400, 7200, 6850, 5900, 5400, 4900, 4200, 3700, 3100, 2600].map((v, i) => {
@@ -253,31 +260,95 @@ function SectionPainel() {
 function Kpi({ label, value, fmt }: { label: string; value: MotionValue<number>; fmt: (n: number) => string }) {
   const display = useTransform(value, (v) => fmt(Math.round(v)));
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-xl border border-border bg-card/80 backdrop-blur-sm p-4">
       <div className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">{label}</div>
       <motion.div className="text-2xl font-semibold tabular-nums">{display}</motion.div>
     </div>
   );
 }
 
-/* ---------- 4. RANKING ---------- */
-function SectionRanking() {
+/* ---------- 4. METAS ---------- */
+function SectionMetas() {
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
   const reduced = useReducedMotion();
 
-  const p1 = useTransform(scrollYProgress, [0.30, 0.70], reduced ? [1, 1] : [0, 1]);
-  const p2 = useTransform(scrollYProgress, [0.25, 0.65], reduced ? [1, 1] : [0, 1]);
-  const p3 = useTransform(scrollYProgress, [0.20, 0.60], reduced ? [1, 1] : [0, 1]);
+  const goals = [
+    { label: "Seguro Vida", pct: 92, color: "#0094FF" },
+    { label: "Consignado", pct: 68, color: "#1CD8CA" },
+    { label: "Cartão Premium", pct: 47, color: "#936FFA" },
+    { label: "Previdência", pct: 81, color: "#B794FF" },
+  ];
 
   return (
-    <section ref={ref} className="relative h-[160vh] bg-gradient-to-b from-muted/30 to-background">
+    <section ref={ref} className="relative h-[150vh]">
+      <div className="sticky top-0 h-screen flex items-center">
+        <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
+          <div className="order-2 md:order-1">
+            <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6 space-y-5">
+              <div className="text-sm font-medium">Metas de novembro</div>
+              {goals.map((g, i) => {
+                const pct = useTransform(
+                  scrollYProgress,
+                  [0.1 + i * 0.05, 0.6 + i * 0.05],
+                  reduced ? [g.pct, g.pct] : [0, g.pct]
+                );
+                const width = useTransform(pct, (v) => `${v}%`);
+                const label = useTransform(pct, (v) => `${Math.round(v)}%`);
+                return (
+                  <div key={g.label}>
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="text-muted-foreground">{g.label}</span>
+                      <motion.span className="tabular-nums font-medium">{label}</motion.span>
+                    </div>
+                    <div className="h-2 rounded-full bg-muted overflow-hidden">
+                      <motion.div
+                        style={{ width, background: g.color }}
+                        className="h-full rounded-full"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="order-1 md:order-2">
+            <SectionEyebrow icon={Target} label="Metas & progresso" />
+            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
+              Cada produto,
+              <br />
+              <span className="bg-gradient-to-r from-[#1CD8CA] to-[#0094FF] bg-clip-text text-transparent">
+                seu próprio alvo.
+              </span>
+            </h2>
+            <p className="text-lg text-muted-foreground font-light">
+              Defina metas por funcionário, agência ou time. A barra avança em
+              tempo real conforme a produção é registrada.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- 5. RANKING ---------- */
+function SectionRanking() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
+  const reduced = useReducedMotion();
+
+  const p1 = useTransform(scrollYProgress, [0.20, 0.70], reduced ? [1, 1] : [0, 1]);
+  const p2 = useTransform(scrollYProgress, [0.15, 0.65], reduced ? [1, 1] : [0, 1]);
+  const p3 = useTransform(scrollYProgress, [0.10, 0.60], reduced ? [1, 1] : [0, 1]);
+
+  return (
+    <section ref={ref} className="relative h-[150vh]">
       <div className="sticky top-0 h-screen flex items-center">
         <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 text-xs font-medium text-primary uppercase tracking-wider mb-4">
-              <Trophy className="h-4 w-4" /> Ranking & gamificação
-            </div>
+            <SectionEyebrow icon={Trophy} label="Ranking & gamificação" />
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
               Competição saudável,
               <br />
@@ -286,8 +357,8 @@ function SectionRanking() {
               </span>
             </h2>
             <p className="text-lg text-muted-foreground font-light">
-              Pontos por produto calibrados de forma transparente, badges por conquistas
-              e ranking mensal atualizado em tempo real.
+              Pontos calibrados de forma transparente, badges por conquistas e
+              ranking mensal atualizado em tempo real.
             </p>
           </div>
 
@@ -319,45 +390,115 @@ function PodiumBar({
   );
 }
 
-/* ---------- 5. RELATÓRIOS ---------- */
-function SectionRelatorios() {
+/* ---------- 6. CONQUISTAS / BADGES ---------- */
+function SectionConquistas() {
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
   const reduced = useReducedMotion();
-  const flip = useTransform(scrollYProgress, [0.2, 0.8], reduced ? [0, 0] : [0, -25]);
+
+  const badges = [
+    { icon: "🔥", label: "Sequência 7 dias", color: "from-[#0094FF] to-[#1CD8CA]" },
+    { icon: "🏆", label: "Top 3 do mês", color: "from-[#936FFA] to-[#0094FF]" },
+    { icon: "⚡", label: "Meta superada", color: "from-[#1CD8CA] to-[#936FFA]" },
+    { icon: "💎", label: "100 contratos", color: "from-[#B794FF] to-[#0094FF]" },
+    { icon: "🚀", label: "Primeira venda", color: "from-[#0094FF] to-[#936FFA]" },
+    { icon: "🎯", label: "Foco total", color: "from-[#936FFA] to-[#1CD8CA]" },
+  ];
 
   return (
-    <section ref={ref} className="relative h-[140vh]">
+    <section ref={ref} className="relative h-[150vh]">
+      <div className="sticky top-0 h-screen flex items-center">
+        <div className="mx-auto max-w-6xl w-full px-6">
+          <div className="text-center mb-10 max-w-2xl mx-auto">
+            <SectionEyebrow icon={Award} label="Conquistas" />
+            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-4">
+              Cada marca,
+              <br />
+              <span className="bg-gradient-to-r from-[#936FFA] via-[#0094FF] to-[#1CD8CA] bg-clip-text text-transparent">
+                um motivo a mais.
+              </span>
+            </h2>
+            <p className="text-lg text-muted-foreground font-light">
+              Badges automáticas que reconhecem consistência, volume e superação —
+              do primeiro contrato ao top do ranking.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-4 max-w-4xl mx-auto">
+            {badges.map((b, i) => {
+              const start = 0.15 + i * 0.06;
+              const scale = useTransform(
+                scrollYProgress,
+                [start, start + 0.20],
+                reduced ? [1, 1] : [0.4, 1]
+              );
+              const opacity = useTransform(scrollYProgress, [start, start + 0.15], [0, 1]);
+              return (
+                <motion.div
+                  key={b.label}
+                  style={{ scale, opacity }}
+                  className="flex flex-col items-center text-center will-change-transform"
+                >
+                  <div
+                    className={`w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br ${b.color} flex items-center justify-center text-3xl md:text-4xl shadow-lg shadow-primary/20 mb-2`}
+                  >
+                    {b.icon}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground leading-tight">{b.label}</div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- 7. RELATÓRIOS ---------- */
+function SectionRelatorios() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
+  const reduced = useReducedMotion();
+  const flip = useTransform(scrollYProgress, [0.1, 0.85], reduced ? [0, 0] : [12, -22]);
+  const reveal = useTransform(scrollYProgress, [0.2, 0.9], reduced ? [1, 1] : [0, 1]);
+
+  return (
+    <section ref={ref} className="relative h-[150vh]">
       <div className="sticky top-0 h-screen flex items-center">
         <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
-          <motion.div className="relative h-[360px] [perspective:1200px]">
+          <motion.div className="relative h-[380px] [perspective:1400px]">
             <motion.div
               style={{ rotateY: flip }}
-              className="absolute inset-0 rounded-xl border border-border bg-card shadow-2xl overflow-hidden [transform-style:preserve-3d]"
+              className="absolute inset-0 rounded-xl border border-border bg-card/90 backdrop-blur-sm shadow-2xl shadow-primary/20 overflow-hidden [transform-style:preserve-3d]"
             >
               <div className="h-9 bg-[#0a1a2f] flex items-center px-4 gap-2">
                 <Logo size={16} />
-                <span className="text-white text-xs lowercase tracking-[0.048em]" style={{ fontFamily: "Poppins, sans-serif" }}>
+                <span
+                  className="text-white text-xs lowercase tracking-[0.048em]"
+                  style={{ fontFamily: "Poppins, sans-serif" }}
+                >
                   banritools — relatório de produção
                 </span>
               </div>
               <div className="p-5 space-y-2">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} className="grid grid-cols-5 gap-2 text-[11px]">
-                    <div className="h-3 bg-muted rounded col-span-2" style={{ width: `${60 + (i * 7) % 35}%` }} />
-                    <div className="h-3 bg-muted rounded" />
-                    <div className="h-3 bg-muted rounded" />
-                    <div className="h-3 bg-primary/40 rounded" />
-                  </div>
-                ))}
+                {Array.from({ length: 10 }).map((_, i) => {
+                  const w = useTransform(reveal, (v) => `${Math.min(100, v * 100) * ((60 + (i * 7) % 35) / 100)}%`);
+                  return (
+                    <div key={i} className="grid grid-cols-5 gap-2 text-[11px]">
+                      <motion.div className="h-3 bg-muted rounded col-span-2" style={{ width: w }} />
+                      <div className="h-3 bg-muted rounded" />
+                      <div className="h-3 bg-muted rounded" />
+                      <div className="h-3 bg-primary/40 rounded" />
+                    </div>
+                  );
+                })}
               </div>
             </motion.div>
           </motion.div>
 
           <div>
-            <div className="inline-flex items-center gap-2 text-xs font-medium text-primary uppercase tracking-wider mb-4">
-              <FileText className="h-4 w-4" /> Relatórios
-            </div>
+            <SectionEyebrow icon={FileText} label="Relatórios" />
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
               Exporta detalhado
               <br />
@@ -366,8 +507,8 @@ function SectionRelatorios() {
               <span className="text-muted-foreground font-light">PDF e Excel.</span>
             </h2>
             <p className="text-lg text-muted-foreground font-light">
-              Cabeçalho com a marca, números formatados em pt-BR e totais já calculados.
-              Pronto para reunião.
+              Cabeçalho com a marca, números formatados em pt-BR e totais já
+              calculados. Pronto para reunião.
             </p>
           </div>
         </div>
@@ -376,10 +517,10 @@ function SectionRelatorios() {
   );
 }
 
-/* ---------- 6. CTA ---------- */
+/* ---------- 8. CTA ---------- */
 function CtaFinal() {
   return (
-    <section className="py-24 md:py-32 text-center">
+    <section className="py-24 md:py-28 text-center">
       <div className="mx-auto max-w-3xl px-6">
         <Sparkles className="h-8 w-8 mx-auto text-primary mb-6" />
         <h2 className="text-4xl md:text-6xl font-semibold tracking-tight mb-6">
@@ -403,7 +544,7 @@ function CtaFinal() {
           </a>
         </div>
       </div>
-      <footer className="mt-24 text-xs text-muted-foreground">
+      <footer className="mt-20 text-xs text-muted-foreground">
         © {new Date().getFullYear()} banritools — Ferramentas internas Banrisul.
       </footer>
     </section>
@@ -417,13 +558,16 @@ export function Landing() {
         <span />
         <span />
         <span />
+        <span />
       </div>
       <div className="relative z-10">
         <TopBar />
         <Hero />
         <SectionRegistro />
         <SectionPainel />
+        <SectionMetas />
         <SectionRanking />
+        <SectionConquistas />
         <SectionRelatorios />
         <CtaFinal />
       </div>
