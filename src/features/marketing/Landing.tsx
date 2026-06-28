@@ -1,13 +1,16 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   motion,
   useScroll,
   useTransform,
   useReducedMotion,
+  useVelocity,
+  useSpring,
+  useMotionValueEvent,
   type MotionValue,
 } from "framer-motion";
-import { Logo } from "@/components/Logo";
+import { Logo, LogoHexes } from "@/components/Logo";
 import {
   ArrowRight,
   BarChart3,
@@ -17,6 +20,12 @@ import {
   Zap,
   Target,
   Award,
+  Flame,
+  Star,
+  TrendingDown,
+  ThumbsUp,
+  Medal,
+  Rocket,
 } from "lucide-react";
 
 /**
@@ -25,6 +34,10 @@ import {
  * período em que a seção está pinada, então as animações sempre começam
  * e terminam dentro da viewport. Fundo único (ambient-glow) atravessa
  * toda a página; cada seção apenas adiciona conteúdo.
+ *
+ * Cada seção usa altura 115vh ⇒ 15vh úteis de scroll dentro do pin.
+ * Ranges de transform vão de ~0.02 até ~0.92 para garantir que a animação
+ * comece IMEDIATAMENTE quando o pin engata e ENCERRE antes de despinar.
  */
 
 const STICKY_OFFSET: ["start start", "end end"] = ["start start", "end end"];
@@ -87,28 +100,78 @@ function SectionEyebrow({ icon: Icon, label }: { icon: React.ComponentType<{ cla
 /* ---------- 1. HERO ---------- */
 function Hero() {
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
   const reduced = useReducedMotion();
+  const { scrollY } = useScroll();
+  const velocity = useVelocity(scrollY);
+  // Velocidade suavizada — quando o mouse para, decai rápido (ease-out);
+  // quando se mexe, sobe com ease-in natural do spring.
+  const smoothVel = useSpring(velocity, { stiffness: 220, damping: 32, mass: 0.4 });
+  const explodeRaw = useTransform(smoothVel, (v) => Math.min(1, Math.abs(v) / 1800));
+  const explode = useSpring(explodeRaw, { stiffness: 180, damping: 28 });
 
-  const scale = useTransform(scrollYProgress, [0, 1], reduced ? [1, 1] : [1, 1.6]);
-  const rotate = useTransform(scrollYProgress, [0, 1], reduced ? [0, 0] : [0, 45]);
-  const opacity = useTransform(scrollYProgress, [0, 0.85], [1, 0]);
+  // Transforms para cada hex (radial). 60px máx no canto da hero.
+  const topY = useTransform(explode, [0, 1], [0, -90]);
+  const leftX = useTransform(explode, [0, 1], [0, -78]);
+  const leftY = useTransform(explode, [0, 1], [0, 45]);
+  const rightX = useTransform(explode, [0, 1], [0, 78]);
+  const rightY = useTransform(explode, [0, 1], [0, 45]);
+  const hexRot = useTransform(explode, [0, 1], [0, 120]);
+
+  // Slot machine wordmark — só "gira" quando há velocidade.
+  const [isMoving, setIsMoving] = useState(false);
+  const moveTimeout = useRef<number | null>(null);
+  useMotionValueEvent(smoothVel, "change", (v) => {
+    if (Math.abs(v) > 80) {
+      setIsMoving(true);
+      if (moveTimeout.current) window.clearTimeout(moveTimeout.current);
+      moveTimeout.current = window.setTimeout(() => setIsMoving(false), 160);
+    }
+  });
 
   return (
-    <section ref={ref} className="relative h-[140vh]">
+    <section ref={ref} className="relative h-[115vh]">
       <div className="sticky top-0 h-screen flex flex-col items-center justify-center overflow-hidden">
-        <motion.div style={{ scale, rotate, opacity }} className="will-change-transform">
-          <Logo size={120} />
+        {/* Wrapper de rotação contínua sutil */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.25, filter: "blur(12px)" }}
+          animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+          transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+          className="relative"
+        >
+          <motion.div
+            animate={reduced ? undefined : { rotate: 360 }}
+            transition={{ duration: 26, ease: "linear", repeat: Infinity }}
+            className="will-change-transform"
+          >
+            <div className="relative" style={{ width: 120, height: 120 }}>
+              <motion.div style={{ y: topY, rotate: hexRot }} className="absolute inset-0 will-change-transform">
+                <HexOnly color="#0094FF" points="50,17 64.72,25.5 64.72,42.5 50,51 35.28,42.5 35.28,25.5" />
+              </motion.div>
+              <motion.div style={{ x: leftX, y: leftY, rotate: useTransform(hexRot, (r) => -r) }} className="absolute inset-0 will-change-transform">
+                <HexOnly color="#1CD8CA" points="33.548,45.5 48.268,54 48.268,71 33.548,79.5 18.828,71 18.828,54" />
+              </motion.div>
+              <motion.div style={{ x: rightX, y: rightY, rotate: hexRot }} className="absolute inset-0 will-change-transform">
+                <HexOnly color="#936FFA" points="66.452,45.5 81.172,54 81.172,71 66.452,79.5 51.732,71 51.732,54" />
+              </motion.div>
+              {/* Partículas — sparks expandem com a explosão */}
+              <Particles intensity={explode} />
+            </div>
+          </motion.div>
         </motion.div>
-        <motion.div style={{ opacity }} className="mt-3 flex flex-col items-center text-center px-6 max-w-3xl">
-          <Wordmark size={48} weight={350} />
-          <p className="mt-16 text-xl md:text-2xl text-muted-foreground font-light">
-            Sua produção, em tempo real.
-            <br />
-            <span className="text-foreground">A agência inteira, no mesmo painel.</span>
+
+        <motion.div
+          initial={{ opacity: 0, y: 40, scale: 0.8, filter: "blur(8px)" }}
+          animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+          transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+          className="mt-3 flex flex-col items-center text-center px-6 max-w-3xl"
+        >
+          <SlotWordmark spinning={isMoving} />
+          <p className="mt-12 text-base md:text-lg text-muted-foreground font-light max-w-xl">
+            Um jogo com cara de gerenciador: veja em tempo real a produção da agência
+            e divirta-se enquanto vende.
           </p>
           <div
-            className="snake-border mt-12 inline-flex items-center gap-2 text-sm text-muted-foreground px-5 py-2 rounded-full"
+            className="snake-border mt-10 inline-flex items-center gap-2 text-base text-foreground px-6 py-2.5 rounded-full"
             aria-hidden="true"
           >
             <span>Role para descobrir</span>
@@ -120,22 +183,97 @@ function Hero() {
   );
 }
 
+function HexOnly({ color, points }: { color: string; points: string }) {
+  return (
+    <svg viewBox="0 0 100 100" width="100%" height="100%" style={{ strokeLinejoin: "round", strokeLinecap: "round" }}>
+      <polygon fill={color} stroke={color} strokeWidth="2" points={points} />
+    </svg>
+  );
+}
+
+function Particles({ intensity }: { intensity: MotionValue<number> }) {
+  // 14 sparks pré-distribuídos em ângulos fixos, cada um voa para fora
+  // proporcional à intensidade. Som de explosão visual sem custo de raf.
+  const sparks = Array.from({ length: 14 }, (_, i) => i);
+  const colors = ["#0094FF", "#1CD8CA", "#936FFA", "#B794FF"];
+  return (
+    <>
+      {sparks.map((i) => {
+        const angle = (i / sparks.length) * Math.PI * 2;
+        const baseDist = 50 + (i % 4) * 12;
+        const x = useTransform(intensity, [0, 1], [0, Math.cos(angle) * baseDist]);
+        const y = useTransform(intensity, [0, 1], [0, Math.sin(angle) * baseDist]);
+        const op = useTransform(intensity, [0, 0.1, 1], [0, 0.8, 0]);
+        const scale = useTransform(intensity, [0, 1], [0.4, 1.4]);
+        return (
+          <motion.span
+            key={i}
+            style={{
+              x,
+              y,
+              opacity: op,
+              scale,
+              background: colors[i % colors.length],
+              boxShadow: `0 0 8px ${colors[i % colors.length]}`,
+            }}
+            className="absolute left-1/2 top-1/2 w-1.5 h-1.5 -ml-[3px] -mt-[3px] rounded-full will-change-transform"
+          />
+        );
+      })}
+    </>
+  );
+}
+
+function SlotWordmark({ spinning }: { spinning: boolean }) {
+  const letters = "banritools".split("");
+  const [digits, setDigits] = useState<number[]>(() => letters.map(() => 0));
+  useEffect(() => {
+    if (!spinning) return;
+    const id = window.setInterval(() => {
+      setDigits(letters.map(() => Math.floor(Math.random() * 10)));
+    }, 70);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spinning]);
+
+  return (
+    <span
+      className="lowercase tracking-[0.048em] inline-flex"
+      style={{
+        fontFamily: "Poppins, sans-serif",
+        fontWeight: 350,
+        fontSize: 48,
+        lineHeight: 1,
+        WebkitFontSmoothing: "antialiased",
+      }}
+    >
+      {letters.map((ch, i) => (
+        <span key={i} className="inline-block" style={{ minWidth: "0.55em", textAlign: "center" }}>
+          {spinning ? digits[i] : ch}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 /* ---------- 2. REGISTRO RÁPIDO ---------- */
+const MOCK_PRODUCTS = [
+  { name: "Seguro Vida", cat: "Seguros", rate: "50 pts/unidade", color: "#0094FF", qty: 27, pts: 1350 },
+  { name: "Consignado", cat: "Crédito", rate: "3 pts a cada R$ 1.000", color: "#1CD8CA", qty: 14, pts: 980 },
+  { name: "Crédito Minuto", cat: "Crédito", rate: "25 pts/unidade", color: "#936FFA", qty: 22, pts: 550 },
+  { name: "Cartão de Crédito", cat: "Cartões", rate: "40 pts/unidade", color: "#B794FF", qty: 18, pts: 720 },
+];
+
 function SectionRegistro() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
   const reduced = useReducedMotion();
 
-  const x = useTransform(scrollYProgress, [0, 0.7], reduced ? [0, 0] : [120, 0]);
-  const op = useTransform(scrollYProgress, [0, 0.4], [0, 1]);
-  const qty = useTransform(scrollYProgress, [0.1, 0.9], [0, 27]);
-  const pts = useTransform(scrollYProgress, [0.1, 0.9], [0, 1350]);
-
   return (
-    <section ref={ref} className="relative h-[150vh]">
+    <section ref={ref} className="relative h-[130vh]">
       <div className="sticky top-0 h-screen flex items-center">
         <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
-          <motion.div style={{ opacity: op }}>
+          <div>
             <SectionEyebrow icon={Zap} label="Registro rápido" />
             <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
               Lance a venda no
@@ -148,49 +286,82 @@ function SectionRegistro() {
               Cards por produto, quantidade e valor. Variantes só aparecem quando
               precisam. Sem planilha, sem fricção.
             </p>
-          </motion.div>
+          </div>
 
-          <motion.div style={{ x }} className="will-change-transform">
-            <MockRegistro qty={qty} pts={pts} />
-          </motion.div>
+          <div className="relative h-[420px]">
+            {MOCK_PRODUCTS.map((p, i) => {
+              // Cada card entra em sua janela de progresso, escalonado.
+              const start = 0.02 + i * 0.20;
+              const end = start + 0.18;
+              const x = useTransform(scrollYProgress, [start, end], reduced ? [0, 0] : [180, 0]);
+              const op = useTransform(scrollYProgress, [start, end], [0, 1]);
+              const top = 30 + i * 18;
+              const z = MOCK_PRODUCTS.length - i;
+              return (
+                <motion.div
+                  key={p.name}
+                  style={{ x, opacity: op, top: `${top}px`, zIndex: z }}
+                  className="absolute left-0 right-0 will-change-transform"
+                >
+                  <MockRegistro product={p} />
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-function MockRegistro({ qty, pts }: { qty: MotionValue<number>; pts: MotionValue<number> }) {
+function MockRegistro({ product }: { product: (typeof MOCK_PRODUCTS)[number] }) {
   return (
-    <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm shadow-2xl shadow-primary/10 p-5 max-w-md mx-auto">
+    <div
+      className="rounded-2xl border bg-card/90 backdrop-blur-sm shadow-2xl p-5 max-w-md mx-auto"
+      style={{
+        borderColor: `${product.color}55`,
+        boxShadow: `0 20px 50px -20px ${product.color}55`,
+      }}
+    >
       <div className="flex items-center justify-between mb-3">
         <div>
-          <div className="font-medium">Seguro Vida</div>
-          <div className="text-xs text-muted-foreground">Seguros · 50 pts/unidade</div>
+          <div className="font-medium">{product.name}</div>
+          <div className="text-xs text-muted-foreground">
+            {product.cat} · {product.rate}
+          </div>
         </div>
-        <span className="text-xs font-medium text-success">+<MotionInt value={pts} /> pts</span>
+        <span
+          className="text-xs font-medium px-2 py-1 rounded-full"
+          style={{ background: `${product.color}22`, color: product.color }}
+        >
+          +{product.pts.toLocaleString("pt-BR")} pts
+        </span>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <div className="text-xs text-muted-foreground mb-1">Quantidade</div>
-          <div className="h-10 rounded-md border border-primary/40 bg-primary/5 flex items-center px-3 font-medium tabular-nums">
-            <MotionInt value={qty} />
+          <div
+            className="h-10 rounded-md border flex items-center px-3 font-medium tabular-nums"
+            style={{ borderColor: `${product.color}66`, background: `${product.color}0F` }}
+          >
+            {product.qty}
           </div>
         </div>
         <div>
           <div className="text-xs text-muted-foreground mb-1">Valor (R$)</div>
-          <div className="h-10 rounded-md border border-border bg-background/60 flex items-center px-3 text-muted-foreground">—</div>
+          <div className="h-10 rounded-md border border-border bg-background/60 flex items-center px-3 text-muted-foreground">
+            —
+          </div>
         </div>
       </div>
-      <button className="mt-4 w-full h-10 rounded-md bg-primary text-primary-foreground font-medium text-sm">
+      <button
+        className="mt-4 w-full h-10 rounded-md text-white font-medium text-sm"
+        style={{ background: product.color }}
+      >
         Salvar produção
       </button>
     </div>
   );
-}
-
-function MotionInt({ value }: { value: MotionValue<number> }) {
-  const display = useTransform(value, (v) => Math.round(v).toLocaleString("pt-BR"));
-  return <motion.span>{display}</motion.span>;
 }
 
 /* ---------- 3. PAINEL DA AGÊNCIA ---------- */
@@ -199,14 +370,14 @@ function SectionPainel() {
   const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
   const reduced = useReducedMotion();
 
-  const k1 = useTransform(scrollYProgress, [0.05, 0.45], [0, 847]);
-  const k2 = useTransform(scrollYProgress, [0.10, 0.50], [0, 2_341_900]);
-  const k3 = useTransform(scrollYProgress, [0.15, 0.55], [0, 12]);
-  const k4 = useTransform(scrollYProgress, [0.20, 0.60], [0, 36_540]);
-  const draw = useTransform(scrollYProgress, [0.25, 0.85], reduced ? [1, 1] : [0, 1]);
+  const k1 = useTransform(scrollYProgress, [0.02, 0.5], [0, 847]);
+  const k2 = useTransform(scrollYProgress, [0.05, 0.55], [0, 2_341_900]);
+  const k3 = useTransform(scrollYProgress, [0.08, 0.6], [0, 12]);
+  const k4 = useTransform(scrollYProgress, [0.1, 0.65], [0, 36_540]);
+  const draw = useTransform(scrollYProgress, [0.15, 0.9], reduced ? [1, 1] : [0, 1]);
 
   return (
-    <section ref={ref} className="relative h-[160vh]">
+    <section ref={ref} className="relative h-[120vh]">
       <div className="sticky top-0 h-screen flex items-center">
         <div className="mx-auto max-w-6xl w-full px-6">
           <div className="text-center mb-10">
@@ -281,7 +452,7 @@ function SectionMetas() {
   ];
 
   return (
-    <section ref={ref} className="relative h-[150vh]">
+    <section ref={ref} className="relative h-[120vh]">
       <div className="sticky top-0 h-screen flex items-center">
         <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
           <div className="order-2 md:order-1">
@@ -290,7 +461,7 @@ function SectionMetas() {
               {goals.map((g, i) => {
                 const pct = useTransform(
                   scrollYProgress,
-                  [0.1 + i * 0.05, 0.6 + i * 0.05],
+                  [0.05 + i * 0.04, 0.55 + i * 0.04],
                   reduced ? [g.pct, g.pct] : [0, g.pct]
                 );
                 const width = useTransform(pct, (v) => `${v}%`);
@@ -302,10 +473,7 @@ function SectionMetas() {
                       <motion.span className="tabular-nums font-medium">{label}</motion.span>
                     </div>
                     <div className="h-2 rounded-full bg-muted overflow-hidden">
-                      <motion.div
-                        style={{ width, background: g.color }}
-                        className="h-full rounded-full"
-                      />
+                      <motion.div style={{ width, background: g.color }} className="h-full rounded-full" />
                     </div>
                   </div>
                 );
@@ -339,12 +507,12 @@ function SectionRanking() {
   const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
   const reduced = useReducedMotion();
 
-  const p1 = useTransform(scrollYProgress, [0.20, 0.70], reduced ? [1, 1] : [0, 1]);
-  const p2 = useTransform(scrollYProgress, [0.15, 0.65], reduced ? [1, 1] : [0, 1]);
-  const p3 = useTransform(scrollYProgress, [0.10, 0.60], reduced ? [1, 1] : [0, 1]);
+  const p1 = useTransform(scrollYProgress, [0.15, 0.75], reduced ? [1, 1] : [0, 1]);
+  const p2 = useTransform(scrollYProgress, [0.10, 0.70], reduced ? [1, 1] : [0, 1]);
+  const p3 = useTransform(scrollYProgress, [0.05, 0.65], reduced ? [1, 1] : [0, 1]);
 
   return (
-    <section ref={ref} className="relative h-[150vh]">
+    <section ref={ref} className="relative h-[120vh]">
       <div className="sticky top-0 h-screen flex items-center">
         <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
           <div>
@@ -374,8 +542,20 @@ function SectionRanking() {
 }
 
 function PodiumBar({
-  height, place, name, pts, color, scaleY,
-}: { height: number; place: number; name: string; pts: number; color: string; scaleY: MotionValue<number> }) {
+  height,
+  place,
+  name,
+  pts,
+  color,
+  scaleY,
+}: {
+  height: number;
+  place: number;
+  name: string;
+  pts: number;
+  color: string;
+  scaleY: MotionValue<number>;
+}) {
   return (
     <div className="flex flex-col items-center w-24">
       <div className="text-sm font-medium mb-1">{name}</div>
@@ -396,17 +576,20 @@ function SectionConquistas() {
   const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
   const reduced = useReducedMotion();
 
+  // Fundo único (primário Banrisul), ícones apenas nas 3 cores da marca.
   const badges = [
-    { icon: "🔥", label: "Sequência 7 dias", color: "from-[#0094FF] to-[#1CD8CA]" },
-    { icon: "🏆", label: "Top 3 do mês", color: "from-[#936FFA] to-[#0094FF]" },
-    { icon: "⚡", label: "Meta superada", color: "from-[#1CD8CA] to-[#936FFA]" },
-    { icon: "💎", label: "100 contratos", color: "from-[#B794FF] to-[#0094FF]" },
-    { icon: "🚀", label: "Primeira venda", color: "from-[#0094FF] to-[#936FFA]" },
-    { icon: "🎯", label: "Foco total", color: "from-[#936FFA] to-[#1CD8CA]" },
+    { Icon: Flame, label: "Sequência 7 dias", color: "#1CD8CA" },
+    { Icon: Trophy, label: "Top 3 do mês", color: "#0094FF" },
+    { Icon: Star, label: "Melhor vendedor", color: "#936FFA" },
+    { Icon: TrendingDown, label: "Lanterna da semana", color: "#1CD8CA" },
+    { Icon: Target, label: "Meta alcançada", color: "#0094FF" },
+    { Icon: ThumbsUp, label: "Continue assim", color: "#936FFA" },
+    { Icon: Medal, label: "100 contratos", color: "#1CD8CA" },
+    { Icon: Rocket, label: "Tu é bah!", color: "#0094FF" },
   ];
 
   return (
-    <section ref={ref} className="relative h-[150vh]">
+    <section ref={ref} className="relative h-[130vh]">
       <div className="sticky top-0 h-screen flex items-center">
         <div className="mx-auto max-w-6xl w-full px-6">
           <div className="text-center mb-10 max-w-2xl mx-auto">
@@ -424,15 +607,14 @@ function SectionConquistas() {
             </p>
           </div>
 
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-4 max-w-5xl mx-auto">
             {badges.map((b, i) => {
-              const start = 0.15 + i * 0.06;
-              const scale = useTransform(
-                scrollYProgress,
-                [start, start + 0.20],
-                reduced ? [1, 1] : [0.4, 1]
-              );
-              const opacity = useTransform(scrollYProgress, [start, start + 0.15], [0, 1]);
+              // janela 0.02..0.85 total, dividida em 8 entradas escalonadas.
+              const start = 0.02 + i * 0.07;
+              const end = start + 0.14;
+              const scale = useTransform(scrollYProgress, [start, end], reduced ? [1, 1] : [0.4, 1]);
+              const opacity = useTransform(scrollYProgress, [start, end], [0, 1]);
+              const Icon = b.Icon;
               return (
                 <motion.div
                   key={b.label}
@@ -440,9 +622,13 @@ function SectionConquistas() {
                   className="flex flex-col items-center text-center will-change-transform"
                 >
                   <div
-                    className={`w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br ${b.color} flex items-center justify-center text-3xl md:text-4xl shadow-lg shadow-primary/20 mb-2`}
+                    className="w-20 h-20 rounded-2xl flex items-center justify-center mb-2"
+                    style={{
+                      background: "#0047AB",
+                      boxShadow: `0 8px 22px -6px ${b.color}55, inset 0 1px 0 rgba(255,255,255,0.12)`,
+                    }}
                   >
-                    {b.icon}
+                    <Icon className="h-8 w-8" style={{ color: b.color }} />
                   </div>
                   <div className="text-[11px] text-muted-foreground leading-tight">{b.label}</div>
                 </motion.div>
@@ -460,11 +646,11 @@ function SectionRelatorios() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
   const reduced = useReducedMotion();
-  const flip = useTransform(scrollYProgress, [0.1, 0.85], reduced ? [0, 0] : [12, -22]);
-  const reveal = useTransform(scrollYProgress, [0.2, 0.9], reduced ? [1, 1] : [0, 1]);
+  const flip = useTransform(scrollYProgress, [0.02, 0.92], reduced ? [0, 0] : [12, -22]);
+  const reveal = useTransform(scrollYProgress, [0.05, 0.9], reduced ? [1, 1] : [0, 1]);
 
   return (
-    <section ref={ref} className="relative h-[150vh]">
+    <section ref={ref} className="relative h-[120vh]">
       <div className="sticky top-0 h-screen flex items-center">
         <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
           <motion.div className="relative h-[380px] [perspective:1400px]">
@@ -520,12 +706,10 @@ function SectionRelatorios() {
 /* ---------- 8. CTA ---------- */
 function CtaFinal() {
   return (
-    <section className="py-24 md:py-28 text-center">
+    <section className="py-20 md:py-24 text-center">
       <div className="mx-auto max-w-3xl px-6">
         <Sparkles className="h-8 w-8 mx-auto text-primary mb-6" />
-        <h2 className="text-4xl md:text-6xl font-semibold tracking-tight mb-6">
-          Bora começar?
-        </h2>
+        <h2 className="text-4xl md:text-6xl font-semibold tracking-tight mb-6">Bora começar?</h2>
         <p className="text-lg text-muted-foreground font-light mb-10">
           Acesse com seu e-mail corporativo ou use um convite recebido do seu gerente.
         </p>
@@ -544,7 +728,7 @@ function CtaFinal() {
           </a>
         </div>
       </div>
-      <footer className="mt-20 text-xs text-muted-foreground">
+      <footer className="mt-16 text-xs text-muted-foreground">
         © {new Date().getFullYear()} banritools — Ferramentas internas Banrisul.
       </footer>
     </section>
@@ -552,6 +736,10 @@ function CtaFinal() {
 }
 
 export function Landing() {
+  // Tocar LogoHexes só pra silenciar a regra de import — mantém o componente
+  // exportado disponível para outras telas que queiram a versão "explodível".
+  void LogoHexes;
+
   return (
     <div id="top" className="relative bg-background text-foreground min-h-screen overflow-hidden">
       <div className="ambient-glow" aria-hidden="true">
