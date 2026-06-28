@@ -21,16 +21,27 @@ export type ExportColumn<T> = {
 
 export type ExportSummaryItem = { label: string; value: string; hint?: string };
 
+export type ExportVariant<T = unknown> = {
+  id: string;
+  label: string;
+  hint?: string;
+  columns: ExportColumn<T>[];
+  rows: T[];
+};
+
 type Props<T> = {
   title?: string;
   subtitle?: string;
   filenameBase: string;
-  columns: ExportColumn<T>[];
-  rows: T[];
+  /** Variantes do relatório (ex.: Detalhado / Resumido). Se omitido, usa columns+rows. */
+  variants?: ExportVariant<unknown>[];
+  columns?: ExportColumn<T>[];
+  rows?: T[];
   triggerLabel?: string;
   /** KPIs do time renderizados como cards no topo do PDF/XLSX */
   summary?: ExportSummaryItem[];
 };
+
 
 type Fmt = "pdf" | "xlsx" | "csv";
 
