@@ -71,7 +71,6 @@ function AdminDashboardPage() {
   // Fonte única: production_entries (modelo v3). daily_reports foi descontinuado.
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileLite[]>([]);
-  const [ranking, setRanking] = useState<{ user_id: string; points: number; position: number }[]>([]);
   const [monthOffset, setMonthOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const monthRange = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
@@ -115,7 +114,7 @@ function AdminDashboardPage() {
       .eq("agency_id", agencyId)
       .order("name");
 
-    const [entriesRes, rankingRes, profilesRes] = await Promise.all([
+    const [entriesRes, profilesRes] = await Promise.all([
       supabase
         .from("production_entries")
         .select("user_id, entry_date, quantity, amount, products(name, slug, category, points_per_unit)")
@@ -123,7 +122,6 @@ function AdminDashboardPage() {
         .eq("status", "confirmed")
         .gte("entry_date", monthRange.start)
         .lte("entry_date", monthRange.end),
-      supabase.from("ranking_monthly").select("user_id, points, position").eq("agency_id", agencyId).eq("month", monthRange.monthFirst).order("position"),
       profilesPromise,
     ]);
 
@@ -131,9 +129,8 @@ function AdminDashboardPage() {
 
     setEntries((entriesRes.data as unknown as EntryRow[]) ?? []);
     setProfiles(profilesData);
-    setRanking((rankingRes.data as { user_id: string; points: number; position: number }[]) ?? []);
     setLoading(false);
-  }, [agencyId, isAdmin, monthRange.start, monthRange.end, monthRange.monthFirst]);
+  }, [agencyId, isAdmin, monthRange.start, monthRange.end]);
 
   useEffect(() => { fetchAll(true); }, [fetchAll]);
 
