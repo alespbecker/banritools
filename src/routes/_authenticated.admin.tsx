@@ -200,6 +200,24 @@ function AdminDashboardPage() {
     return map;
   }, [entries]);
 
+  // Ranking derivado das entries (fonte única). Fórmula consistente com
+  // /ranking-v3 e /dashboard-v3: pts = (quantity + amount) × points_per_unit.
+  // Substituiu o consumo de ranking_monthly, que só era alimentado pelo
+  // trigger legado em daily_reports e portanto ficava vazio no modelo v3.
+  const ranking = useMemo<{ user_id: string; points: number; position: number }[]>(() => {
+    const byUser = new Map<string, number>();
+    for (const e of entries) {
+      const ppu = e.products?.points_per_unit ?? 0;
+      const pts = (Number(e.quantity ?? 0) + Number(e.amount ?? 0)) * ppu;
+      byUser.set(e.user_id, (byUser.get(e.user_id) ?? 0) + pts);
+    }
+    return Array.from(byUser.entries())
+      .map(([user_id, points]) => ({ user_id, points: Math.round(points) }))
+      .sort((a, b) => b.points - a.points)
+      .map((r, i) => ({ ...r, position: i + 1 }));
+  }, [entries]);
+
+
   const stats = useMemo(() => {
     let totalUnits = 0, volFinanceiro = 0, recuperado = 0, segurosValor = 0;
     for (const agg of entriesAgg.values()) {
