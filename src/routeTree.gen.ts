@@ -17,7 +17,6 @@ import { Route as ConviteCodeRouteImport } from './routes/convite.$code'
 import { Route as AuthenticatedToolsRouteImport } from './routes/_authenticated.tools'
 import { Route as AuthenticatedRegistrarProducaoV3RouteImport } from './routes/_authenticated.registrar-producao-v3'
 import { Route as AuthenticatedRankingV3RouteImport } from './routes/_authenticated.ranking-v3'
-import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated.ranking'
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated.perfil'
 import { Route as AuthenticatedMetasRouteImport } from './routes/_authenticated.metas'
 import { Route as AuthenticatedDesignSystemRouteImport } from './routes/_authenticated.design-system'
@@ -66,11 +65,6 @@ const AuthenticatedRegistrarProducaoV3Route =
 const AuthenticatedRankingV3Route = AuthenticatedRankingV3RouteImport.update({
   id: '/ranking-v3',
   path: '/ranking-v3',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedRankingRoute = AuthenticatedRankingRouteImport.update({
-  id: '/ranking',
-  path: '/ranking',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
@@ -134,7 +128,6 @@ export interface FileRoutesByFullPath {
   '/design-system': typeof AuthenticatedDesignSystemRoute
   '/metas': typeof AuthenticatedMetasRoute
   '/perfil': typeof AuthenticatedPerfilRoute
-  '/ranking': typeof AuthenticatedRankingRoute
   '/ranking-v3': typeof AuthenticatedRankingV3Route
   '/registrar-producao-v3': typeof AuthenticatedRegistrarProducaoV3Route
   '/tools': typeof AuthenticatedToolsRoute
@@ -153,7 +146,6 @@ export interface FileRoutesByTo {
   '/design-system': typeof AuthenticatedDesignSystemRoute
   '/metas': typeof AuthenticatedMetasRoute
   '/perfil': typeof AuthenticatedPerfilRoute
-  '/ranking': typeof AuthenticatedRankingRoute
   '/ranking-v3': typeof AuthenticatedRankingV3Route
   '/registrar-producao-v3': typeof AuthenticatedRegistrarProducaoV3Route
   '/tools': typeof AuthenticatedToolsRoute
@@ -174,7 +166,6 @@ export interface FileRoutesById {
   '/_authenticated/design-system': typeof AuthenticatedDesignSystemRoute
   '/_authenticated/metas': typeof AuthenticatedMetasRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
-  '/_authenticated/ranking': typeof AuthenticatedRankingRoute
   '/_authenticated/ranking-v3': typeof AuthenticatedRankingV3Route
   '/_authenticated/registrar-producao-v3': typeof AuthenticatedRegistrarProducaoV3Route
   '/_authenticated/tools': typeof AuthenticatedToolsRoute
@@ -195,7 +186,6 @@ export interface FileRouteTypes {
     | '/design-system'
     | '/metas'
     | '/perfil'
-    | '/ranking'
     | '/ranking-v3'
     | '/registrar-producao-v3'
     | '/tools'
@@ -214,7 +204,6 @@ export interface FileRouteTypes {
     | '/design-system'
     | '/metas'
     | '/perfil'
-    | '/ranking'
     | '/ranking-v3'
     | '/registrar-producao-v3'
     | '/tools'
@@ -234,7 +223,6 @@ export interface FileRouteTypes {
     | '/_authenticated/design-system'
     | '/_authenticated/metas'
     | '/_authenticated/perfil'
-    | '/_authenticated/ranking'
     | '/_authenticated/ranking-v3'
     | '/_authenticated/registrar-producao-v3'
     | '/_authenticated/tools'
@@ -307,13 +295,6 @@ declare module '@tanstack/react-router' {
       path: '/ranking-v3'
       fullPath: '/ranking-v3'
       preLoaderRoute: typeof AuthenticatedRankingV3RouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/ranking': {
-      id: '/_authenticated/ranking'
-      path: '/ranking'
-      fullPath: '/ranking'
-      preLoaderRoute: typeof AuthenticatedRankingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/perfil': {
@@ -390,7 +371,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDesignSystemRoute: typeof AuthenticatedDesignSystemRoute
   AuthenticatedMetasRoute: typeof AuthenticatedMetasRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
-  AuthenticatedRankingRoute: typeof AuthenticatedRankingRoute
   AuthenticatedRankingV3Route: typeof AuthenticatedRankingV3Route
   AuthenticatedRegistrarProducaoV3Route: typeof AuthenticatedRegistrarProducaoV3Route
   AuthenticatedToolsRoute: typeof AuthenticatedToolsRoute
@@ -406,7 +386,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDesignSystemRoute: AuthenticatedDesignSystemRoute,
   AuthenticatedMetasRoute: AuthenticatedMetasRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
-  AuthenticatedRankingRoute: AuthenticatedRankingRoute,
   AuthenticatedRankingV3Route: AuthenticatedRankingV3Route,
   AuthenticatedRegistrarProducaoV3Route: AuthenticatedRegistrarProducaoV3Route,
   AuthenticatedToolsRoute: AuthenticatedToolsRoute,
@@ -428,12 +407,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
