@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -21,16 +21,27 @@ export type ExportColumn<T> = {
 
 export type ExportSummaryItem = { label: string; value: string; hint?: string };
 
+export type ExportVariant<T = unknown> = {
+  id: string;
+  label: string;
+  hint?: string;
+  columns: ExportColumn<T>[];
+  rows: T[];
+};
+
 type Props<T> = {
   title?: string;
   subtitle?: string;
   filenameBase: string;
-  columns: ExportColumn<T>[];
-  rows: T[];
+  /** Variantes do relatório (ex.: Detalhado / Resumido). Se omitido, usa columns+rows. */
+  variants?: ExportVariant<unknown>[];
+  columns?: ExportColumn<T>[];
+  rows?: T[];
   triggerLabel?: string;
   /** KPIs do time renderizados como cards no topo do PDF/XLSX */
   summary?: ExportSummaryItem[];
 };
+
 
 type Fmt = "pdf" | "xlsx" | "csv";
 
@@ -194,21 +205,42 @@ export function ExportDialog<T>({
   title = "Exportar dados",
   subtitle,
   filenameBase,
-  columns,
-  rows,
+  columns: columnsProp,
+  rows: rowsProp,
+  variants,
   triggerLabel = "Exportar",
   summary,
 }: Props<T>) {
   const [open, setOpen] = useState(false);
   const [format, setFormat] = useState<Fmt>("pdf");
+
+  const variantList = useMemo<ExportVariant<unknown>[]>(() => {
+    if (variants && variants.length > 0) return variants;
+    return [{ id: "default", label: "Padrão", columns: (columnsProp ?? []) as ExportColumn<unknown>[], rows: (rowsProp ?? []) as unknown[] }];
+  }, [variants, columnsProp, rowsProp]);
+
+  const [variantId, setVariantId] = useState<string>(variantList[0].id);
+  const currentVariant = useMemo(
+    () => variantList.find((v) => v.id === variantId) ?? variantList[0],
+    [variantList, variantId]
+  );
+  const columns = currentVariant.columns as ExportColumn<T>[];
+  const rows = currentVariant.rows as T[];
+
   const [selected, setSelected] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(columns.map((c) => [c.key, c.defaultChecked ?? true]))
   );
+
+  // Reset column selection when variant changes
+  useEffect(() => {
+    setSelected(Object.fromEntries(columns.map((c) => [c.key, c.defaultChecked ?? true])));
+  }, [variantId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeColumns = useMemo(
     () => columns.filter((c) => selected[c.key]),
     [columns, selected]
   );
+
 
   const toggle = (key: string) => setSelected((s) => ({ ...s, [key]: !s[key] }));
   const setAll = (val: boolean) =>
@@ -553,7 +585,10 @@ export function ExportDialog<T>({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
+        <Button
+          size="sm"
+          className="gap-2 bg-[var(--brand-blue,#0094FF)] text-white shadow-sm hover:bg-[var(--brand-teal,#1CD8CA)] hover:text-white border-transparent"
+        >
           <Download className="h-4 w-4" />
           {triggerLabel}
         </Button>
@@ -565,6 +600,33 @@ export function ExportDialog<T>({
             Escolha o formato e as colunas. {rows.length} {rows.length === 1 ? "registro" : "registros"} no período.
           </DialogDescription>
         </DialogHeader>
+
+        {variantList.length > 1 && (
+          <div className="space-y-2">
+            <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tipo de relatório</Label>
+            <RadioGroup
+              value={variantId}
+              onValueChange={setVariantId}
+              className={`grid gap-2`}
+              style={{ gridTemplateColumns: `repeat(${variantList.length}, minmax(0, 1fr))` }}
+            >
+              {variantList.map((v) => (
+                <Label
+                  key={v.id}
+                  htmlFor={`var-${v.id}`}
+                  className={`flex cursor-pointer flex-col items-start gap-1 rounded-md border p-3 transition-colors ${
+                    variantId === v.id ? "border-primary bg-primary/5 text-primary" : "border-border hover:bg-accent"
+                  }`}
+                >
+                  <RadioGroupItem value={v.id} id={`var-${v.id}`} className="sr-only" />
+                  <span className="text-sm font-medium">{v.label}</span>
+                  {v.hint && <span className="text-[10px] text-muted-foreground">{v.hint}</span>}
+                </Label>
+              ))}
+            </RadioGroup>
+          </div>
+        )}
+
 
         <div className="space-y-2">
           <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Formato</Label>
