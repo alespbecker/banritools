@@ -412,14 +412,21 @@ function CtaFinal() {
 
 export function Landing() {
   return (
-    <div id="top" className="bg-background text-foreground min-h-screen">
-      <TopBar />
-      <Hero />
-      <SectionRegistro />
-      <SectionPainel />
-      <SectionRanking />
-      <SectionRelatorios />
-      <CtaFinal />
+    <div id="top" className="relative bg-background text-foreground min-h-screen overflow-hidden">
+      <div className="ambient-glow" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="relative z-10">
+        <TopBar />
+        <Hero />
+        <SectionRegistro />
+        <SectionPainel />
+        <SectionRanking />
+        <SectionRelatorios />
+        <CtaFinal />
+      </div>
     </div>
   );
 }
