@@ -23,6 +23,7 @@ import {
 } from "@/components/ds";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { calcEntryPoints } from "@/features/production/points";
 
 export const Route = createFileRoute("/_authenticated/dashboard-v3")({
   head: () => ({ meta: [{ title: "Início — BanriTools" }] }),
