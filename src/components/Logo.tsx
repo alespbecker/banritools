@@ -7,10 +7,17 @@ interface LogoProps {
 }
 
 /**
- * Logotipo vetorial do BanriTools — três hexágonos interligados
- * representando colaboração, inovação e resultados.
+ * Logotipo BanriTools — três hexágonos em formação honeycomb perfeita.
+ * Espaçamento equidistante entre o hexágono superior e os dois inferiores.
+ * Cantos suavemente arredondados via stroke-linejoin="round".
  */
 export function Logo({ className, size = 32, ariaLabel = "BanriTools" }: LogoProps) {
+  // Hex pointy-top: width 29.44, height 34. Honeycomb: dx=14.72, dy=25.5.
+  // Centros: topo (50, 36) · esq (35.28, 61.5) · dir (64.72, 61.5)
+  const topHex = "50,19 64.72,27.5 64.72,44.5 50,53 35.28,44.5 35.28,27.5";
+  const leftHex = "35.28,44.5 50,53 50,70 35.28,78.5 20.56,70 20.56,53";
+  const rightHex = "64.72,44.5 79.44,53 79.44,70 64.72,78.5 50,70 50,53";
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -21,19 +28,11 @@ export function Logo({ className, size = 32, ariaLabel = "BanriTools" }: LogoPro
       width={size}
       height={size}
       className={cn("shrink-0", className)}
+      style={{ strokeLinejoin: "round", strokeLinecap: "round" }}
     >
-      <polygon
-        fill="#0094FF"
-        points="50,19 64.72,27.5 64.72,44.5 50,53 35.28,44.5 35.28,27.5"
-      />
-      <polygon
-        fill="#1CD8CA"
-        points="33,47 47.72,55.5 47.72,72.5 33,81 18.28,72.5 18.28,55.5"
-      />
-      <polygon
-        fill="#936FFA"
-        points="67,47 81.72,55.5 81.72,72.5 67,81 52.28,72.5 52.28,55.5"
-      />
+      <polygon fill="#0094FF" stroke="#0094FF" strokeWidth="2" points={topHex} />
+      <polygon fill="#1CD8CA" stroke="#1CD8CA" strokeWidth="2" points={leftHex} />
+      <polygon fill="#936FFA" stroke="#936FFA" strokeWidth="2" points={rightHex} />
     </svg>
   );
 }

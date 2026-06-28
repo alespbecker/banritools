@@ -16,11 +16,19 @@ import { ArrowRight, BarChart3, Trophy, FileText, Sparkles, Zap } from "lucide-r
  * framer-motion (já no projeto) e respeita `prefers-reduced-motion`.
  */
 
-function Wordmark({ size = 64 }: { size?: number }) {
+function Wordmark({ size = 64, weight = 350 }: { size?: number; weight?: number }) {
   return (
     <span
-      className="font-medium lowercase tracking-[0.048em]"
-      style={{ fontFamily: "Poppins, sans-serif", fontSize: size, lineHeight: 1 }}
+      className="lowercase tracking-[0.048em]"
+      style={{
+        fontFamily: "Poppins, sans-serif",
+        fontWeight: weight,
+        fontSize: size,
+        lineHeight: 1,
+        // Suaviza levemente os cantos da tipografia
+        WebkitFontSmoothing: "antialiased",
+        textRendering: "geometricPrecision",
+      }}
     >
       banritools
     </span>
@@ -34,8 +42,8 @@ function TopBar() {
         <Link to="/" className="flex items-center gap-2.5">
           <Logo size={26} />
           <span
-            className="font-medium lowercase tracking-[0.048em] text-[15px]"
-            style={{ fontFamily: "Poppins, sans-serif" }}
+            className="lowercase tracking-[0.048em] text-[15px]"
+            style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400 }}
           >
             banritools
           </span>
@@ -76,19 +84,22 @@ function Hero() {
           style={{ scale, rotate, opacity }}
           className="will-change-transform"
         >
-          <Logo size={160} />
+          <Logo size={120} />
         </motion.div>
         <motion.div
           style={{ opacity }}
-          className="mt-10 flex flex-col items-center text-center px-6 max-w-3xl"
+          className="mt-3 flex flex-col items-center text-center px-6 max-w-3xl"
         >
-          <Wordmark size={56} />
-          <p className="mt-6 text-xl md:text-2xl text-muted-foreground font-light">
+          <Wordmark size={48} weight={350} />
+          <p className="mt-16 text-xl md:text-2xl text-muted-foreground font-light">
             Sua produção, em tempo real.
             <br />
             <span className="text-foreground">A agência inteira, no mesmo painel.</span>
           </p>
-          <div className="mt-10 flex items-center gap-2 text-sm text-muted-foreground">
+          <div
+            className="snake-border mt-12 inline-flex items-center gap-2 text-sm text-muted-foreground px-5 py-2 rounded-full"
+            aria-hidden="true"
+          >
             <span>Role para descobrir</span>
             <span className="animate-bounce">↓</span>
           </div>
@@ -401,14 +412,21 @@ function CtaFinal() {
 
 export function Landing() {
   return (
-    <div id="top" className="bg-background text-foreground min-h-screen">
-      <TopBar />
-      <Hero />
-      <SectionRegistro />
-      <SectionPainel />
-      <SectionRanking />
-      <SectionRelatorios />
-      <CtaFinal />
+    <div id="top" className="relative bg-background text-foreground min-h-screen overflow-hidden">
+      <div className="ambient-glow" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="relative z-10">
+        <TopBar />
+        <Hero />
+        <SectionRegistro />
+        <SectionPainel />
+        <SectionRanking />
+        <SectionRelatorios />
+        <CtaFinal />
+      </div>
     </div>
   );
 }
