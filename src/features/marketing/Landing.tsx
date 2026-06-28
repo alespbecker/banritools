@@ -42,8 +42,8 @@ function TopBar() {
         <Link to="/" className="flex items-center gap-2.5">
           <Logo size={26} />
           <span
-            className="font-medium lowercase tracking-[0.048em] text-[15px]"
-            style={{ fontFamily: "Poppins, sans-serif" }}
+            className="lowercase tracking-[0.048em] text-[15px]"
+            style={{ fontFamily: "Poppins, sans-serif", fontWeight: 400 }}
           >
             banritools
           </span>
