@@ -255,11 +255,9 @@ function SectionRanking() {
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
   const reduced = useReducedMotion();
 
-  const podium = (delay: number) =>
-    useTransform(scrollYProgress, [0.3 + delay, 0.7 + delay], reduced ? [1, 1] : [0, 1]);
-  const p1 = podium(0);
-  const p2 = podium(-0.05);
-  const p3 = podium(-0.1);
+  const p1 = useTransform(scrollYProgress, [0.30, 0.70], reduced ? [1, 1] : [0, 1]);
+  const p2 = useTransform(scrollYProgress, [0.25, 0.65], reduced ? [1, 1] : [0, 1]);
+  const p3 = useTransform(scrollYProgress, [0.20, 0.60], reduced ? [1, 1] : [0, 1]);
 
   return (
     <section ref={ref} className="relative h-[160vh] bg-gradient-to-b from-muted/30 to-background">
