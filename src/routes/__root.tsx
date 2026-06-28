@@ -1,5 +1,6 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/hooks/useAuth";
+import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
 
@@ -44,6 +45,7 @@ export const Route = createRootRoute({
       { name: "twitter:description", content: "Ferramenta interna de produtividade e gestão de vendas para funcionários bancários" },
     ],
     links: [
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -89,6 +91,7 @@ function RootComponent() {
   return (
     <AuthProvider>
       <Outlet />
+      <Toaster />
     </AuthProvider>
   );
 }

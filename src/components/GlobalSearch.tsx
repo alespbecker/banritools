@@ -1,78 +1,80 @@
-import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { supabase } from "@/integrations/supabase/client";
-import { Megaphone, Package, FileText } from "lucide-react";
+import {
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  LayoutDashboard,
+  FileText,
+  Trophy,
+  Wrench,
+  Megaphone,
+  Target,
+  Package,
+  Users,
+  Shield,
+  User,
+} from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
-interface Result {
-  id: string;
-  label: string;
-  hint?: string;
-  to: string;
-  group: "Campanhas" | "Produtos" | "Produção";
+interface GlobalSearchProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const [q, setQ] = useState("");
-  const [results, setResults] = useState<Result[]>([]);
-  const [loading, setLoading] = useState(false);
+const baseItems = [
+  { label: "Início", to: "/dashboard-v3", icon: LayoutDashboard },
+  { label: "Registrar Produção", to: "/registrar-producao-v3", icon: FileText },
+  { label: "Ranking", to: "/ranking-v3", icon: Trophy },
+  { label: "Campanhas", to: "/campanhas", icon: Megaphone },
+  { label: "Metas", to: "/metas", icon: Target },
+  { label: "Ferramentas", to: "/tools", icon: Wrench },
+  { label: "Meu Perfil", to: "/perfil", icon: User },
+];
+
+const adminItems = [
+  { label: "Painel da Agência", to: "/admin", icon: Shield },
+  { label: "Produtos", to: "/admin/produtos", icon: Package },
+  { label: "Usuários", to: "/admin/convites", icon: Users },
+];
+
+export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const navigate = useNavigate();
+  const { userRole } = useAuth();
+  const isAdminLike = userRole === "admin" || userRole === "gerente";
 
-  const search = useCallback(async (term: string) => {
-    if (term.trim().length < 2) { setResults([]); return; }
-    setLoading(true);
-    const like = `%${term}%`;
-    const [campaigns, products, entries] = await Promise.all([
-      supabase.from("campaigns").select("id, name, status").ilike("name", like).limit(5),
-      supabase.from("products").select("id, name, category").ilike("name", like).limit(5),
-      supabase.from("production_entries").select("id, entry_date, notes, product_id, products(name)").ilike("notes", like).limit(5),
-    ]);
-    const out: Result[] = [];
-    (campaigns.data ?? []).forEach((c) => out.push({ id: c.id, label: c.name, hint: c.status, to: "/campanhas", group: "Campanhas" }));
-    (products.data ?? []).forEach((p) => out.push({ id: p.id, label: p.name, hint: p.category ?? "", to: "/admin/produtos", group: "Produtos" }));
-    (entries.data ?? []).forEach((e) => {
-      const prod = (e as unknown as { products?: { name?: string } }).products;
-      out.push({ id: e.id, label: prod?.name ?? "Lançamento", hint: e.entry_date, to: "/dashboard-v3", group: "Produção" });
-    });
-    setResults(out);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    const t = setTimeout(() => search(q), 200);
-    return () => clearTimeout(t);
-  }, [q, search]);
-
-  const go = (to: string) => { onOpenChange(false); navigate({ to }); };
-
-  const groups: Result["group"][] = ["Campanhas", "Produtos", "Produção"];
-  const iconFor = (g: Result["group"]) => {
-    if (g === "Campanhas") return <Megaphone className="h-4 w-4" />;
-    if (g === "Produtos") return <Package className="h-4 w-4" />;
-    return <FileText className="h-4 w-4" />;
+  const go = (to: string) => {
+    onOpenChange(false);
+    navigate({ to });
   };
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Buscar contatos, campanhas, produtos..." value={q} onValueChange={setQ} />
+      <CommandInput placeholder="Buscar páginas..." />
       <CommandList>
-        {loading && <div className="p-3 text-xs text-muted-foreground">Buscando...</div>}
-        {!loading && q.length >= 2 && results.length === 0 && <CommandEmpty>Nada encontrado.</CommandEmpty>}
-        {groups.map((g) => {
-          const items = results.filter((r) => r.group === g);
-          if (items.length === 0) return null;
-          return (
-            <CommandGroup key={g} heading={g}>
-              {items.map((r) => (
-                <CommandItem key={`${g}-${r.id}`} onSelect={() => go(r.to)} value={`${g}-${r.label}-${r.id}`}>
-                  {iconFor(g)}
-                  <span className="ml-2">{r.label}</span>
-                  {r.hint && <span className="ml-auto text-xs text-muted-foreground">{r.hint}</span>}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          );
-        })}
+        <CommandEmpty>Nada encontrado.</CommandEmpty>
+        <CommandGroup heading="Navegação">
+          {baseItems.map((item) => (
+            <CommandItem key={item.to} onSelect={() => go(item.to)}>
+              <item.icon className="mr-2 h-4 w-4" />
+              <span>{item.label}</span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+        {isAdminLike && (
+          <CommandGroup heading="Administração">
+            {adminItems.map((item) => (
+              <CommandItem key={item.to} onSelect={() => go(item.to)}>
+                <item.icon className="mr-2 h-4 w-4" />
+                <span>{item.label}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
       </CommandList>
     </CommandDialog>
   );
