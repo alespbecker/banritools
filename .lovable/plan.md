@@ -1,96 +1,41 @@
+
 ## Objetivo
+Gerar dados realistas o suficiente para você abrir as telas de relatório e exportar (PDF/XLSX/CSV) e ver como ficam — sem poluir o banco real e sem criar contas de login.
 
-1. Renomear a seção **Convites → Usuários**, mantendo a tabela atual de convites como histórico secundário.
-2. Permitir que o **admin** edite **qualquer dado** de qualquer usuário da agência (perfil, cargo, função/role, produção) através de um modal disparado por um botão "Editar" em cada linha.
-3. Suavizar a abertura/fechamento do menu lateral no mobile.
+## Abordagem recomendada: seed SQL temporário com rollback fácil
 
-Sem mexer em nada fora desses três pontos.
+Em vez de criar 10 contas no Supabase Auth (que exigiria service role, e-mails, limpeza no `auth.users` etc.), faço um seed só nas tabelas de domínio (`profiles`, `production_entries`) marcando todos os registros com uma flag de origem para apagar tudo em 1 comando depois.
 
----
+### Como fica
 
-## 1. Rota e navegação
+1. **Migração 1 — `seed_demo`**
+   - Insere 10 linhas em `public.profiles` com `id = gen_random_uuid()`, nomes fictícios ("Demo - Ana", "Demo - Bruno"…), cargos variados, mesma `agency_id` da sua agência atual.
+   - Insere ~10 dias × 10 usuários de `production_entries` distribuídos pelos produtos existentes, com quantidades aleatórias plausíveis (cartões 0–5/dia, seguros 0–3/dia, consórcios 0–1/dia etc.), `status = 'aprovado'`, datas nos últimos 10 dias.
+   - Marca tudo com um campo identificável — uso o prefixo `Demo - ` no `full_name` do profile e `metadata->>'demo' = 'true'` (ou um comentário) nas entries para conseguir limpar.
+   - **Não cria** linhas em `auth.users`, `user_roles`, `user_points`, `daily_reports`, gamificação. Só o necessário para o relatório.
 
-- **Renomear** a entrada do sidebar (`src/components/DashboardSidebar.tsx`) de `Convites` para `Usuários` (mesmo ícone `Mail` substituído por `Users`). A rota física continua `/admin/convites` por simplicidade (sem migração de URL) — apenas o label muda. *(Se preferir mudar a URL para `/admin/usuarios`, faço com redirect; aviso no chat para confirmar.)*
-- Atualizar `head().meta.title` da rota para "Usuários — BanriTools".
+2. **Você abre o Painel da Agência / Usuários / Exporta** o PDF/XLSX que quiser revisar visualmente.
 
-## 2. Tela "Usuários" (`src/routes/_authenticated.admin_.convites.tsx`)
+3. **Migração 2 — `cleanup_demo`** (rodo quando você disser "pode limpar")
+   - `DELETE FROM production_entries WHERE user_id IN (SELECT id FROM profiles WHERE full_name LIKE 'Demo - %');`
+   - `DELETE FROM profiles WHERE full_name LIKE 'Demo - %';`
+   - Banco volta exatamente ao estado atual.
 
-Estrutura nova em duas seções dentro da mesma página:
+### Por que essa solução e não outras
 
-```text
-PageHeader: Usuários
-  action: [Gerar convite]   (mantido)
+- **Não usar Auth Admin API**: criar 10 usuários reais no `auth.users` exigiria service role + cleanup em schema protegido, e contamina logs de auth para um teste visual.
+- **Não mockar no front**: você quer ver o **export real** (PDF/XLSX gerados pelo `ExportDialog`), que lê do banco. Mockar no front não exercita o pipeline real.
+- **Não usar uma agência "demo" separada**: como admin você já vê tudo, e criar agência nova exigiria filtrar em várias telas. Usar a sua agência atual + flag de nome é mais simples e reversível.
 
-InfoCard "Equipe"  ← NOVO (principal)
-  Tabela: Avatar | Nome | Email | Cargo | Função | Status | [Editar]
-  Botão Editar (ícone Pencil) abre <UserEditDialog />
+### Risco / cuidado
+- Como uso a sua `agency_id`, os 10 demos aparecem misturados aos dados reais no Painel da Agência enquanto não rodarmos o cleanup. Como hoje a produção real está zerada (você limpou recentemente), isso fica limpo: tudo que aparecer é demo.
+- Não toco em `user_roles`, então os demos não conseguem logar nem aparecem como gestores.
 
-InfoCard "Histórico de convites"  ← existente, recolhido visualmente
-  Mantém colunas atuais; sem mudanças funcionais.
-```
+## Próximos passos
+Se aprovar, eu:
+1. Confirmo qual é sua `agency_id` e os `product_id`s ativos com uma `read_query`.
+2. Rodo a migração `seed_demo`.
+3. Te aviso para abrir os relatórios e exportar.
+4. Quando me disser, rodo `cleanup_demo`.
 
-### `<UserEditDialog />` (novo, `src/features/admin/UserEditDialog.tsx`)
-
-Modal com abas (`Tabs` shadcn) reaproveitando o visual de `/perfil`:
-
-- **Perfil** — nome, telefone, job_title, cargo + cargo_especialidade, avatar (upload reaproveitando o fluxo de `perfil.tsx`).
-- **Acesso** — função (`app_role`) via `admin_set_user_role` (RPC já existente).
-- **Produção** — lista paginada de `production_entries` do usuário (produto, data, qtd, valor, status) com ações **Editar** / **Excluir** inline. Edição inline simples (Dialog secundário com produto/variant/quantidade/valor/data/notas).
-
-Sem reescrever `/perfil` — extraio um único helper `updateProfileFields(profileId, patch)` em `src/features/admin/users.ts` usado pelo dialog e, opcionalmente, pela página de perfil. Tudo client-side usando o `supabase` browser client (RLS).
-
-## 3. Permissões (migration)
-
-Hoje admin já **lê** profiles, user_roles e production_entries da agência, mas **não consegue UPDATE/DELETE** dos demais usuários. Adicionar políticas restritas a `admin` da mesma agência:
-
-```sql
--- profiles: admin pode atualizar perfis da própria agência
-CREATE POLICY "Admins can update agency profiles" ON public.profiles
-FOR UPDATE TO authenticated
-USING (has_role(auth.uid(),'admin') AND agency_id = get_user_agency_id(auth.uid()))
-WITH CHECK (has_role(auth.uid(),'admin') AND agency_id = get_user_agency_id(auth.uid()));
-
--- production_entries: admin pode atualizar/excluir lançamentos da agência
-CREATE POLICY "Admins manage agency production update" ON public.production_entries
-FOR UPDATE TO authenticated
-USING (has_role(auth.uid(),'admin') AND agency_id = get_user_agency_id(auth.uid()));
-
-CREATE POLICY "Admins manage agency production delete" ON public.production_entries
-FOR DELETE TO authenticated
-USING (has_role(auth.uid(),'admin') AND agency_id = get_user_agency_id(auth.uid()));
-```
-
-`user_roles` continua sendo alterado **apenas** via RPC `admin_set_user_role` (já valida agência e protege último admin). Sem nova policy de UPDATE direto.
-
-Storage `avatars`: o upload pelo admin grava em `${targetUserId}/avatar-*` — verifico a policy do bucket; se necessário, adiciono policy permitindo admin escrever em paths de usuários da mesma agência. *(Reporto no chat se exigir ajuste de storage.)*
-
-## 4. Otimização do menu mobile
-
-Causa provável da "travadinha": o `Sheet` anima `transform` enquanto o `DashboardSidebar` interno tem `backdrop-blur-md` + `transition-[width]`. No mobile (`forceExpanded`) a transição de largura não é usada, mas o blur duplicado (Sheet overlay + sidebar) custa caro no primeiro frame.
-
-Ajustes em `src/routes/_authenticated.tsx` e `DashboardSidebar.tsx`:
-
-- Adicionar `will-change: transform` ao `SheetContent` mobile.
-- Quando `forceExpanded` for true, remover `transition-[width]` do `<aside>` e remover o `backdrop-blur` interno (mantendo só o do SheetContent) — elimina o blur aninhado.
-- Reduzir duração da animação do Sheet para `duration-200` via classe utilitária.
-
-Sem alterar comportamento desktop.
-
----
-
-## Arquivos tocados
-
-- `src/components/DashboardSidebar.tsx` — label "Usuários", ícone `Users`, classes condicionais para mobile.
-- `src/routes/_authenticated.tsx` — `SheetContent` com `will-change`/duração.
-- `src/routes/_authenticated.admin_.convites.tsx` — nova seção "Equipe" + título da página.
-- `src/features/admin/UserEditDialog.tsx` *(novo)* — modal com abas Perfil/Acesso/Produção.
-- `src/features/admin/users.ts` *(novo)* — helpers `updateProfileFields`, `listUserEntries`, `updateEntry`, `deleteEntry`.
-- 1 migration: políticas de UPDATE/DELETE para admin em `profiles` e `production_entries`.
-
-## Riscos e mitigações
-
-- **RLS mais permissiva**: escopo limitado a `admin` + mesma agência via `has_role` (security definer já existente). Não amplia acesso de `gerente`/`funcionario`.
-- **Avatar de terceiros no storage**: confirmo policy antes de habilitar upload no dialog; se bloqueada, oculto o botão de avatar no modo admin e libero só os campos de texto nessa primeira versão.
-- **Edição de produção pode disparar pontos/ranking**: o modelo novo (`production_entries`) não está ligado aos triggers de pontos (só `daily_reports`), então editar/excluir aqui não corrompe gamificação legada.
-
-Sem mudanças em dashboards, exports, auth flow ou outros componentes.
+Quer assim, ou prefere variação (ex.: 30 dias, mais/menos usuários, agência separada)?
