@@ -585,6 +585,7 @@ export type Database = {
       products: {
         Row: {
           active: boolean
+          amount_bucket: number
           category: string | null
           commission_per_unit: number
           commission_rate: number
@@ -596,6 +597,8 @@ export type Database = {
           legacy_field: string | null
           metric_type: string
           name: string
+          points_per_amount: number
+          points_per_quantity: number
           points_per_unit: number
           slug: string
           subcategory: string | null
@@ -604,6 +607,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          amount_bucket?: number
           category?: string | null
           commission_per_unit?: number
           commission_rate?: number
@@ -615,6 +619,8 @@ export type Database = {
           legacy_field?: string | null
           metric_type?: string
           name: string
+          points_per_amount?: number
+          points_per_quantity?: number
           points_per_unit?: number
           slug: string
           subcategory?: string | null
@@ -623,6 +629,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          amount_bucket?: number
           category?: string | null
           commission_per_unit?: number
           commission_rate?: number
@@ -634,6 +641,8 @@ export type Database = {
           legacy_field?: string | null
           metric_type?: string
           name?: string
+          points_per_amount?: number
+          points_per_quantity?: number
           points_per_unit?: number
           slug?: string
           subcategory?: string | null

@@ -23,6 +23,7 @@ import {
 } from "@/components/ds";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { calcEntryPoints } from "@/features/production/points";
 
 export const Route = createFileRoute("/_authenticated/dashboard-v3")({
   head: () => ({ meta: [{ title: "Início — BanriTools" }] }),
@@ -35,7 +36,7 @@ interface Entry {
   quantity: number;
   amount: number | null;
   entry_date: string;
-  products: { name: string; category: string | null; points_per_unit: number } | null;
+  products: { name: string; category: string | null; points_per_unit: number; points_per_quantity: number | null; points_per_amount: number | null; amount_bucket: number | null } | null;
 }
 interface ContactRow {
   id: string;
@@ -87,7 +88,7 @@ function Page() {
       ] = await Promise.all([
         supabase
           .from("production_entries")
-          .select("product_id, quantity, amount, entry_date, products(name, category, points_per_unit)")
+          .select("product_id, quantity, amount, entry_date, products(name, category, points_per_unit, points_per_quantity, points_per_amount, amount_bucket)")
           .eq("user_id", user.id)
           .eq("status", "confirmed")
           .gte("entry_date", monthStartStr)
@@ -103,7 +104,7 @@ function Page() {
         profile?.agency_id
           ? supabase
               .from("production_entries")
-              .select("user_id, quantity, amount, products(points_per_unit)")
+              .select("user_id, quantity, amount, products(points_per_unit, points_per_quantity, points_per_amount, amount_bucket)")
               .eq("agency_id", profile.agency_id)
               .eq("status", "confirmed")
               .gte("entry_date", monthStartStr)
@@ -119,10 +120,9 @@ function Page() {
       (agEntries ?? []).forEach((row) => {
         const er = row as unknown as {
           user_id: string; quantity: number | null; amount: number | null;
-          products: { points_per_unit: number } | null;
+          products: { points_per_unit: number | null; points_per_quantity: number | null; points_per_amount: number | null; amount_bucket: number | null } | null;
         };
-        const ppu = er.products?.points_per_unit ?? 0;
-        const pts = (Number(er.quantity || 0) + Number(er.amount || 0)) * ppu;
+        const pts = calcEntryPoints(er, er.products);
         byUser.set(er.user_id, (byUser.get(er.user_id) ?? 0) + pts);
       });
       setAgencyEntries(
@@ -150,16 +150,10 @@ function Page() {
   const stats = useMemo(() => {
     const todayQty = todayEntries.reduce((s, e) => s + Number(e.quantity || 0), 0);
     const todayAmt = todayEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
-    const todayPts = todayEntries.reduce((s, e) => {
-      const ppu = e.products?.points_per_unit ?? 0;
-      return s + (Number(e.quantity || 0) + Number(e.amount || 0)) * ppu;
-    }, 0);
+    const todayPts = todayEntries.reduce((s, e) => s + calcEntryPoints(e, e.products), 0);
     const monthQty = monthEntries.reduce((s, e) => s + Number(e.quantity || 0), 0);
     const monthAmt = monthEntries.reduce((s, e) => s + Number(e.amount || 0), 0);
-    const monthPts = monthEntries.reduce((s, e) => {
-      const ppu = e.products?.points_per_unit ?? 0;
-      return s + (Number(e.quantity || 0) + Number(e.amount || 0)) * ppu;
-    }, 0);
+    const monthPts = monthEntries.reduce((s, e) => s + calcEntryPoints(e, e.products), 0);
     return { todayQty, todayAmt, todayPts, monthQty, monthAmt, monthPts };
   }, [monthEntries, todayEntries]);
 

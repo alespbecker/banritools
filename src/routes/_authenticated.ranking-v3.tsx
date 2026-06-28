@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { motion, AnimatePresence } from "framer-motion";
+import { calcEntryPoints } from "@/features/production/points";
 
 import { ErrorState } from "@/components/states/ErrorState";
 import { EmptyState } from "@/components/states/EmptyState";
@@ -47,7 +48,7 @@ function Page() {
 
     const { data: entries, error: e } = await supabase
       .from("production_entries")
-      .select("user_id, quantity, amount, products(points_per_unit)")
+      .select("user_id, quantity, amount, products(points_per_unit, points_per_quantity, points_per_amount, amount_bucket)")
       .eq("agency_id", profile.agency_id!)
       .eq("status", "confirmed")
       .gte("entry_date", startStr);
@@ -57,11 +58,10 @@ function Page() {
     (entries ?? []).forEach((row) => {
       type EntryRow = {
         user_id: string; quantity: number | null; amount: number | null;
-        products: { points_per_unit: number } | null;
+        products: { points_per_unit: number | null; points_per_quantity: number | null; points_per_amount: number | null; amount_bucket: number | null } | null;
       };
       const er = row as unknown as EntryRow;
-      const ppu = er.products?.points_per_unit ?? 0;
-      const pts = (Number(er.quantity || 0) + Number(er.amount || 0)) * ppu;
+      const pts = calcEntryPoints(er, er.products);
       byUser.set(er.user_id, (byUser.get(er.user_id) ?? 0) + pts);
     });
 

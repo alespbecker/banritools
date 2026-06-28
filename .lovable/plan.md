@@ -1,118 +1,131 @@
 
-# Auditoria — Fluxo de Dados, Relatórios e Segurança
+# Parte 1 — Landing page de apresentação
 
-Modo somente leitura. Nada será alterado neste plano — abaixo segue o diagnóstico por área, evidências coletadas no banco/código, simulações de problemas e a remediação recomendada para quando for autorizado agir.
+Hoje `/` apenas redireciona para `/login` ou `/dashboard-v3`. Vou transformar `/` em uma landing pública (estilo AirPods) e mover o redirect para um gate condicional: usuários autenticados continuam indo direto para o dashboard; visitantes veem a landing.
 
----
+### Estrutura da página (scroll-driven)
 
-## 1) Estado do banco (snapshot agora)
+Inspirada na página dos AirPods: cada seção "pina" enquanto o usuário rola e o produto (no nosso caso, o **hexágono do logo + dashboards mockados**) anima em resposta ao scroll. Implementado com Motion (`framer-motion`) usando `useScroll` + `useTransform` — já está no projeto, sem dependências novas.
 
-- `production_entries`: **628** lançamentos, **10** usuários, datas **19/06 → 28/06/2026**, qtd total **604**, valor **R$ 2.258.500,00** (dados do seed).
-- `daily_reports`: legado, não é mais lido por nenhuma tela (boa notícia — fonte única é `production_entries`).
-- `ranking_monthly`, `points_log`, `user_points`: **0 linhas**. Isso é a causa-raiz do problema #2 abaixo.
-- `products`: 22 produtos cadastrados, com `metric_type` e `points_per_unit` coerentes (ex.: Consignado ppu=1, Recuperação E2/E3 ppu=0,002, Seguro Vida ppu=50).
+```
+┌──────────────────────────────────────────┐
+│ 1. HERO                                  │
+│    Logo gigante animado (hexágonos       │
+│    girando/montando) + headline:         │
+│    "banritools — sua produção,           │
+│    em tempo real."                       │
+├──────────────────────────────────────────┤
+│ 2. PIN: REGISTRO RÁPIDO                  │
+│    Mockup do card de produto cresce      │
+│    da direita conforme rola; números     │
+│    do odômetro sobem.                    │
+├──────────────────────────────────────────┤
+│ 3. PIN: PAINEL DA AGÊNCIA                │
+│    KPIs aparecem em sequência (stagger), │
+│    gráfico desenha de 0→100% no scroll.  │
+├──────────────────────────────────────────┤
+│ 4. PIN: RANKING & GAMIFICAÇÃO            │
+│    Pódio 3D sobe; badges entram em órbita│
+├──────────────────────────────────────────┤
+│ 5. RELATÓRIOS                            │
+│    PDF "folheia" páginas conforme rola.  │
+├──────────────────────────────────────────┤
+│ 6. CTA FINAL                             │
+│    "Entrar" / "Tenho um convite"         │
+└──────────────────────────────────────────┘
+```
 
----
-
-## 2) Coerência por seção (coleta → envio → recebimento → apresentação)
-
-### Registrar Produção (`/registrar-producao-v3`)
-- Coleta `quantity` + `amount` + `variants` e grava em `production_entries` com `status='confirmed'`. `agency_id` é preenchido pelo trigger `fill_production_entry_agency`. **OK.**
-- Realtime dispara `banritools:sync`, que invalida o painel admin com debounce de 500 ms. **OK.**
-
-### Dashboard pessoal (`/dashboard-v3`)
-- Lê `production_entries` do mês do usuário + da agência para ranking local. **OK.**
-- Pontuação: `pts = (quantity + amount) × points_per_unit`. **Observação:** para produtos `mixed` (ex.: Seguro Vida, ppu=50), 1 unidade + R$ 500 vira `551 × 50 = 27.550 pts` — fórmula consistente em todas as telas, mas potencialmente inflada. Não é um bug; é uma decisão de produto que vale revisar quando quiser calibrar gamificação.
-
-### Ranking (`/ranking-v3`)
-- Calcula no cliente a partir de `production_entries`. Mesma fórmula do dashboard. **Consistente.**
-
-### Painel da Agência (`/admin`)
-- KPIs e agregações (`stats`, `teamStats`, `entriesAgg`) lêem `production_entries` filtrando por `agency_id` + `status='confirmed'` + janela mensal. **OK.**
-- **PROBLEMA REAL — coluna "Pontos do mês" e gráfico "Top 10 do Ranking" lêem de `ranking_monthly`, que está vazia.** A tabela só é alimentada pelo trigger `handle_report_points` em `daily_reports` (legado descontinuado). Resultado: pontos/posição aparecem como `0`/`—` no painel da agência e no export Detalhado, mesmo com produção registrada.
-  - **Remediação sugerida** (a aplicar depois): trocar o consumo de `ranking_monthly` por agregação client-side sobre `production_entries` (idêntica ao `/ranking-v3`), ou portar a função `update_monthly_ranking` para um trigger em `production_entries`. Recomendo a 1ª opção (mais simples, fonte única, sem manter trigger legado).
-
-### Metas (`/metas`) e Campanhas (`/campanhas`)
-- `goals` é lido com filtro de período e escopo. Dashboard usa `personalMonthGoal` e `personalDailyGoal` corretamente. **OK.**
-- `goalsAtRisk` usa elapsed%×target×0,8 — fórmula plausível, alinhada ao mês corrente.
-
-### Contatos (`/contacts`)
-- `overdueFollowups` e `pendingContacts` derivados de `contacts.next_follow_up`/`status`. Lógica coerente.
-
-### Usuários (`/admin/convites`)
-- Painel admin de edição de perfil e produção individual. Usa o serviço `src/features/admin/users.ts`. Sem inconsistência detectada na navegação ↔ dados.
-
----
-
-## 3) Relatórios (export — foco do pedido)
-
-### Variantes
-- **Detalhado** (`rawRows`): 1 linha por lançamento (`production_entries`) — Data, Colaborador, Email, Categoria, Produto, Qtd, R$. **OK.**
-- **Resumido** (`summaryRows`): agrupa por `entry_date|product` somando `quantity`/`amount` e contando colaboradores únicos. Ordenação data DESC, produto ASC. **OK.**
-
-### KPIs do cabeçalho do PDF/XLSX
-- `Engajamento %`, `Unidades`, `Vol. Crédito`, `Recuperação` — todos derivados de `entriesAgg` (production_entries). **Consistentes.**
-
-### Problemas/riscos detectados
-1. **Pontos no Detalhado**: a coluna "Pontos do mês" no export por colaborador (`exportRows`) puxa de `rankMap` (= `ranking_monthly`). Pelo motivo #2 acima, sai **0 para todos**. — Mesma remediação: usar agregação client-side.
-2. **Carregamento da Poppins no PDF** (`ExportDialog.loadPoppins`): faz `fetch` em `cdn.jsdelivr.net` → fallback `raw.githubusercontent.com`. Se o usuário estiver em rede corporativa Banrisul bloqueando CDN externa, o PDF renderiza com fonte fallback (Helvetica). Não quebra o relatório, só perde a marca. — **Sugestão:** empacotar o TTF no bundle (`?url` import) ou hospedar em `/public/fonts/`.
-3. **Filtro de status `"inactive"`**: ao exportar, `rawRows`/`summaryRows` filtram só ativos quando há filtros aplicados; com `statusFilter='inactive'`, o export Detalhado fica **vazio** (esperado, mas pode confundir). — Sugestão: rótulo no diálogo avisando "Inativos não possuem lançamentos".
-4. **Tipos `mixed` no Resumido**: para Seguro Vida etc., uma linha terá `quantity=1` e `amount=500` na mesma célula-resumo. É correto, mas analista pode interpretar como dupla contagem. — Sugestão: nota de rodapé "produtos mistos podem somar unidades e valor monetário simultaneamente".
-5. **`amount=0` em produtos `quantity-only`** (Cartão de Crédito, PJ, NPS, Portabilidade): aparece como `R$ 0,00` no Resumido. Tecnicamente correto, mas visualmente poluído. — Sugestão: render condicional ("—" quando produto não tem métrica monetária).
-
-### Simulações executadas
-- ✅ Soma `production_entries` por data confere com `entriesAgg` (10 dias × 10 usuários ≈ 60 entries/dia, total R$ 2,26 mi).
-- ✅ Aggregator do Resumido bate produto a produto com `SELECT … GROUP BY entry_date, product`.
-- ⚠️ Ranking exportado = 0 (confirmado pelo `count(*) ranking_monthly = 0`).
+### Detalhes técnicos
+- Nova rota `src/routes/_marketing.tsx` (layout sem sidebar) + `src/routes/_marketing.index.tsx` (a landing).
+- `src/routes/index.tsx` vira: `if (isAuthenticated) <Navigate to="/dashboard-v3" />; else <Navigate to="/apresentacao" />` — ou mais simples, monta a landing inline.
+- Componentes em `src/features/marketing/`: `Hero.tsx`, `ScrollScene.tsx` (wrapper com `position: sticky` + `useScroll`), `SectionRegistro.tsx`, `SectionPainel.tsx`, `SectionRanking.tsx`, `SectionRelatorios.tsx`, `CtaFinal.tsx`.
+- Sem imagens novas — reutilizo `Logo.tsx` e desenho os mockups em SVG/HTML com os tokens do DS v2.
+- `prefers-reduced-motion`: substituo animações por fade simples.
+- SEO: `head()` próprio com title/description/og.
 
 ---
 
-## 4) Segurança — findings e o que fazer com cada um
+# Parte 2 — Sistema de pontos coerente
 
-### 🔴 ERROR — corrigir antes de ir ao ar
-1. **`PROFILE_AGENCY_SELF_ASSIGN`** — Policy UPDATE de `profiles` não tem `WITH CHECK`. Usuário pode `update profiles set agency_id='<outra-agência>' where id=auth.uid()` e ler tudo daquela agência (campaigns, ranking, contacts).
-   **Ação:** recriar a policy com `WITH CHECK (id = auth.uid() AND agency_id = public.get_user_agency_id(auth.uid()))`. (Migration trivial.)
-2. **`AUDIT_LOG_AGENCY_INJECTION`** — INSERT em `audit_logs` aceita qualquer `agency_id`. Permite poluir o log de outra agência ou injetar evento global (`NULL`).
-   **Ação:** adicionar `agency_id = public.get_user_agency_id(auth.uid())` ao `WITH CHECK`.
+### Diagnóstico
 
-### 🟡 WARN — endurecer assim que possível
-3. **`admin_route_client_guard`** — `/admin` e `/admin/produtos` só fazem `useEffect`-redirect. UI pisca para não-admin antes de redirecionar. RLS protege os dados, mas o ideal é gate em `beforeLoad`.
-   **Ação:** mover a verificação para `beforeLoad` da rota usando `requireSupabaseAuth` + `has_role('admin')`. Esconder antes de montar.
-4. **`PRODUCTION_INSERT_NO_AGENCY_PIN` / `DAILY_REPORTS_INSERT_NO_AGENCY_PIN`** — INSERT não fixa `agency_id`. O trigger `fill_production_entry_agency` mitiga, mas se o usuário enviar um `agency_id` explícito, ele passa.
-   **Ação:** acrescentar `WITH CHECK (... AND agency_id = public.get_user_agency_id(user_id))` nas duas policies. `daily_reports` é legado, mas ainda tem RLS aberta.
-5. **`AGENCIES_FULLY_READABLE`** — Lista de agências (nomes/cidades) visível a qualquer usuário autenticado. Para um SaaS interno de um único banco isso pode ser intencional, mas se planeja multiagência segregada, restringir a `id = get_user_agency_id(auth.uid())`.
-   **Ação:** decidir; se segregar, criar policy com filtro.
-6. **`MISSING_INVITE_ANON_READ`** — Falso positivo. O fluxo já usa RPC `redeem_invite_code` (`SECURITY DEFINER`), não SELECT direto. **Ignorar** com nota.
-7. **Supabase linter — `Public Bucket Allows Listing` (bucket `avatars`)** — listagem pública das chaves do bucket. Avatares são públicos por design, mas listagem expõe quem tem foto/quantas.
-   **Ação:** restringir SELECT em `storage.objects` ao bucket `avatars` para `auth.uid()` dono, mantendo o bucket `public` apenas para download por URL.
-8. **Supabase linter — `Leaked Password Protection Disabled`** — habilitar HIBP via `configure_auth({ password_hibp_enabled: true })`.
-9. **Supabase linter — 4×`anon`/4×`authenticated` SECURITY DEFINER executáveis** — provavelmente `gen_invite_code`, `has_role`, `get_user_agency_id`, `redeem_invite_code`, `calculate_report_points`, `get_level`, `check_badges`, `update_monthly_ranking`, `admin_set_user_role`.
-   **Ação:** auditar cada uma:
-     - `redeem_invite_code` precisa de `authenticated` → OK manter.
-     - `has_role`, `get_user_agency_id` são usadas em policies → manter `authenticated`.
-     - `gen_invite_code`, `update_monthly_ranking`, `check_badges`, `calculate_report_points`, `admin_set_user_role` → `REVOKE EXECUTE … FROM anon, authenticated` (são chamadas pelo servidor/triggers, não pelo cliente).
+Fórmula atual: `pts = (quantity + amount) × points_per_unit`. Isso é matematicamente incorreto para produtos por valor:
+- **Consignado** com `points_per_unit = 1` e amount de R$ 770.600 → **770.600 pontos** em um único lançamento.
+- **Cartão de Crédito** (5 unidades × 30) → 150 pontos.
+- Resultado: gaps de milhões; ranking dominado por quem registra valor; quantidade vira ruído.
+
+Os produtos `metric_type='amount'` já têm `points_per_unit` arbitrariamente baixo (0,002 nos legados, 1–2 nos novos) tentando "compensar" — solução frágil.
+
+### Proposta: pontos por "lote" + separação de quantidade e valor
+
+Adicionar duas colunas explícitas em `products`:
+
+| coluna                | tipo    | significado                                              |
+|-----------------------|---------|----------------------------------------------------------|
+| `points_per_quantity` | numeric | pontos por **1 unidade** vendida                         |
+| `points_per_amount`   | numeric | pontos por **R$ 1.000** contratados (lote configurável)  |
+| `amount_bucket`       | integer | tamanho do lote em R$ (default 1000)                     |
+
+**Nova fórmula única:**
+```
+pts(entry) = quantity   * product.points_per_quantity
+           + (amount / product.amount_bucket) * product.points_per_amount
+```
+Ambos os termos são aditivos. Produtos só-quantidade têm `points_per_amount = 0`; só-valor têm `points_per_quantity = 0`; mistos têm os dois. `metric_type` continua existindo apenas para definir quais campos o formulário mostra.
+
+### Calibração sugerida (alvo: top performer ~3.000–6.000 pts/mês; gap entre 1º e 10º ~ centenas)
+
+| Produto                          | qty pts | R$/lote | pts/lote |
+|----------------------------------|--------:|--------:|---------:|
+| Seguro Vida                      | 50      | —       | —        |
+| Seguro AP Smart                  | 30      | —       | —        |
+| Capitalização                    | 20      | —       | —        |
+| Previdência                      | 15      | 1.000   | 1        |
+| Conta Empresarial PJ             | 60      | —       | —        |
+| Máquina Vero                     | 50      | —       | —        |
+| Portabilidade de Salário         | 40      | —       | —        |
+| Cartão de Crédito                | 30      | —       | —        |
+| Banricompras                     | 5       | —       | —        |
+| Crédito Minuto (cada)            | 10      | 1.000   | 2        |
+| Cheque Especial                  | 5       | 1.000   | 1        |
+| Pacotes / Serviços               | 15      | —       | —        |
+| Investimentos / CDB Auto         | 5       | 10.000  | 2        |
+| **Consignado**                   | —       | 1.000   | 3        |
+| **Crédito Fidelidade**           | —       | 1.000   | 2        |
+| Recuperação (E2 e E3 unificados) | —       | 1.000   | 4        |
+| NPS                              | 5       | —       | —        |
+
+Resultado prático: o consignado de R$ 770.600 acima passa de 770k → **2.312 pts** (770,6 × 3). Cartões e seguros voltam a competir.
+
+Valores ficam **editáveis em `/admin/produtos`** — a tabela acima é o seed inicial.
+
+### Migração / compatibilidade
+
+1. **Migration SQL**:
+   - `ALTER TABLE products ADD COLUMN points_per_quantity numeric NOT NULL DEFAULT 0`
+   - `ALTER TABLE products ADD COLUMN points_per_amount   numeric NOT NULL DEFAULT 0`
+   - `ALTER TABLE products ADD COLUMN amount_bucket       integer NOT NULL DEFAULT 1000`
+   - `UPDATE products SET …` com os valores da tabela acima (por slug).
+   - Manter `points_per_unit` por enquanto (deprecated; remover em segunda passada).
+
+2. **Front-end**: substituir a fórmula em **3 lugares** (`_authenticated.admin.tsx`, `_authenticated.dashboard-v3.tsx`, `_authenticated.ranking-v3.tsx`) por um helper único `calcEntryPoints(entry, product)` em `src/features/production/points.ts`. Single source of truth, fácil migrar.
+
+3. **Admin / Produtos**: adicionar dois inputs (pts/unidade, pts por R$ X) + display do `amount_bucket`.
+
+4. **Exibição para o gestor**: no card de produto e no relatório, mostrar a regra em texto curto: *"Seguro Vida — 50 pts por unidade"* / *"Consignado — 3 pts a cada R$ 1.000"*. Transparente e explicável.
+
+5. **Gamificação legada** (`points_log`, `user_points`, `ranking_monthly`, `daily_reports`, `calculate_report_points`): permanecem intactos. O dashboard novo já calcula client-side a partir de `production_entries`, então a mudança é puramente cosmética para o usuário final.
+
+### Não vou mexer (escopo)
+- Tabela `daily_reports` e suas triggers de pontos (legado, sem leitura no UI ativo).
+- Badges / níveis / `get_level()` — podem ser reavaliados depois quando virmos a nova escala em produção.
 
 ---
 
-## 5) Riscos operacionais quando for ao ar (e mitigação)
+# Ordem de execução proposta
 
-| Cenário | Sintoma | Mitigação |
-|---|---|---|
-| Sessão `getSession` cai durante export PDF longo | Erro de auth no meio do download | O export é client-side puro, não chama Supabase no meio — sem risco |
-| Realtime cai (Wi-Fi corporativo) | KPIs do admin ficam estáticos | Já há fallback: F5 refaz fetch; debounce protege de tempestade |
-| Volume real (10–20 agências × 50 usuários × 1 ano) | Query `production_entries` no admin pode ficar lenta | Criar index em `(agency_id, entry_date, status)` antes de escalar |
-| 2 admins editam o mesmo usuário simultâneo | Última gravação vence | Aceitável p/ MVP; revisitar com `updated_at` optimistic-lock se virar atrito |
-| Usuário muda fuso horário | `new Date().toISOString().split('T')[0]` usa UTC; pode "perder" o dia depois das 21h BRT | Trocar por `Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Sao_Paulo' })` em todas as telas |
+1. Pontos (migration + helper + 3 substituições + UI admin) — base sólida primeiro.
+2. Landing page (rota + seções + scroll animations).
+3. Smoke test em mobile e desktop; conferir números do `/admin` antes/depois.
 
----
-
-## 6) Recomendação de ordem de execução (quando autorizar)
-
-1. **Migration #1** (segurança crítica): WITH CHECK em `profiles`, `audit_logs`, `production_entries`, `daily_reports`.
-2. **Migration #2**: revogar EXECUTE de funções SECURITY DEFINER não-cliente; habilitar HIBP.
-3. **Code #1**: trocar consumo de `ranking_monthly` por agregação client-side no painel admin (corrige "Pontos do mês = 0" no relatório).
-4. **Code #2**: `beforeLoad` admin com `has_role('admin')`.
-5. **Code #3**: Poppins local + fuso horário BRT em todas as datas.
-6. **Polish**: rótulos de export ("—" para produtos sem amount, nota de produtos mistos).
-
-Aguardo seu OK para começar pelo passo 1.
+Confirma? Posso ajustar a tabela de pontos antes de aplicar se quiser calibrar outro alvo (ex.: top ~10.000 pts/mês).

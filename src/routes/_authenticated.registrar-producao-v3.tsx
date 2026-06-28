@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { Product, ProductVariant } from "@/features/production/types";
 import { VARIANT_TYPE_LABEL } from "@/features/production/types";
+import { calcEntryPoints, describePointsRule } from "@/features/production/points";
 
 const CATEGORY_GRADIENT: Record<string, string> = {
   Seguros: "from-blue-500/10 to-cyan-500/10",
@@ -61,7 +62,7 @@ function ProductRow({
   const showQty = product.metric_type === "quantity" || product.metric_type === "mixed";
   const showAmt = product.metric_type === "amount" || product.metric_type === "mixed";
   const filled = values.quantity > 0 || values.amount > 0;
-  const points = (values.quantity + values.amount) * (product.points_per_unit ?? 0);
+  const points = calcEntryPoints(values, product);
 
   const variantsByType = useMemo(() => {
     const m = new Map<string, ProductVariant[]>();
@@ -99,7 +100,7 @@ function ProductRow({
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <Badge variant="neutral" className="text-[10px] leading-none px-1.5 py-0.5 whitespace-nowrap">{product.points_per_unit} pts/{product.unit}</Badge>
+          <Badge variant="neutral" className="text-[10px] leading-none px-1.5 py-0.5 whitespace-nowrap">{describePointsRule(product)}</Badge>
           {filled && points > 0 && (
             <span className="text-xs font-medium text-success">+{points.toFixed(0)} pts</span>
           )}
@@ -239,7 +240,7 @@ function Page() {
       if (!v) return;
       if (v.quantity > 0 || v.amount > 0) {
         count++;
-        points += (v.quantity + v.amount) * (p.points_per_unit ?? 0);
+        points += calcEntryPoints(v, p);
         totalAmt += v.amount;
         totalQty += v.quantity;
       }

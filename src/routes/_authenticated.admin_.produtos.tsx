@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import type { Product, ProductVariant, MetricType, VariantType } from "@/features/production/types";
 import { VARIANT_TYPE_LABEL } from "@/features/production/types";
+import { describePointsRule } from "@/features/production/points";
 import {
   PageContainer,
   PageHeader,
@@ -198,7 +199,7 @@ function AdminProductsPage() {
                       )}
                       <div className="flex flex-wrap gap-1.5 mb-3">
                         <Badge variant="secondary" className="text-[10px]">{METRIC_LABEL[p.metric_type]}</Badge>
-                        <Badge variant="secondary" className="text-[10px]">{p.points_per_unit} pts/{p.unit}</Badge>
+                        <Badge variant="secondary" className="text-[10px]">{describePointsRule(p)}</Badge>
                         {p.commission_per_unit > 0 && (
                           <Badge variant="outline" className="text-[10px] border-emerald-500/40 text-emerald-700 dark:text-emerald-300">
                             R$ {p.commission_per_unit}/{p.unit}
@@ -269,7 +270,9 @@ function ProductEditDialog({
     subcategory: product.subcategory ?? "",
     unit: product.unit ?? "unidade",
     metric_type: product.metric_type,
-    points_per_unit: product.points_per_unit,
+    points_per_quantity: product.points_per_quantity ?? 0,
+    points_per_amount: product.points_per_amount ?? 0,
+    amount_bucket: product.amount_bucket ?? 1000,
     commission_per_unit: product.commission_per_unit ?? 0,
     commission_rate: product.commission_rate ?? 0,
     display_order: product.display_order,
@@ -375,15 +378,10 @@ function ProductEditDialog({
                 <Input value={form.subcategory} onChange={(e) => setForm({ ...form, subcategory: e.target.value })} />
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Unidade</Label>
                 <Input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
-              </div>
-              <div>
-                <Label>Pts/unidade</Label>
-                <Input type="number" value={form.points_per_unit}
-                  onChange={(e) => setForm({ ...form, points_per_unit: Number(e.target.value) || 0 })} />
               </div>
               <div>
                 <Label>Ordem</Label>
@@ -401,6 +399,30 @@ function ProductEditDialog({
                   <SelectItem value="mixed">Quantidade + Valor</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-3">
+              <div className="text-xs font-medium text-primary">Pontuação</div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-xs">Pts por unidade</Label>
+                  <Input type="number" min="0" step="0.01" value={form.points_per_quantity}
+                    onChange={(e) => setForm({ ...form, points_per_quantity: Number(e.target.value) || 0 })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Pts por lote R$</Label>
+                  <Input type="number" min="0" step="0.01" value={form.points_per_amount}
+                    onChange={(e) => setForm({ ...form, points_per_amount: Number(e.target.value) || 0 })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Tamanho do lote (R$)</Label>
+                  <Input type="number" min="1" step="1" value={form.amount_bucket}
+                    onChange={(e) => setForm({ ...form, amount_bucket: Number(e.target.value) || 1000 })} />
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Fórmula: <code>quantidade × pts/unidade + (valor ÷ lote) × pts/lote</code>.
+                Use só uma das pontas para produtos puros (ex.: Consignado = 3 pts a cada R$ 1.000).
+              </p>
             </div>
             <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-3">
               <div className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
