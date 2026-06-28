@@ -16,11 +16,19 @@ import { ArrowRight, BarChart3, Trophy, FileText, Sparkles, Zap } from "lucide-r
  * framer-motion (já no projeto) e respeita `prefers-reduced-motion`.
  */
 
-function Wordmark({ size = 64 }: { size?: number }) {
+function Wordmark({ size = 64, weight = 350 }: { size?: number; weight?: number }) {
   return (
     <span
-      className="font-medium lowercase tracking-[0.048em]"
-      style={{ fontFamily: "Poppins, sans-serif", fontSize: size, lineHeight: 1 }}
+      className="lowercase tracking-[0.048em]"
+      style={{
+        fontFamily: "Poppins, sans-serif",
+        fontWeight: weight,
+        fontSize: size,
+        lineHeight: 1,
+        // Suaviza levemente os cantos da tipografia
+        WebkitFontSmoothing: "antialiased",
+        textRendering: "geometricPrecision",
+      }}
     >
       banritools
     </span>
