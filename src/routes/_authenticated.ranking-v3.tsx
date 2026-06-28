@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { motion, AnimatePresence } from "framer-motion";
+import { calcEntryPoints } from "@/features/production/points";
 
 import { ErrorState } from "@/components/states/ErrorState";
 import { EmptyState } from "@/components/states/EmptyState";
