@@ -448,11 +448,25 @@ function AdminDashboardPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ExportDialog
-            title="Relatório bruto de lançamentos"
+            title="Relatório de produção"
             subtitle={`Período: ${monthRange.label}`}
             filenameBase="banritools-relatorios"
-            columns={rawColumns}
-            rows={rawRows}
+            variants={[
+              {
+                id: "detalhado",
+                label: "Detalhado",
+                hint: "Uma linha por lançamento",
+                columns: rawColumns as ExportColumn<unknown>[],
+                rows: rawRows as unknown[],
+              },
+              {
+                id: "resumido",
+                label: "Resumido",
+                hint: "Totais diários por produto",
+                columns: summaryColumns as ExportColumn<unknown>[],
+                rows: summaryRows as unknown[],
+              },
+            ]}
             triggerLabel="Exportar Relatórios"
             summary={[
               { label: "Engajamento", value: `${teamStats.engajamento}%`, hint: `${stats.activeUsers}/${profiles.length} ativos` },
@@ -461,6 +475,7 @@ function AdminDashboardPage() {
               { label: "Recuperação", value: fmtBRL(stats.recuperado), hint: "E2 + E3" },
             ]}
           />
+
           <Select value={String(monthOffset)} onValueChange={(v) => setMonthOffset(Number(v))}>
             <SelectTrigger
               className="w-44"
