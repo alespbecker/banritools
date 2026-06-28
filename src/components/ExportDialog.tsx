@@ -205,21 +205,42 @@ export function ExportDialog<T>({
   title = "Exportar dados",
   subtitle,
   filenameBase,
-  columns,
-  rows,
+  columns: columnsProp,
+  rows: rowsProp,
+  variants,
   triggerLabel = "Exportar",
   summary,
 }: Props<T>) {
   const [open, setOpen] = useState(false);
   const [format, setFormat] = useState<Fmt>("pdf");
+
+  const variantList = useMemo<ExportVariant<unknown>[]>(() => {
+    if (variants && variants.length > 0) return variants;
+    return [{ id: "default", label: "Padrão", columns: (columnsProp ?? []) as ExportColumn<unknown>[], rows: (rowsProp ?? []) as unknown[] }];
+  }, [variants, columnsProp, rowsProp]);
+
+  const [variantId, setVariantId] = useState<string>(variantList[0].id);
+  const currentVariant = useMemo(
+    () => variantList.find((v) => v.id === variantId) ?? variantList[0],
+    [variantList, variantId]
+  );
+  const columns = currentVariant.columns as ExportColumn<T>[];
+  const rows = currentVariant.rows as T[];
+
   const [selected, setSelected] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(columns.map((c) => [c.key, c.defaultChecked ?? true]))
   );
+
+  // Reset column selection when variant changes
+  useEffect(() => {
+    setSelected(Object.fromEntries(columns.map((c) => [c.key, c.defaultChecked ?? true])));
+  }, [variantId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeColumns = useMemo(
     () => columns.filter((c) => selected[c.key]),
     [columns, selected]
   );
+
 
   const toggle = (key: string) => setSelected((s) => ({ ...s, [key]: !s[key] }));
   const setAll = (val: boolean) =>
