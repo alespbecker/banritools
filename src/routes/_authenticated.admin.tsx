@@ -363,6 +363,56 @@ function AdminDashboardPage() {
     { key: "amount", label: "Valor (R$)", accessor: (r) => r.amount, defaultChecked: true, format: "currency", summable: true },
   ], []);
 
+  // Resumido: totais diários por produto (agrega todos os colaboradores).
+  type SummaryRow = {
+    entry_date: string;
+    category: string;
+    product: string;
+    quantity: number;
+    amount: number;
+    contributors: number;
+  };
+  const summaryRows: SummaryRow[] = useMemo(() => {
+    const allowedIds = activeFilterCount > 0 && !showInactivesAsRows
+      ? new Set(filteredPerUser.map((u) => u.user_id))
+      : null;
+    const source = allowedIds ? entries.filter((e) => allowedIds.has(e.user_id)) : entries;
+    const map = new Map<string, SummaryRow & { _users: Set<string> }>();
+    for (const e of source) {
+      const product = e.products?.name ?? "—";
+      const category = e.products?.category ?? "—";
+      const key = `${e.entry_date}|${product}`;
+      let row = map.get(key);
+      if (!row) {
+        row = {
+          entry_date: e.entry_date,
+          category,
+          product,
+          quantity: 0,
+          amount: 0,
+          contributors: 0,
+          _users: new Set<string>(),
+        };
+        map.set(key, row);
+      }
+      row.quantity += Number(e.quantity ?? 0);
+      row.amount += Number(e.amount ?? 0);
+      row._users.add(e.user_id);
+    }
+    return Array.from(map.values())
+      .map((r) => ({ ...r, contributors: r._users.size }))
+      .sort((a, b) => (a.entry_date < b.entry_date ? 1 : a.entry_date > b.entry_date ? -1 : a.product.localeCompare(b.product)));
+  }, [entries, filteredPerUser, activeFilterCount, showInactivesAsRows]);
+  const summaryColumns: ExportColumn<SummaryRow>[] = useMemo(() => [
+    { key: "entry_date", label: "Data", accessor: (r) => r.entry_date, defaultChecked: true, format: "date" },
+    { key: "category", label: "Categoria", accessor: (r) => r.category, defaultChecked: true, format: "text" },
+    { key: "product", label: "Produto/Serviço", accessor: (r) => r.product, defaultChecked: true, format: "text" },
+    { key: "quantity", label: "Quantidade", accessor: (r) => r.quantity, defaultChecked: true, format: "integer", summable: true },
+    { key: "amount", label: "Valor (R$)", accessor: (r) => r.amount, defaultChecked: true, format: "currency", summable: true },
+    { key: "contributors", label: "Colaboradores", accessor: (r) => r.contributors, defaultChecked: true, format: "integer" },
+  ], []);
+
+
   if (isLoading || (userRole && userRole !== "admin")) {
     return <PageSkeleton kpis={4} rows={6} />;
   }
