@@ -24,6 +24,9 @@ export interface Product {
   subcategory: string | null;
   unit: string | null;
   points_per_unit: number;
+  points_per_quantity: number;
+  points_per_amount: number;
+  amount_bucket: number;
   commission_per_unit: number;
   commission_rate: number;
   metric_type: MetricType;
