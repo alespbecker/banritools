@@ -27,7 +27,7 @@ import {
  * toda a página; cada seção apenas adiciona conteúdo.
  */
 
-const STICKY_OFFSET = ["start start", "end end"] as const;
+const STICKY_OFFSET: ["start start", "end end"] = ["start start", "end end"];
 
 function Wordmark({ size = 64, weight = 350 }: { size?: number; weight?: number }) {
   return (
