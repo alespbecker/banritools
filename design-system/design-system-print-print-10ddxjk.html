@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<style data-omelette-print-defaults>
+@media print {
+  h1, h2, h3, h4, h5, h6 { break-after: avoid; }
+  figure, table, pre, blockquote, img, svg, tr, [class~="card" i] { break-inside: avoid; }
+  img, svg { max-width: 100%; }
+  p { orphans: 3; widows: 3; }
+}
+</style>
+<meta charset="utf-8">
+<title>Banritools — Design System</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page { size: A4; margin: 14mm; }
+  html, body { background: #fff; }
+  body { font-family: var(--font-body); color: var(--text); }
+  .page { max-width: 760px; margin: 0 auto; }
+  section { break-inside: avoid; margin-bottom: 30px; }
+  h1.cover { font-family: var(--font-display); font-size: 40px; letter-spacing: .01em; margin: 0; }
+  h2.sec { font-family: var(--font-display); font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+  .sec-sub { color: var(--text-muted); font-size: 14px; margin: 0 0 16px; }
+  .eyebrow2 { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-subtle); margin: 0 0 10px; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .swrow { display: flex; border-radius: 10px; overflow: hidden; box-shadow: var(--shadow-sm); }
+  .sw { flex: 1; height: 64px; display: flex; flex-direction: column; justify-content: flex-end; padding: 6px 8px; font-size: 10px; font-weight: 600; }
+  .sw small { font-weight: 400; opacity: .8; font-size: 9px; }
+  .note { font-size: 12.5px; color: var(--text-muted); margin-top: 8px; }
+  .note b { color: var(--text); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .chip { width: 10px; height: 10px; border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 5px; }
+  .divider { height: 1px; background: var(--border); margin: 26px 0; }
+  .typ { line-height: 1.1; margin: 0 0 8px; }
+  .meta { font-family: var(--font-body); font-size: 11px; color: var(--text-subtle); font-weight: 400; letter-spacing: 0; margin-left: 8px; }
+  .card-demo { border: 1px solid var(--border); border-radius: 14px; padding: 16px; background: var(--surface); box-shadow: var(--shadow-sm); }
+  .pagebreak { break-before: page; }
+  .foot { color: var(--text-subtle); font-size: 11px; text-align: center; margin-top: 8px; }
+  @media print { .row, .grid2, .grid3, .swrow { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- COVER / BRAND -->
+  <section style="display:flex; align-items:center; gap:18px; margin-bottom:18px;">
+    <img src="assets/logo-mark.svg" width="60" height="60" alt="">
+    <div>
+      <h1 class="cover" style="font-family:var(--font-brand); font-weight:600;">banritools</h1>
+      <p class="sec-sub" style="margin:2px 0 0; font-size:16px;">Design System · Fundações & Componentes</p>
+    </div>
+  </section>
+  <p class="note" style="max-width:620px; margin-bottom:22px;">
+    Sistema de design interno do Banritools (plataforma de produtividade comercial do Banrisul).
+    Marca de três porcas hexagonais (furo vazado — o aceno a “tools”) — <b>o humano, o coletivo, o presente</b>.
+    Wordmark em Poppins; tipografia Exo 2 (títulos) +
+    Source Sans 3 (corpo). Light e dark mode. Tokens semânticos, nunca hex crus.
+  </p>
+
+  <!-- BRAND LOGO -->
+  <section>
+    <h2 class="sec">Marca</h2>
+    <p class="sec-sub">Versões do logo de três hexágonos.</p>
+    <div class="grid3">
+      <div class="card-demo" style="display:flex; align-items:center; gap:10px; justify-content:center;">
+        <img src="assets/logo-mark.svg" width="34" height="34" alt="">
+        <span style="font-family:var(--font-brand); font-weight:600; font-size:20px; letter-spacing:-.01em;">banritools</span>
+      </div>
+      <div class="card-demo" style="display:flex; align-items:center; justify-content:center;">
+        <img src="assets/logo-mark.svg" width="44" height="44" alt="">
+      </div>
+      <div class="card-demo" style="display:flex; align-items:center; justify-content:center; background:var(--navy-800);">
+        <img src="assets/app-icon.svg" width="44" height="44" alt="">
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- COLORS -->
+  <section>
+    <h2 class="sec">Cores — Primária (Azul Banrisul)</h2>
+    <p class="sec-sub">#0094FF é a cor de reconhecimento. 500 só em acentos/ícones/foco/títulos grandes.</p>
+    <div class="swrow">
+      <div class="sw" style="background:var(--primary-50);color:#00477D">50<small>E8F4FF</small></div>
+      <div class="sw" style="background:var(--primary-100);color:#00477D">100</div>
+      <div class="sw" style="background:var(--primary-200);color:#00477D">200</div>
+      <div class="sw" style="background:var(--primary-300);color:#002E52">300</div>
+      <div class="sw" style="background:var(--primary-400);color:#fff">400</div>
+      <div class="sw" style="background:var(--primary-500);color:#fff">500<small>0094FF</small></div>
+      <div class="sw" style="background:var(--primary-600);color:#fff">600<small>0077DB</small></div>
+      <div class="sw" style="background:var(--primary-700);color:#fff">700<small>0061B0</small></div>
+      <div class="sw" style="background:var(--primary-800);color:#fff">800</div>
+      <div class="sw" style="background:var(--primary-900);color:#fff">900</div>
+    </div>
+    <p class="note">
+      <span class="chip" style="background:var(--primary-500)"></span><b>500</b> acento · ícone · foco · títulos &nbsp;
+      <span class="chip" style="background:var(--primary-600)"></span><b>600</b> botão sólido &nbsp;
+      <span class="chip" style="background:var(--primary-700)"></span><b>700</b> texto · links
+    </p>
+  </section>
+
+  <section>
+    <h2 class="sec" style="font-size:18px;">Navy · Turquesa · Roxo</h2>
+    <div class="grid3">
+      <div>
+        <p class="eyebrow2">Navy #000050</p>
+        <div class="swrow"><div class="sw" style="background:var(--navy-700);color:#fff">700</div><div class="sw" style="background:var(--navy-800);color:#fff">800</div><div class="sw" style="background:var(--navy-900);color:#fff">900</div></div>
+      </div>
+      <div>
+        <p class="eyebrow2">Turquesa #1CD8CA</p>
+        <div class="swrow"><div class="sw" style="background:var(--turquoise-400);color:#085E58">400</div><div class="sw" style="background:var(--turquoise-500);color:#085E58">500</div><div class="sw" style="background:var(--turquoise-700);color:#fff">700</div></div>
+      </div>
+      <div>
+        <p class="eyebrow2">Roxo #936FFA</p>
+        <div class="swrow"><div class="sw" style="background:var(--purple-400);color:#421F94">400</div><div class="sw" style="background:var(--purple-500);color:#fff">500</div><div class="sw" style="background:var(--purple-700);color:#fff">700</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sec" style="font-size:18px;">Status & Neutros</h2>
+    <div class="grid2">
+      <div>
+        <p class="eyebrow2">Feedback</p>
+        <div class="row">
+          <span class="bt-badge bt-badge--success bt-badge--dot">Sucesso</span>
+          <span class="bt-badge bt-badge--warning">Atenção</span>
+          <span class="bt-badge bt-badge--error">Erro</span>
+          <span class="bt-badge bt-badge--brand">+2.550 pts</span>
+        </div>
+        <p class="note">Valores positivos em R$ no verde <b>#0E6E3B</b>.</p>
+      </div>
+      <div>
+        <p class="eyebrow2">Neutros</p>
+        <div class="swrow">
+          <div class="sw" style="background:var(--gray-50);color:#121620;box-shadow:inset 0 0 0 1px var(--border)">50</div>
+          <div class="sw" style="background:var(--gray-200);color:#121620">200</div>
+          <div class="sw" style="background:var(--gray-400);color:#fff">400</div>
+          <div class="sw" style="background:var(--gray-600);color:#fff">600</div>
+          <div class="sw" style="background:var(--gray-900);color:#fff">900</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sec" style="font-size:18px;">Acessibilidade — a regra #0094FF</h2>
+    <div class="grid2">
+      <div class="card-demo">
+        <p class="eyebrow2" style="color:var(--error)">✕ Não</p>
+        <span style="color:var(--primary-500); font-weight:600;">Texto em #0094FF (3.14:1)</span>
+        <div style="margin-top:8px;"><button class="bt-btn bt-btn--md" style="background:var(--primary-500);color:#fff;border:none;">Botão #0094FF</button></div>
+      </div>
+      <div class="card-demo">
+        <p class="eyebrow2" style="color:var(--success)">✓ Sim</p>
+        <span style="color:var(--link); font-weight:600;">Texto em #0061B0 (6.29:1)</span>
+        <div style="margin-top:8px;"><button class="bt-btn bt-btn--primary bt-btn--md"><span>Botão #0077DB</span></button></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider pagebreak"></div>
+
+  <!-- TYPE -->
+  <section>
+    <h2 class="sec">Tipografia</h2>
+    <p class="sec-sub">Exo 2 nos títulos, Source Sans 3 no corpo e números (tabular).</p>
+    <p class="typ" style="font-family:var(--font-display); font-size:40px; font-weight:700; letter-spacing:.01em;">Painel da Agência<span class="meta">display · Exo 2 700</span></p>
+    <p class="typ" style="font-family:var(--font-display); font-size:30px; font-weight:600;">Ranking de junho<span class="meta">h2 · Exo 2 600</span></p>
+    <p class="typ" style="font-size:20px; font-weight:600;">Sua central de operações<span class="meta">xl · Source 600</span></p>
+    <p class="typ" style="font-size:16px; font-weight:400; color:var(--text); max-width:60ch; line-height:1.6;">Cada lançamento de produção soma pontos para sua posição no mês.<span class="meta">base · Source 400</span></p>
+    <p class="eyebrow" style="font-size:12px; margin-top:6px;">RESUMO DE HOJE<span class="meta">eyebrow · uppercase</span></p>
+    <div class="row" style="margin-top:14px;">
+      <div class="card-demo" style="flex:1;">
+        <span class="eyebrow2">Números tabulares</span>
+        <div style="font-family:var(--font-display); font-size:36px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1;">9.150</div>
+        <div style="font-variant-numeric:tabular-nums; font-weight:600; color:var(--success); margin-top:6px;">R$ 11.050,50</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- SPACING / RADIUS -->
+  <section>
+    <h2 class="sec">Espaço · Raio · Elevação</h2>
+    <div class="grid2">
+      <div>
+        <p class="eyebrow2">Raio (lg 14px = card)</p>
+        <div class="row">
+          <div style="width:54px;height:44px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;"></div>
+          <div style="width:54px;height:44px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;"></div>
+          <div style="width:54px;height:44px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;"></div>
+          <div style="width:54px;height:44px;background:var(--surface-2);border:1px solid var(--border);border-radius:20px;"></div>
+          <div style="width:54px;height:44px;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;"></div>
+        </div>
+      </div>
+      <div>
+        <p class="eyebrow2">Elevação (navy-tinted)</p>
+        <div class="row">
+          <div style="width:64px;height:44px;background:var(--surface);border-radius:10px;box-shadow:var(--shadow-sm);"></div>
+          <div style="width:64px;height:44px;background:var(--surface);border-radius:10px;box-shadow:var(--shadow-md);"></div>
+          <div style="width:64px;height:44px;background:var(--surface);border-radius:10px;box-shadow:var(--shadow-lg);"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- COMPONENTS -->
+  <section>
+    <h2 class="sec">Componentes</h2>
+    <p class="sec-sub">Primitivos reutilizáveis (light mode mostrado).</p>
+
+    <p class="eyebrow2">Botões</p>
+    <div class="row" style="margin-bottom:16px;">
+      <button class="bt-btn bt-btn--primary bt-btn--md"><span>Salvar lançamento</span></button>
+      <button class="bt-btn bt-btn--secondary bt-btn--md"><span>Cancelar</span></button>
+      <button class="bt-btn bt-btn--ghost bt-btn--md"><span>Ver metas</span></button>
+      <button class="bt-btn bt-btn--navy bt-btn--md"><span>Exportar</span></button>
+      <button class="bt-btn bt-btn--danger bt-btn--md"><span>Excluir</span></button>
+    </div>
+
+    <p class="eyebrow2">Badges & Pílulas</p>
+    <div class="row" style="margin-bottom:16px;">
+      <span class="bt-badge bt-badge--brand">+2.550 pts</span>
+      <span class="bt-badge bt-badge--purple bt-badge--md">TIME</span>
+      <span class="bt-badge bt-badge--success bt-badge--dot">Preenchido</span>
+      <span class="bt-badge bt-badge--warning">Pendente</span>
+      <span class="bt-badge bt-badge--turquoise">50 pts/unidade</span>
+      <span class="bt-badge bt-badge--neutral">1 produto</span>
+    </div>
+
+    <div class="grid2" style="margin-bottom:16px;">
+      <div>
+        <p class="eyebrow2">Avatares & Tiles</p>
+        <div class="row">
+          <span class="bt-avatar bt-avatar--md">AB</span>
+          <span class="bt-avatar bt-avatar--md bt-avatar--purple">MP</span>
+          <span class="bt-avatar bt-avatar--md bt-avatar--turquoise">RS</span>
+          <span class="bt-icontile"><i data-lucide="activity"></i></span>
+          <span class="bt-icontile bt-icontile--success"><i data-lucide="gauge"></i></span>
+          <span class="bt-icontile bt-icontile--purple"><i data-lucide="trophy"></i></span>
+        </div>
+      </div>
+      <div>
+        <p class="eyebrow2">Progresso</p>
+        <div class="bt-progress bt-progress--gradient" style="margin-bottom:8px;"><div class="bt-progress__fill" style="width:100%"></div></div>
+        <div class="bt-progress"><div class="bt-progress__fill" style="width:62%"></div></div>
+      </div>
+    </div>
+
+    <p class="eyebrow2">Campos de formulário</p>
+    <div class="grid2" style="margin-bottom:16px;">
+      <div class="bt-field">
+        <label class="bt-label">Valor (R$)</label>
+        <div class="bt-inputwrap bt-inputwrap--icon">
+          <span class="bt-input__icon"><i data-lucide="dollar-sign" width="16" height="16"></i></span>
+          <input class="bt-input" value="1.250,00" readonly>
+        </div>
+      </div>
+      <div class="bt-field">
+        <label class="bt-label">Tipo de métrica</label>
+        <div class="bt-selectwrap">
+          <select class="bt-input"><option>Quantidade + Valor</option></select>
+          <span class="bt-select__chevron"><i data-lucide="chevron-down" width="18" height="18"></i></span>
+        </div>
+      </div>
+    </div>
+    <div class="row" style="margin-bottom:16px;">
+      <label class="bt-check"><input type="checkbox" checked><span class="bt-check__box"><i data-lucide="check"></i></span> Utilizar biometria</label>
+      <label class="bt-switch"><input type="checkbox" checked><span class="bt-switch__track"></span> Notificações</label>
+    </div>
+
+    <p class="eyebrow2">Cards & Banner</p>
+    <div class="grid2" style="margin-bottom:12px;">
+      <div class="bt-card"><strong>Card padrão</strong><p style="margin:4px 0 0;color:var(--text-muted);font-size:14px">Superfície base com borda e sombra curta.</p></div>
+      <div class="bt-card bt-card--accent"><strong style="color:var(--success)">Próxima melhor ação</strong><p style="margin:4px 0 0;color:var(--text-muted);font-size:14px">Variante de destaque verde.</p></div>
+    </div>
+    <div class="bt-banner bt-banner--info">
+      <span class="bt-banner__icon"><i data-lucide="info" width="18" height="18"></i></span>
+      <div class="bt-banner__body"><div class="bt-banner__title">Meta atualizada</div><div class="bt-banner__text">A meta de junho foi revisada pela gestão.</div></div>
+    </div>
+  </section>
+
+  <p class="foot">Banritools Design System · Poppins (marca) + Exo 2 + Source Sans 3 · Lucide icons · light & dark</p>
+</div>
+
+<script>
+  lucide.createIcons();
+  addEventListener('load', () => {
+    (async () => {
+      try { await document.fonts.ready; } catch (e) {}
+      const imgs = Array.from(document.images).filter((i) => !i.complete);
+      await Promise.race([
+        Promise.allSettled(imgs.map((i) => i.decode())),
+        new Promise((r) => setTimeout(r, 8000)),
+      ]);
+      setTimeout(() => window.print(), 600);
+    })();
+  });
+</script>
+<script>
+(async () => {
+  if (!document.title || !document.title.trim()) document.title = "design-system-print";
+  // Prepend so page-supplied @page / break rules (deck-stage's margin:0,
+  // author CSS) keep source-order precedence over the baseline.
+  const baseCss = document.createElement('style');
+  baseCss.textContent = "@media print {\n  @page { margin: 0.5cm; }\n  figure, table { break-inside: avoid; }\n  *, *::before, *::after {\n    print-color-adjust: exact; -webkit-print-color-adjust: exact;\n    backdrop-filter: none !important; -webkit-backdrop-filter: none !important;\n    animation-delay: -99s !important; animation-duration: .001s !important;\n    animation-iteration-count: 1 !important; animation-fill-mode: both !important;\n    animation-play-state: running !important; transition-duration: 0s !important;\n  }\n}";
+  document.head.prepend(baseCss);
+  if (document.readyState === 'loading') {
+    await new Promise((r) => document.addEventListener('DOMContentLoaded', r, { once: true }));
+  }
+  let ds = document.querySelector('deck-stage');
+  // whenDefined never resolves when nothing registers the element, so only
+  // await it when a <deck-stage> tag exists (and race a timeout regardless).
+  if (ds && !customElements.get('deck-stage')) {
+    try {
+      await Promise.race([
+        customElements.whenDefined('deck-stage'),
+        new Promise((r) => setTimeout(r, 3000)),
+      ]);
+    } catch (e) {}
+    ds = document.querySelector('deck-stage');
+  }
+  // dc-runtime assigns window.DCLogic at init and mounts into #dc-root on
+  // DOMContentLoaded; settle on that subtree so React has rendered before
+  // print(). Non-DC pages fall through to weighing body.
+  const isDc = !ds && 'DCLogic' in window;
+  const settleRoot = ds || (isDc ? document.getElementById('dc-root') : null) || document.body;
+  if (settleRoot) {
+    // Weigh only content children — skip script/style/template so inline
+    // Babel/CSS doesn't register as stable "content" before the framework
+    // has mounted anything.
+    const MEDIA = 'img,svg,canvas,video,picture,iframe,embed,object';
+    const weigh = () => {
+      let text = 0, media = 0;
+      for (const c of settleRoot.children) {
+        const t = c.tagName;
+        if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEMPLATE') continue;
+        text += (c.textContent || '').trim().length;
+        media += c.querySelectorAll(MEDIA).length + (c.matches(MEDIA) ? 1 : 0);
+      }
+      return text + media * 100;
+    };
+    // "Non-zero and stable" alone is not sufficient to mean rendered: generic
+    // body can carry a static shell while async main content is pending, and
+    // #dc-root can carry the root DC's static text while child refs are still
+    // .sc-placeholder boxes. Gate generic on readyState 'complete', and never
+    // accept stability while a dc-runtime placeholder is present.
+    const isGeneric = settleRoot === document.body;
+    const deadline = Date.now() + 15000;
+    let last = -1, stable = 0;
+    while (Date.now() < deadline) {
+      const n = weigh();
+      const ready =
+        (!isGeneric || document.readyState === 'complete') &&
+        !settleRoot.querySelector('.sc-placeholder');
+      if (n > 0 && n === last && ready) { if (++stable >= 2) break; } else { stable = 0; }
+      last = n;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+  }
+  // Reveal content gated on scroll or visibility before printing. Lazy <img>,
+  // IntersectionObserver fade-ins, and collapsed <details> don't render while
+  // off-screen, so a long page would print with them blank or closed. Open
+  // every <details>, force native-lazy images eager, and scroll the document
+  // through its full height to trip lazy-load + IO; then wait (bounded) for the
+  // newly-triggered images. Inert for deck-stage (slides aren't scroll-gated).
+  try {
+    for (const d of document.querySelectorAll('details')) d.open = true;
+    for (const img of document.querySelectorAll('img[loading="lazy"]'))
+      img.loading = 'eager';
+    const scroller = document.scrollingElement || document.documentElement;
+    const full = Math.max(scroller.scrollHeight, document.body.scrollHeight);
+    const step = window.innerHeight || 800;
+    for (let y = 0; y <= full; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((r) => requestAnimationFrame(r));
+    }
+    window.scrollTo(0, 0);
+    await Promise.race([
+      Promise.all(
+        [...document.images].map((img) =>
+          img.complete
+            ? null
+            : new Promise((res) => {
+                img.addEventListener('load', res, { once: true });
+                img.addEventListener('error', res, { once: true });
+              })
+        )
+      ),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]);
+  } catch (e) {}
+  try { await document.fonts.ready; } catch (e) {}
+  // Jump every animation to its end state so print() never captures a slide
+  // mid-entrance. Ordering matters: the 0s-transition style must be live
+  // BEFORE data-deck-active is set so attribute-keyed transitions don't
+  // start a (now-0s) run from the pre-active base.
+  const st = document.createElement('style');
+  st.textContent = '*,*::before,*::after{animation-delay:-99s !important;animation-duration:.001s !important;animation-iteration-count:1 !important;animation-fill-mode:both !important;animation-play-state:running !important;transition-duration:0s !important}';
+  document.head.appendChild(st);
+  for (const d of document.querySelectorAll('deck-stage')) {
+    for (const c of d.children) {
+      const t = c.tagName;
+      if (t === 'SCRIPT' || t === 'STYLE' || t === 'TEMPLATE') continue;
+      c.setAttribute('data-deck-active', '');
+    }
+  }
+  // Re-append deck-stage's @page last so no author @page can add a margin and
+  // spill each full-bleed slide onto two sheets. Backstop for old copies.
+  if (ds) {
+    let pg = document.getElementById('deck-stage-print-page');
+    if (!pg) {
+      pg = document.createElement('style');
+      pg.textContent = '@page{size:' + (+ds.getAttribute('width') || 1920) +
+        'px ' + (+ds.getAttribute('height') || 1080) + 'px;margin:0}';
+    }
+    document.body.appendChild(pg);
+  }
+  try {
+    const sweep = () => {
+      for (const a of document.getAnimations()) {
+        try { a.finish(); } catch (e) {
+          try { a.currentTime = (a.effect && a.effect.getComputedTiming().duration) || 0; a.pause(); } catch (e2) {}
+        }
+      }
+    };
+    sweep();
+    await new Promise((r) => requestAnimationFrame(r));
+    sweep();
+    await new Promise((r) => requestAnimationFrame(r));
+  } catch (e) {}
+  // Relax break-inside on oversized elements. An element taller than a
+  // printable page can't honor break-inside: avoid — browsers either overflow
+  // it or push it whole to the next page, leaving a blank gap, then break it
+  // anyway at an arbitrary point. After the final layout (content revealed,
+  // animations jumped), find elements taller than a page that still compute
+  // break-inside: avoid and reset them to auto, so the browser breaks them at
+  // their children's boundaries instead (children keep their own avoid). PAGE_PX
+  // is a conservative portrait estimate at 96 CSS px/in — Letter/A4 usable
+  // height minus our 0.5in margins — so only clearly-oversized elements are
+  // touched and under-page elements still stay whole. Skipped for decks, whose
+  // slides are sized to the page.
+  try {
+    if (!document.querySelector('deck-stage')) {
+      const PAGE_PX = 1024;
+      // Our print defaults add a body padding inset only when we also zero the
+      // @page margin; computed style can't tell us (it reports screen media),
+      // so read the injected rule directly.
+      const defaults = document.querySelector('style[data-omelette-print-defaults]');
+      const pageInset = /body\s*\{[^}]*padding/.test(defaults ? defaults.textContent || '' : '');
+      const SEL = 'section,article,figure,table,pre,blockquote,[class~="card" i],[class~="page" i],[class~="sheet" i]';
+      for (const el of document.body.querySelectorAll(SEL)) {
+        if (el instanceof HTMLElement && el.offsetHeight > PAGE_PX) {
+          el.setAttribute('data-om-oversized', '');
+          // Fake-paged docs simulate sheets with over-tall break-after:page
+          // boxes; honoring the break spills half-blank pages and ends a
+          // colored box mid-sheet. Flow them, and (only when we own the page
+          // inset) drop the redundant padding/background via the rule below.
+          const cs = getComputedStyle(el);
+          if (cs.breakAfter === 'page' || cs.pageBreakAfter === 'always') {
+            el.setAttribute('data-om-fakepage', '');
+          }
+        }
+      }
+      const ost = document.createElement('style');
+      ost.textContent = '@media print{' +
+        '[data-om-oversized]{break-inside:auto !important;page-break-inside:auto !important}' +
+        '[data-om-fakepage]{break-after:auto !important;page-break-after:auto !important}' +
+        (pageInset ? '[data-om-fakepage]{padding:0 !important;background:none !important}' : '') +
+        '}';
+      document.head.appendChild(ost);
+    }
+  } catch (e) {}
+  // macOS Preview renders Skia-PDF Luminosity soft-masks as opaque grey boxes;
+  // swap the CSS that triggers them for Preview-safe forms.
+  try {
+    for (const el of document.body.querySelectorAll('*')) {
+      const cs = getComputedStyle(el);
+
+      if (cs.boxShadow !== 'none' && cs.filter === 'none') {
+        const outs = [], kept = [];
+        for (const s of cs.boxShadow.split(/,(?![^(]*[)])/)) {
+          const t = s.trim();
+          const m = t.match(/^(rgba?[(][^)]+[)]) (-?[0-9.]+px) (-?[0-9.]+px) ([0-9.]+px) -?[0-9.]+px$/);
+          if (m && parseFloat(m[4]) > 0) outs.push('drop-shadow(' + m[2] + ' ' + m[3] + ' ' + m[4] + ' ' + m[1] + ')');
+          else kept.push(t);
+        }
+        if (outs.length) {
+          el.style.setProperty('filter', outs.join(' '), 'important');
+          el.style.setProperty('box-shadow', kept.join(', ') || 'none', 'important');
+        }
+      }
+
+      const mask = cs.maskImage && cs.maskImage !== 'none' ? cs.maskImage : cs.webkitMaskImage;
+      if (mask && mask !== 'none' && cs.filter === 'none') el.style.setProperty('filter', 'opacity(1)', 'important');
+    }
+  } catch (e) {}
+  setTimeout(() => { try { window.print(); } catch (e) {} }, 200);
+})();
+</script>
+</body>
+</html>

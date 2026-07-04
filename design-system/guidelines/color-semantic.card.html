@@ -1,0 +1,36 @@
+<!-- @dsCard group="Colors" viewport="700x250" name="Semantic tokens — Light & Dark" subtitle="The aliases components consume. Same names, two themes." -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 0; font-family: var(--font-body); display: grid; grid-template-columns: 1fr 1fr; }
+  .pane { padding: 20px; background: var(--bg); }
+  .pane h4 { font-family: var(--font-display); font-size: 13px; margin: 0 0 12px; color: var(--text); letter-spacing: .04em; text-transform: uppercase; }
+  .tok { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 12.5px; color: var(--text); }
+  .tok .dot { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--border); flex: none; }
+  .tok code { color: var(--text-muted); font-size: 11.5px; margin-left: auto; }
+</style>
+</head>
+<body>
+  <div class="pane">
+    <h4>Light · :root</h4>
+    <div class="tok"><span class="dot" style="background:var(--bg)"></span>--bg <code>gray-50</code></div>
+    <div class="tok"><span class="dot" style="background:var(--surface)"></span>--surface <code>white</code></div>
+    <div class="tok"><span class="dot" style="background:var(--text)"></span>--text <code>gray-900</code></div>
+    <div class="tok"><span class="dot" style="background:var(--text-muted)"></span>--text-muted <code>gray-600</code></div>
+    <div class="tok"><span class="dot" style="background:var(--primary)"></span>--primary <code>500</code></div>
+    <div class="tok"><span class="dot" style="background:var(--link)"></span>--link <code>700</code></div>
+  </div>
+  <div class="pane dark">
+    <h4>Dark · .dark</h4>
+    <div class="tok"><span class="dot" style="background:var(--bg)"></span>--bg <code>gray-950</code></div>
+    <div class="tok"><span class="dot" style="background:var(--surface)"></span>--surface <code>gray-900</code></div>
+    <div class="tok"><span class="dot" style="background:var(--text)"></span>--text <code>gray-50</code></div>
+    <div class="tok"><span class="dot" style="background:var(--text-muted)"></span>--text-muted <code>gray-300</code></div>
+    <div class="tok"><span class="dot" style="background:var(--primary)"></span>--primary <code>400</code></div>
+    <div class="tok"><span class="dot" style="background:var(--link)"></span>--link <code>300</code></div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,167 @@
+/* ============================================================
+   Banritools — Semantic Color Tokens
+   Light = :root. Dark = .dark or [data-theme="dark"].
+   ALWAYS consume these in components, never raw palette hex.
+
+   ACCESSIBILITY CONTRACT (non-negotiable):
+   - --primary (#0094FF) is for ACCENTS, ICONS, FOCUS RING and
+     LARGE TITLES only — it fails WCAG for normal text (3.14:1).
+   - Body text & links use --link (#0061B0).
+   - Solid buttons use --primary-strong (#0077DB) + white label.
+   - Positive R$ values use --success (#0E6E3B on light).
+   ============================================================ */
+
+:root {
+  /* Surfaces */
+  --bg:             var(--gray-50);
+  --surface:        var(--gray-0);
+  --surface-2:      var(--gray-100);
+  --surface-3:      var(--gray-200);
+  --surface-sunken: var(--gray-50);   /* input/track wells on white cards */
+  --surface-inverse:var(--navy-800);  /* brand hero panels */
+  --overlay:        rgba(10, 13, 20, .48);
+
+  /* Text */
+  --text:           var(--gray-900);
+  --text-muted:     var(--gray-600);
+  --text-subtle:    var(--gray-500);
+  --text-disabled:  var(--gray-400);
+  --on-primary:     var(--gray-0);
+  --on-inverse:     var(--gray-50);
+  --on-inverse-muted: rgba(255, 255, 255, .72);
+
+  /* Borders */
+  --border:         var(--gray-200);
+  --border-strong:  var(--gray-300);
+  --border-inverse: rgba(255, 255, 255, .14);
+
+  /* Brand / primary */
+  --primary:               var(--primary-500); /* accent, icon, focus, big titles */
+  --primary-strong:        var(--primary-600); /* solid button bg */
+  --primary-strong-hover:  var(--primary-700);
+  --primary-strong-active: var(--primary-800);
+  --primary-soft:          var(--primary-50);  /* tinted surfaces */
+  --primary-soft-hover:    var(--primary-100);
+  --primary-soft-border:   var(--primary-200);
+  --on-soft:               var(--primary-700); /* label on --primary-soft */
+  --link:                  var(--primary-700);
+  --link-hover:            var(--primary-800);
+  --brand-deep:            var(--navy-800);     /* heros, brand headers */
+
+  /* Accents (data-viz, decorative) */
+  --accent-turquoise:      var(--turquoise-500);
+  --accent-turquoise-text: var(--turquoise-700);
+  --accent-turquoise-soft: #DEF7F4;
+  --accent-purple:         var(--purple-500);
+  --accent-purple-text:    var(--purple-700);
+  --accent-purple-soft:    #EFE9FE;
+
+  /* Feedback — text/icon + soft surface + border */
+  --success:        var(--success-700);
+  --success-strong: var(--success-500);
+  --success-soft:   #E2F6EC;
+  --success-border: #BCE6CC;
+  --warning:        var(--warning-700);
+  --warning-strong: var(--warning-500);
+  --warning-soft:   #FBF0DC;
+  --warning-border: #F0DBAE;
+  --error:          var(--error-600);
+  --error-strong:   var(--error-500);
+  --error-soft:     #FCE8E6;
+  --error-border:   #F5C5C1;
+  --info:           var(--primary-700);
+  --info-soft:      var(--primary-50);
+
+  /* Focus */
+  --focus-ring:       var(--primary-500);
+  --focus-ring-alpha: rgba(0, 148, 255, .35);
+
+  /* Data-viz series */
+  --viz-1: var(--primary-500);
+  --viz-2: var(--turquoise-500);
+  --viz-3: var(--purple-500);
+  --viz-4: var(--success-500);
+  --viz-5: var(--warning-500);
+
+  /* Elevation (navy-tinted on light) */
+  --shadow-xs: 0 1px 1px rgba(0, 0, 80, .05);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 80, .06), 0 1px 3px rgba(0, 0, 80, .04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 80, .08);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 80, .12);
+  --shadow-xl: 0 24px 56px rgba(0, 0, 80, .16);
+  --shadow-focus: 0 0 0 3px var(--focus-ring-alpha);
+}
+
+/* ---------- Dark theme ---------- */
+.dark,
+[data-theme="dark"] {
+  --bg:             var(--gray-950);
+  --surface:        var(--gray-900);
+  --surface-2:      var(--gray-800);
+  --surface-3:      #28303D;
+  --surface-sunken: #0E1320;
+  --surface-inverse:var(--navy-800);
+  --overlay:        rgba(0, 0, 30, .62);
+
+  --text:           var(--gray-50);
+  --text-muted:     var(--gray-300);
+  --text-subtle:    var(--gray-400);
+  --text-disabled:  #5B6678;
+  --on-primary:     var(--gray-0);
+  --on-inverse:     var(--gray-50);
+  --on-inverse-muted: rgba(255, 255, 255, .72);
+
+  --border:         var(--gray-700);
+  --border-strong:  var(--gray-600);
+  --border-inverse: rgba(255, 255, 255, .14);
+
+  --primary:               var(--primary-400); /* #1F9FFF brightened accent */
+  --primary-strong:        var(--primary-600); /* solid button keeps #0077DB */
+  --primary-strong-hover:  var(--primary-500);
+  --primary-strong-active: var(--primary-400);
+  --primary-soft:          rgba(31, 159, 255, .14);
+  --primary-soft-hover:    rgba(31, 159, 255, .22);
+  --primary-soft-border:   rgba(31, 159, 255, .30);
+  --on-soft:               var(--primary-300);
+  --link:                  var(--primary-300); /* #5CB7FF */
+  --link-hover:            var(--primary-200);
+  --brand-deep:            var(--navy-800);
+
+  --accent-turquoise:      var(--turquoise-400);
+  --accent-turquoise-text: var(--turquoise-400);
+  --accent-turquoise-soft: rgba(28, 216, 202, .14);
+  --accent-purple:         var(--purple-400);
+  --accent-purple-text:    var(--purple-400);
+  --accent-purple-soft:    rgba(147, 111, 250, .16);
+
+  --success:        var(--success-500);
+  --success-strong: var(--success-500);
+  --success-soft:   rgba(31, 184, 102, .13);
+  --success-border: rgba(31, 184, 102, .30);
+  --warning:        var(--warning-400);
+  --warning-strong: var(--warning-400);
+  --warning-soft:   rgba(246, 180, 60, .13);
+  --warning-border: rgba(246, 180, 60, .30);
+  --error:          var(--error-500);
+  --error-strong:   var(--error-500);
+  --error-soft:     rgba(240, 70, 60, .14);
+  --error-border:   rgba(240, 70, 60, .32);
+  --info:           var(--primary-300);
+  --info-soft:      rgba(31, 159, 255, .14);
+
+  --focus-ring:       var(--primary-400);
+  --focus-ring-alpha: rgba(31, 159, 255, .40);
+
+  --viz-1: var(--primary-400);
+  --viz-2: var(--turquoise-400);
+  --viz-3: var(--purple-400);
+  --viz-4: var(--success-500);
+  --viz-5: var(--warning-400);
+
+  --shadow-xs: 0 1px 1px rgba(0, 0, 0, .35);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .45);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, .50);
+  --shadow-lg: 0 14px 36px rgba(0, 0, 0, .58);
+  --shadow-xl: 0 24px 56px rgba(0, 0, 0, .64);
+  --shadow-focus: 0 0 0 3px var(--focus-ring-alpha);
+}

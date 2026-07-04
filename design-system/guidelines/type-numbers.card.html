@@ -1,0 +1,31 @@
+<!-- @dsCard group="Type" viewport="700x200" name="Numbers & currency" subtitle="tabular-nums so R$ values and points align in columns." -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px 22px; background: var(--surface); font-family: var(--font-body); color: var(--text); display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; }
+  table { border-collapse: collapse; width: 100%; }
+  td { padding: 4px 0; font-size: 15px; }
+  td.v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .pos { color: var(--success); }
+  .stat { font-family: var(--font-display); font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  .lbl { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .pill { display: inline-block; margin-top: 8px; background: var(--primary-soft); color: var(--on-soft); border: 1px solid var(--primary-soft-border); padding: 3px 10px; border-radius: var(--radius-full); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+  <table>
+    <tr><td>Seguro Vida</td><td class="v pos">R$ 1.250,00</td></tr>
+    <tr><td>Capitalização</td><td class="v pos">R$ 9.480,00</td></tr>
+    <tr><td>Cheque Especial</td><td class="v pos">R$ 320,50</td></tr>
+    <tr><td style="font-weight:600;border-top:1px solid var(--border);padding-top:8px">Total</td><td class="v pos" style="border-top:1px solid var(--border);padding-top:8px">R$ 11.050,50</td></tr>
+  </table>
+  <div>
+    <div class="stat">9.150</div>
+    <div class="lbl">pontos no mês</div>
+    <span class="pill">+2.550 pts</span>
+  </div>
+</body>
+</html>

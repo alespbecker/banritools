@@ -1,0 +1,66 @@
+/* ============================================================
+   Banritools — Color Primitives (raw brand scales)
+   Source: MIV Banrisul brand colors + WCAG-2.1-verified
+   accessible variants. Never reference these directly in
+   components — use the semantic tokens in colors.css.
+   ============================================================ */
+
+:root {
+  /* Primary — Azul Banrisul (anchor 500 = #0094FF) */
+  --primary-50:  #E8F4FF;
+  --primary-100: #CFE8FF;
+  --primary-200: #9CD2FF;
+  --primary-300: #5CB7FF;
+  --primary-400: #1F9FFF;
+  --primary-500: #0094FF; /* brand — accents, icons, focus, large titles */
+  --primary-600: #0077DB; /* solid button bg (white label) */
+  --primary-700: #0061B0; /* interactive text, links */
+  --primary-800: #00477D;
+  --primary-900: #002E52;
+  --primary-950: #001A30;
+
+  /* Navy — Azul Escuro de marca (anchor 800 = #000050) */
+  --navy-600: #1A1A6E;
+  --navy-700: #0D0D5C;
+  --navy-800: #000050; /* brand — heros, dark headers, dark buttons */
+  --navy-900: #00003A;
+
+  /* Turquoise — accent + data-viz (brand 500 = #1CD8CA) */
+  --turquoise-400: #52E3D8;
+  --turquoise-500: #1CD8CA;
+  --turquoise-600: #12A99E;
+  --turquoise-700: #0C857C; /* text-safe */
+  --turquoise-800: #085E58;
+
+  /* Purple — accent + data-viz (brand 500 = #936FFA) */
+  --purple-400: #AD93FB;
+  --purple-500: #936FFA;
+  --purple-600: #7544EE;
+  --purple-700: #5B30C4; /* text-safe */
+  --purple-800: #421F94;
+
+  /* Neutrals — cool, slightly pulled toward navy */
+  --gray-0:   #FFFFFF;
+  --gray-50:  #F7F8FA;
+  --gray-100: #EDF0F5;
+  --gray-200: #DEE3EC;
+  --gray-300: #C5CCDA;
+  --gray-400: #98A2B5;
+  --gray-500: #697387;
+  --gray-600: #4B5566;
+  --gray-700: #353D4B;
+  --gray-800: #1F2530;
+  --gray-900: #121620;
+  --gray-950: #0A0D14;
+
+  /* Status */
+  --success-500: #1FB866;
+  --success-600: #138A4A;
+  --success-700: #0E6E3B; /* positive R$ values on light */
+  --warning-400: #F6B43C;
+  --warning-500: #E89510;
+  --warning-700: #8A5808;
+  --error-500: #F0463C;
+  --error-600: #D32A20;
+  --error-700: #A81F17;
+}

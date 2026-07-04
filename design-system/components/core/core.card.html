@@ -1,0 +1,98 @@
+<!-- @dsCard group="Components" viewport="700x560" name="Core — Button, Badge, Card, Avatar, Progress" subtitle="Action & surface primitives with their states." -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 22px; background: var(--bg); font-family: var(--font-body); }
+  .sec { margin-bottom: 22px; }
+  .h { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-subtle); margin: 0 0 12px; }
+  .rowf { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Button, IconButton, Badge, Card, Avatar, ProgressBar, Icon } = window.BanritoolsDesignSystem_38adfd;
+
+function Demo() {
+  return (
+    <div>
+      <div className="sec">
+        <p className="h">Button — variants</p>
+        <div className="rowf">
+          <Button variant="primary">Salvar lançamento</Button>
+          <Button variant="secondary">Cancelar</Button>
+          <Button variant="ghost">Ver metas</Button>
+          <Button variant="navy">Exportar</Button>
+          <Button variant="danger">Excluir</Button>
+          <Button variant="primary" disabled>Desabilitado</Button>
+        </div>
+      </div>
+      <div className="sec">
+        <p className="h">Button — sizes · icon · loading</p>
+        <div className="rowf">
+          <Button size="sm" variant="primary">Pequeno</Button>
+          <Button size="md" variant="primary" iconLeft={<Icon name="save" size={16} />}>Salvar</Button>
+          <Button size="lg" variant="primary" iconRight={<Icon name="arrow-right" size={18} />}>Continuar</Button>
+          <Button variant="secondary" loading>Salvando</Button>
+        </div>
+      </div>
+      <div className="sec">
+        <p className="h">Icon button</p>
+        <div className="rowf">
+          <IconButton aria-label="Menu"><Icon name="menu" /></IconButton>
+          <IconButton aria-label="Buscar"><Icon name="search" /></IconButton>
+          <IconButton aria-label="Atualizar"><Icon name="refresh-cw" /></IconButton>
+          <IconButton aria-label="Notificações"><Icon name="bell" /></IconButton>
+          <IconButton aria-label="Adicionar" variant="solid"><Icon name="plus" /></IconButton>
+        </div>
+      </div>
+      <div className="sec">
+        <p className="h">Badge / Pill</p>
+        <div className="rowf">
+          <Badge variant="brand">+2.550 pts</Badge>
+          <Badge variant="purple" size="md">TIME</Badge>
+          <Badge variant="success" dot>Preenchido</Badge>
+          <Badge variant="warning">Pendente</Badge>
+          <Badge variant="error">Erro</Badge>
+          <Badge variant="turquoise">50 pts/unidade</Badge>
+          <Badge variant="neutral">1 produto</Badge>
+        </div>
+      </div>
+      <div className="sec">
+        <p className="h">Avatar · Progress</p>
+        <div className="rowf" style={{ marginBottom: 14 }}>
+          <Avatar name="Alessandro Becker" size="sm" />
+          <Avatar name="Marina Petry" color="purple" />
+          <Avatar name="Rafael Souza" color="turquoise" size="lg" />
+        </div>
+        <ProgressBar value={9150} max={9150} variant="gradient" label="Evolução" />
+      </div>
+      <div className="sec">
+        <p className="h">Card — variants</p>
+        <div className="grid2">
+          <Card>
+            <strong>Card padrão</strong>
+            <p style={{ margin: "4px 0 0", color: "var(--text-muted)", fontSize: 14 }}>Superfície base com borda e sombra curta.</p>
+          </Card>
+          <Card variant="accent">
+            <strong style={{ color: "var(--success)" }}>Próxima melhor ação</strong>
+            <p style={{ margin: "4px 0 0", color: "var(--text-muted)", fontSize: 14 }}>Variante de destaque verde.</p>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+</script>
+</body>
+</html>

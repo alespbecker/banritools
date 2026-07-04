@@ -1,0 +1,456 @@
+<!-- @dsCard group="App do Consultor" viewport="390x760" name="App do Consultor (mobile)" subtitle="Login, dashboard, registrar, ranking, metas — dark, interativo." -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Banritools — App do Consultor</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body {
+    background:
+      radial-gradient(80% 60% at 50% 0%, #0d1326, #05070d 70%);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 24px; box-sizing: border-box; font-family: var(--font-body);
+  }
+  .phone {
+    width: 390px; height: 760px; max-height: calc(100vh - 48px);
+    background: var(--bg); border-radius: 40px; overflow: hidden;
+    display: flex; flex-direction: column; position: relative;
+    box-shadow: 0 0 0 11px #0a0d14, 0 0 0 13px #2a2f3a, 0 40px 90px rgba(0,0,0,.6);
+  }
+  .phone__scroll { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+  .phone__scroll::-webkit-scrollbar { width: 0; }
+  .savebar {
+    position: absolute; left: 12px; right: 12px; bottom: 78px;
+    background: var(--primary-strong); border-radius: var(--radius-xl);
+    padding: 14px; box-shadow: var(--shadow-lg); z-index: 200;
+  }
+  .savebar__pill {
+    background: rgba(255,255,255,.16); color: #fff; border-radius: var(--radius-full);
+    padding: 4px 12px; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+  .fab { position: absolute; right: 18px; bottom: 92px; z-index: 190; }
+  .toast {
+    position: absolute; left: 16px; right: 16px; bottom: 86px; z-index: 250;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+    border-radius: var(--radius-md); padding: 10px 14px; display: flex; align-items: center; gap: 12px;
+    font-size: 14px; box-shadow: var(--shadow-lg);
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+/* Banritools — App do Consultor (mobile). Screens.
+   Reads components from the DS namespace; exports screens to window. */
+const NS = window.BanritoolsDesignSystem_38adfd;
+const {
+  AppBar, BottomNav, IconButton, Avatar, Icon, Card, Badge, Button,
+  StatCard, RankRow, ListRow, ProgressBar, CurrencyBRL, Input, Select, Banner,
+} = NS;
+
+/* ---------- shared bits ---------- */
+function ScreenHeader({ icon, iconColor = "brand", title, subtitle }) {
+  return (
+    <div style={{ display: "flex", gap: 14, alignItems: "flex-start", padding: "20px 20px 8px" }}>
+      <span className={`bt-icontile bt-icontile--lg ${iconColor !== "brand" ? "bt-icontile--" + iconColor : ""}`}>
+        {icon}
+      </span>
+      <div>
+        <h1 style={{ fontSize: 30, lineHeight: 1.1 }}>{title}</h1>
+        <p style={{ color: "var(--text-muted)", marginTop: 4, fontSize: 16 }}>{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+function SectionLabel({ children, right }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 20px 10px" }}>
+      <span className="eyebrow">{children}</span>
+      {right}
+    </div>
+  );
+}
+
+/* ---------- Dashboard (Início) ---------- */
+function DashboardScreen({ onGoMetas }) {
+  return (
+    <div style={{ paddingBottom: 24 }}>
+      <ScreenHeader icon={<Icon name="house" size={24} />} title="Início" subtitle="Sua central de operações" />
+      <div style={{ padding: "12px 20px 0" }}>
+        <div className="bt-hero">
+          <span className="bt-hero__eyebrow"><Icon name="sparkles" size={14} /> Resumo de hoje</span>
+          <div className="bt-hero__title">Bom dia, Alessandro</div>
+          <p className="bt-hero__text">Aqui está sua situação hoje e sua próxima melhor ação.</p>
+          <div style={{ marginTop: 18 }}>
+            <span className="eyebrow" style={{ color: "rgba(255,255,255,.72)" }}>Produção de hoje</span>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginTop: 6 }}>
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 44, fontWeight: 700, color: "#fff", fontVariantNumeric: "tabular-nums" }}>1</span>
+              <Badge variant="solid">+2.550 pts</Badge>
+            </div>
+          </div>
+          <div style={{ marginTop: 18, background: "rgba(14,110,59,.22)", border: "1px solid rgba(31,184,102,.35)", borderRadius: "var(--radius-lg)", padding: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span className="eyebrow" style={{ color: "var(--success-500)" }}>Próxima melhor ação</span>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--success-500)" }} />
+            </div>
+            <div style={{ display: "flex", gap: 14, marginTop: 12 }}>
+              <span className="bt-icontile bt-icontile--success"><Icon name="sparkles" size={20} /></span>
+              <div>
+                <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 20, color: "#fff" }}>Tudo em dia</div>
+                <p style={{ color: "rgba(255,255,255,.78)", fontSize: 14, marginTop: 2 }}>Aproveite para revisar metas e novas oportunidades.</p>
+                <button onClick={onGoMetas} style={{ marginTop: 10, background: "none", border: "none", color: "var(--success-500)", fontWeight: 700, fontSize: 15, display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer", padding: 0 }}>
+                  Ver metas <Icon name="arrow-right" size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <SectionLabel right={<span style={{ fontSize: 13, color: "var(--text-muted)" }}>3 lançamentos</span>}>Sua performance no mês</SectionLabel>
+      <div style={{ padding: "0 20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <StatCard label="Pontos" value="9.150" sub="1º lugar na agência" icon={<Icon name="trophy" size={20} />} iconColor="purple" />
+        <StatCard label="Produção" value={<CurrencyBRL value={11050.5} positive />} sub="Acumulado de junho" icon={<Icon name="trending-up" size={20} />} iconColor="success" />
+      </div>
+
+      <SectionLabel>Últimos lançamentos</SectionLabel>
+      <div style={{ padding: "0 20px" }}>
+        <Card padding="none">
+          <ListRow leading={<span className="bt-icontile bt-icontile--purple"><Icon name="shield" size={18} /></span>}
+            title="Seguro Vida" subtitle="Hoje · 1 unidade" trailing={<Badge variant="brand">+2.550</Badge>} />
+          <ListRow leading={<span className="bt-icontile"><Icon name="piggy-bank" size={18} /></span>}
+            title="Capitalização" subtitle="Ontem · 3 unidades" trailing={<Badge variant="brand">+60</Badge>} />
+          <ListRow leading={<span className="bt-icontile bt-icontile--turquoise"><Icon name="credit-card" size={18} /></span>}
+            title="Cheque Especial" subtitle="12/06 · 2 unidades" trailing={<Badge variant="brand">+50</Badge>} />
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Registrar Produção ---------- */
+const PRODUCTS = [
+  { group: "Seguros", count: 2, items: [
+    { name: "Seguro Vida", cat: "Seguros · Mixed", pts: "50 pts/unidade", filled: true, color: "purple", icon: "shield" },
+    { name: "Seguro Residencial", cat: "Seguros · Mixed", pts: "30 pts/unidade", filled: false, color: "purple", icon: "house-plug" },
+  ]},
+  { group: "Crédito", count: 2, items: [
+    { name: "Cheque Especial", cat: "Crédito · Mixed", pts: "25 pts/unidade", filled: false, color: "turquoise", icon: "credit-card" },
+    { name: "Crédito Minuto — Empréstimo Pessoal", cat: "Crédito · Mixed", pts: "40 pts/volume", filled: false, color: "turquoise", icon: "banknote" },
+  ]},
+];
+
+function ProductCard({ p }) {
+  const [qty, setQty] = React.useState(p.filled ? "1" : "0");
+  const [val, setVal] = React.useState(p.filled ? "50" : "");
+  return (
+    <Card padding="md" style={p.filled ? { borderColor: "var(--success-border)", boxShadow: "0 0 0 1px var(--success-border)" } : null}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 19, color: "var(--text)" }}>{p.name}</span>
+            {p.filled && <Badge variant="success" dot>Preenchido</Badge>}
+          </div>
+          <p style={{ color: "var(--text-muted)", fontSize: 14, marginTop: 2 }}>{p.cat}</p>
+        </div>
+        <Badge variant="neutral">{p.pts}</Badge>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 14 }}>
+        <Input label="Quantidade" inputMode="numeric" value={qty} onChange={(e) => setQty(e.target.value)} />
+        <Input label="Valor (R$)" inputMode="decimal" placeholder="0,00" value={val} onChange={(e) => setVal(e.target.value)} icon={<Icon name="dollar-sign" size={16} />} />
+      </div>
+    </Card>
+  );
+}
+
+function RegistrarScreen({ onSave }) {
+  return (
+    <div style={{ paddingBottom: 140 }}>
+      <ScreenHeader icon={<Icon name="square-pen" size={24} />} title="Registrar Produção" subtitle="Lance suas vendas do dia em segundos" />
+      <div style={{ padding: "8px 20px 0", display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 160px", minWidth: 160 }}>
+          <Select label="Data do lançamento" defaultValue="hoje">
+            <option value="hoje">13/06/2026</option>
+            <option value="ontem">12/06/2026</option>
+          </Select>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", paddingTop: 22 }}>
+          <Badge variant="success" dot>1 preenchido</Badge>
+          <Badge variant="brand">+2.550 pts</Badge>
+        </div>
+      </div>
+
+      {PRODUCTS.map((sec) => (
+        <div key={sec.group}>
+          <SectionLabel right={sec.group === "Seguros" ? <Badge variant="success" dot>1 preenchido</Badge> : null}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <Icon name="package" size={15} /> {sec.group} · {sec.count}
+            </span>
+          </SectionLabel>
+          <div style={{ padding: "0 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+            {sec.items.map((p) => <ProductCard key={p.name} p={p} />)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ---------- Ranking ---------- */
+function RankingScreen() {
+  return (
+    <div style={{ paddingBottom: 24 }}>
+      <ScreenHeader icon={<Icon name="trophy" size={24} />} title="Ranking" subtitle="Sua evolução em junho" />
+      <div style={{ padding: "12px 20px 0" }}>
+        <Card>
+          <span className="eyebrow" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Icon name="sparkles" size={14} /> Sua posição</span>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: 56, fontWeight: 700, color: "var(--text)", lineHeight: 1 }}>1º</span>
+            <span style={{ color: "var(--text-muted)", fontSize: 18 }}>de 18</span>
+          </div>
+          <p style={{ color: "var(--text-muted)", marginTop: 8, fontSize: 16 }}>Você está liderando o mês. Continue no ritmo!</p>
+          <div style={{ marginTop: 14 }}><Badge variant="brand" size="md">9.150 pts</Badge></div>
+          <div style={{ marginTop: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 8 }}>
+              <span style={{ fontWeight: 600, color: "var(--text)" }}>Sua evolução vs. líder</span>
+              <span className="tabular" style={{ color: "var(--text-muted)" }}>9.150 / 9.150 pts</span>
+            </div>
+            <ProgressBar value={100} variant="gradient" label="evolução" />
+          </div>
+        </Card>
+      </div>
+
+      <SectionLabel>Classificação · pontuação no mês</SectionLabel>
+      <div style={{ padding: "0 20px" }}>
+        <Card padding="none">
+          <RankRow position={1} name="Alessandro Becker" points="9.150 pts" me
+            avatar={<Avatar name="Alessandro Becker" />}
+            tags={<><Badge variant="brand">Você</Badge><Badge variant="warning">Líder</Badge></>}
+            progress={<ProgressBar value={100} variant="warning" label="evolução" />} />
+          <RankRow position={2} name="Marina Petry" points="8.830 pts"
+            avatar={<Avatar name="Marina Petry" color="purple" />}
+            progress={<ProgressBar value={96} label="evolução" />} />
+          <RankRow position={3} name="Rafael Souza" points="7.420 pts"
+            avatar={<Avatar name="Rafael Souza" color="turquoise" />}
+            progress={<ProgressBar value={81} label="evolução" />} />
+          <RankRow position={4} name="Juliana Lima" points="6.180 pts"
+            avatar={<Avatar name="Juliana Lima" color="navy" />}
+            progress={<ProgressBar value={67} label="evolução" />} />
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Metas ---------- */
+function MetasScreen() {
+  const metas = [
+    { name: "Seguros", icon: "shield", color: "purple", cur: 5, goal: 8, pct: 62 },
+    { name: "Capitalização", icon: "piggy-bank", color: "brand", cur: 12, goal: 12, pct: 100 },
+    { name: "Crédito", icon: "credit-card", color: "turquoise", cur: 3, goal: 10, pct: 30 },
+  ];
+  return (
+    <div style={{ paddingBottom: 24 }}>
+      <ScreenHeader icon={<Icon name="target" size={24} />} iconColor="success" title="Metas" subtitle="Seu progresso de junho por categoria" />
+      <div style={{ padding: "12px 20px 0" }}>
+        <Banner tone="info" icon={<Icon name="info" size={18} />} title="Faltam 17 dias">Mantendo o ritmo atual, você bate 2 de 3 metas no mês.</Banner>
+      </div>
+      <div style={{ padding: "16px 20px 0", display: "flex", flexDirection: "column", gap: 12 }}>
+        {metas.map((m) => (
+          <Card key={m.name}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span className={`bt-icontile ${m.color !== "brand" ? "bt-icontile--" + m.color : ""}`}><Icon name={m.icon} size={18} /></span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, color: "var(--text)" }}>{m.name}</div>
+                <div className="tabular" style={{ fontSize: 13, color: "var(--text-muted)" }}>{m.cur} de {m.goal} unidades</div>
+              </div>
+              {m.pct >= 100 ? <Badge variant="success" dot>Batida</Badge> : <Badge variant="neutral">{m.pct}%</Badge>}
+            </div>
+            <div style={{ marginTop: 12 }}>
+              <ProgressBar value={m.pct} variant={m.pct >= 100 ? "success" : "default"} label={m.name} />
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Perfil ---------- */
+function PerfilScreen({ onLogout }) {
+  return (
+    <div style={{ paddingBottom: 24 }}>
+      <ScreenHeader icon={<Icon name="user" size={24} />} iconColor="turquoise" title="Perfil" subtitle="Conta e preferências" />
+      <div style={{ padding: "12px 20px 0" }}>
+        <Card>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <Avatar name="Alessandro Becker" size="lg" />
+            <div>
+              <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 20, color: "var(--text)" }}>Alessandro Becker</div>
+              <div style={{ color: "var(--text-muted)", fontSize: 14 }}>Agência 0427 · Porto Alegre</div>
+              <div style={{ marginTop: 6 }}><Badge variant="purple">Consultor</Badge></div>
+            </div>
+          </div>
+        </Card>
+      </div>
+      <div style={{ padding: "16px 20px 0" }}>
+        <Card padding="none">
+          <ListRow leading={<span className="bt-icontile"><Icon name="bell" size={18} /></span>} title="Notificações" trailing={<Icon name="chevron-right" size={18} />} onClick={() => {}} />
+          <ListRow leading={<span className="bt-icontile"><Icon name="shield-check" size={18} /></span>} title="Segurança" trailing={<Icon name="chevron-right" size={18} />} onClick={() => {}} />
+          <ListRow leading={<span className="bt-icontile"><Icon name="circle-help" size={18} /></span>} title="Ajuda e suporte" trailing={<Icon name="chevron-right" size={18} />} onClick={() => {}} />
+        </Card>
+      </div>
+      <div style={{ padding: "16px 20px 0" }}>
+        <Button variant="secondary" block iconLeft={<Icon name="log-out" size={16} />} onClick={onLogout}>Sair</Button>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, {
+  DashboardScreen, RegistrarScreen, RankingScreen, MetasScreen, PerfilScreen,
+});
+
+</script>
+<script type="text/babel">
+/* Banritools — App do Consultor shell: login + phone frame + bottom-nav routing. */
+const NS = window.BanritoolsDesignSystem_38adfd;
+const { AppBar, BottomNav, IconButton, Avatar, Icon, Button, Input, Checkbox } = NS;
+
+function StatusBar() {
+  return (
+    <div style={{ height: 36, display: "flex", alignItems: "center", justifyContent: "space-between",
+      padding: "0 22px", fontSize: 14, fontWeight: 600, color: "var(--text)", flex: "none" }}>
+      <span className="tabular">9:41</span>
+      <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+        <Icon name="signal" size={15} /><Icon name="wifi" size={15} /><Icon name="battery-full" size={17} />
+      </span>
+    </div>
+  );
+}
+
+function LoginScreen({ onLogin }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "0 24px", background: "var(--bg)" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 36 }}>
+          <img src="../../assets/app-icon.svg" width="68" height="68" alt="Banritools" style={{ borderRadius: 18 }} />
+          <div style={{ fontFamily: "var(--font-brand)", fontWeight: 600, fontSize: 28, letterSpacing: "-0.01em", marginTop: 16, color: "var(--text)" }}>banritools</div>
+          <p style={{ color: "var(--text-muted)", marginTop: 4, fontSize: 15 }}>Sua produção comercial, em um só lugar.</p>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <Input label="Matrícula" defaultValue="042715" icon={<Icon name="user" size={16} />} />
+          <Input label="Senha" type="password" defaultValue="123456" icon={<Icon name="lock" size={16} />} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Checkbox label="Usar biometria" defaultChecked />
+            <a href="#" onClick={(e) => e.preventDefault()} style={{ fontSize: 14 }}>Esqueci a senha</a>
+          </div>
+          <Button variant="primary" size="lg" block onClick={onLogin} iconRight={<Icon name="arrow-right" size={18} />}>Entrar</Button>
+        </div>
+      </div>
+      <p style={{ textAlign: "center", color: "var(--text-subtle)", fontSize: 12, padding: "20px 0 28px" }}>
+        Banrisul · Plataforma interna · v3.0
+      </p>
+    </div>
+  );
+}
+
+const NAV = [
+  { value: "inicio", label: "Início", icon: <Icon name="house" size={22} /> },
+  { value: "registrar", label: "Registrar", icon: <Icon name="square-pen" size={22} /> },
+  { value: "ranking", label: "Ranking", icon: <Icon name="trophy" size={22} /> },
+  { value: "metas", label: "Metas", icon: <Icon name="target" size={22} /> },
+  { value: "perfil", label: "Perfil", icon: <Icon name="user" size={22} /> },
+];
+
+function App() {
+  const [authed, setAuthed] = React.useState(false);
+  const [tab, setTab] = React.useState("inicio");
+  const [toast, setToast] = React.useState(false);
+  const scrollRef = React.useRef(null);
+
+  React.useEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0; }, [tab]);
+
+  const logo = <img src="../../assets/logo-mark.svg" width="24" height="24" alt="" />;
+
+  function save() {
+    setToast(true);
+    setTimeout(() => setToast(false), 2600);
+  }
+
+  let screen = null;
+  if (tab === "inicio") screen = <DashboardScreen onGoMetas={() => setTab("metas")} />;
+  else if (tab === "registrar") screen = <RegistrarScreen onSave={save} />;
+  else if (tab === "ranking") screen = <RankingScreen />;
+  else if (tab === "metas") screen = <MetasScreen />;
+  else screen = <PerfilScreen onLogout={() => setAuthed(false)} />;
+
+  return (
+    <div className="phone dark">
+      <StatusBar />
+      {!authed ? (
+        <LoginScreen onLogin={() => { setAuthed(true); setTab("inicio"); }} />
+      ) : (
+        <React.Fragment>
+          <AppBar logo={logo}
+            leading={<IconButton aria-label="Menu"><Icon name="menu" /></IconButton>}
+            actions={<>
+              <IconButton aria-label="Buscar"><Icon name="search" /></IconButton>
+              <IconButton aria-label="Notificações" className="bt-appbar__dot"><Icon name="bell" /></IconButton>
+              <Avatar name="Alessandro Becker" size="sm" />
+            </>} />
+          <div ref={scrollRef} className="phone__scroll">
+            {screen}
+          </div>
+
+          {/* Save bar on Registrar */}
+          {tab === "registrar" && (
+            <div className="savebar">
+              <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 10, flexWrap: "wrap" }}>
+                <span className="savebar__pill">1 produto</span>
+                <span className="savebar__pill">R$ 50,00</span>
+                <span className="savebar__pill">+2.550 pts</span>
+              </div>
+              <Button variant="secondary" size="lg" block onClick={save}
+                iconLeft={<Icon name="save" size={18} />}
+                style={{ background: "#fff", color: "var(--primary-700)", borderColor: "transparent" }}>
+                Salvar lançamento
+              </Button>
+            </div>
+          )}
+
+          {/* FAB on dashboard/ranking */}
+          {(tab === "inicio" || tab === "ranking") && (
+            <button className="bt-fab fab" aria-label="Novo lançamento" onClick={() => setTab("registrar")}>
+              <Icon name="plus" size={26} />
+            </button>
+          )}
+
+          {toast && (
+            <div className="toast">
+              <span className="bt-icontile bt-icontile--success" style={{ width: 32, height: 32 }}><Icon name="check" size={18} /></span>
+              <span>Lançamento salvo · <strong>+2.550 pts</strong></span>
+            </div>
+          )}
+
+          <BottomNav value={tab} onChange={setTab} items={NAV} />
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+
+</script>
+</body>
+</html>

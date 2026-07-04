@@ -1,0 +1,26 @@
+<!-- @dsCard group="Spacing" viewport="700x160" name="Motion" subtitle="200ms base, easing cubic-bezier(0.2,0,0,1). Hover to preview." -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 22px; background: var(--surface); font-family: var(--font-body); color: var(--text); }
+  .row { display: flex; gap: 16px; }
+  .card { flex: 1; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; background: var(--bg); transition: transform var(--d) var(--ease-standard), box-shadow var(--d) var(--ease-standard); }
+  .card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+  .dur { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--primary); }
+  .tok { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .hint { font-size: 11px; color: var(--text-subtle); margin-top: 18px; }
+  code { font-size: 11px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="card" style="--d:var(--duration-fast)"><div class="dur">120ms</div><div class="tok">fast · taps, toggles</div></div>
+    <div class="card" style="--d:var(--duration-base)"><div class="dur">200ms</div><div class="tok">base · most transitions</div></div>
+    <div class="card" style="--d:var(--duration-slow)"><div class="dur">320ms</div><div class="tok">slow · overlays, sheets</div></div>
+  </div>
+  <div class="hint">easing <code>cubic-bezier(0.2, 0, 0, 1)</code> — hover a card to feel it.</div>
+</body>
+</html>

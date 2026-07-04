@@ -1,0 +1,36 @@
+<!-- @dsCard group="Colors" viewport="700x230" name="Accessibility — the #0094FF rule" subtitle="Brand blue fails AA for text. Extend, don't abandon." -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface); font-family: var(--font-body); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .col h5 { margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: .03em; }
+  .col.no h5 { color: var(--error); }
+  .col.yes h5 { color: var(--success); }
+  .demo { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .ratio { margin-left: auto; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: var(--radius-full); }
+  .pass { background: var(--success-soft); color: var(--success); }
+  .fail { background: var(--error-soft); color: var(--error); }
+  .btn { padding: 8px 14px; border-radius: var(--radius-md); font-weight: 600; font-size: 13px; border: none; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="col no">
+      <h5>✕ NÃO</h5>
+      <div class="demo"><span style="color:var(--primary-500)">Texto em #0094FF</span><span class="ratio fail">3.14:1</span></div>
+      <div class="demo"><button class="btn" style="background:var(--primary-500);color:#fff">Salvar</button><span class="ratio fail">3.14:1</span></div>
+      <div class="demo" style="background:var(--primary-100)"><span style="color:var(--primary-400)">+2.550 pts</span><span class="ratio fail">baixo</span></div>
+    </div>
+    <div class="col yes">
+      <h5>✓ SIM</h5>
+      <div class="demo"><span style="color:var(--link)">Texto em #0061B0</span><span class="ratio pass">6.29:1</span></div>
+      <div class="demo"><button class="btn" style="background:var(--primary-strong);color:var(--on-primary)">Salvar</button><span class="ratio pass">4.5:1</span></div>
+      <div class="demo"><span style="color:var(--primary-500)">★ ícone / acento</span><span class="ratio pass">UI 3:1</span></div>
+    </div>
+  </div>
+</body>
+</html>

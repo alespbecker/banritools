@@ -1,0 +1,26 @@
+<!-- @dsCard group="Spacing" viewport="700x180" name="Radius scale" subtitle="lg (14px) is the default card radius. full for pills & avatars." -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 22px; background: var(--surface); font-family: var(--font-body); color: var(--text); }
+  .row { display: flex; gap: 18px; align-items: flex-start; }
+  .item { text-align: center; }
+  .box { width: 84px; height: 64px; background: var(--surface-2); border: 1px solid var(--border); border-bottom: 3px solid var(--primary); }
+  .tok { font-size: 11px; color: var(--text-muted); margin-top: 8px; font-weight: 600; }
+  .px { font-size: 10px; color: var(--text-subtle); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="item"><div class="box" style="border-radius:var(--radius-sm)"></div><div class="tok">sm</div><div class="px">6px</div></div>
+    <div class="item"><div class="box" style="border-radius:var(--radius-md)"></div><div class="tok">md</div><div class="px">10px</div></div>
+    <div class="item"><div class="box" style="border-radius:var(--radius-lg)"></div><div class="tok">lg · default</div><div class="px">14px</div></div>
+    <div class="item"><div class="box" style="border-radius:var(--radius-xl)"></div><div class="tok">xl</div><div class="px">20px</div></div>
+    <div class="item"><div class="box" style="border-radius:var(--radius-2xl)"></div><div class="tok">2xl</div><div class="px">28px</div></div>
+    <div class="item"><div class="box" style="border-radius:var(--radius-full);width:64px"></div><div class="tok">full</div><div class="px">pill</div></div>
+  </div>
+</body>
+</html>
