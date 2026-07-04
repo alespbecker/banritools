@@ -41,10 +41,23 @@ function status(inv: Invite): { label: string; tone: "success" | "warning" | "in
   return { label: "Ativo", tone: "success" };
 }
 
+interface InviteRequest {
+  id: string;
+  name: string;
+  email: string;
+  agency_name: string;
+  cargo: string | null;
+  cargo_especialidade: string | null;
+  message: string | null;
+  status: string;
+  created_at: string;
+}
+
 function Page() {
   const { user, userRole, profile } = useAuth();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [users, setUsers] = useState<AgencyUserRow[]>([]);
+  const [requests, setRequests] = useState<InviteRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -52,6 +65,7 @@ function Page() {
   const [creating, setCreating] = useState(false);
   const [justCreated, setJustCreated] = useState<Invite | null>(null);
   const [editingUser, setEditingUser] = useState<AgencyUserRow | null>(null);
+  const [processingReqId, setProcessingReqId] = useState<string | null>(null);
 
   const canManage = userRole === "admin" || userRole === "gerente";
   const isOwner = userRole === "admin";
@@ -59,14 +73,18 @@ function Page() {
   const load = useCallback(async () => {
     if (!profile?.agency_id) { setLoading(false); return; }
     setLoading(true);
-    const [{ data: invData }, agencyUsers] = await Promise.all([
+    const [{ data: invData }, agencyUsers, { data: reqData }] = await Promise.all([
       supabase.from("user_invites").select("*").order("created_at", { ascending: false }),
       listAgencyUsers(profile.agency_id),
+      isOwner
+        ? supabase.from("invite_requests").select("*").eq("status", "pending").order("created_at", { ascending: false })
+        : Promise.resolve({ data: [] as InviteRequest[] }),
     ]);
     setInvites((invData ?? []) as unknown as Invite[]);
     setUsers(agencyUsers);
+    setRequests((reqData ?? []) as unknown as InviteRequest[]);
     setLoading(false);
-  }, [profile?.agency_id]);
+  }, [profile?.agency_id, isOwner]);
 
   useEffect(() => { if (canManage) load(); else setLoading(false); }, [canManage, load]);
 
