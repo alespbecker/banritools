@@ -79,10 +79,10 @@ function TopBar() {
             Entrar
           </Link>
           <Link
-            to="/login"
+            to="/primeiro-acesso"
             className="text-sm font-medium px-4 py-1.5 rounded-full bg-primary text-primary-foreground hover:bg-[#1CD8CA] hover:text-white transition"
           >
-            Acessar painel
+            Primeiro acesso
           </Link>
         </nav>
       </div>

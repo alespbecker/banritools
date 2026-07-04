@@ -435,6 +435,62 @@ export type Database = {
           },
         ]
       }
+      invite_requests: {
+        Row: {
+          agency_name: string
+          cargo: string | null
+          cargo_especialidade: string | null
+          created_at: string
+          email: string
+          id: string
+          invite_id: string | null
+          message: string | null
+          name: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agency_name: string
+          cargo?: string | null
+          cargo_especialidade?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invite_id?: string | null
+          message?: string | null
+          name: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agency_name?: string
+          cargo?: string | null
+          cargo_especialidade?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invite_id?: string | null
+          message?: string | null
+          name?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invite_requests_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "user_invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       points_log: {
         Row: {
           agency_id: string | null

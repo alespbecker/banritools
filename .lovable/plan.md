@@ -1,62 +1,71 @@
-# Correção crítica de leitura por agência (ranking + painel)
+## Objetivo
 
-## Diagnóstico confirmado
-- `production_entries` e `profiles` só liberam SELECT ao próprio dono e admin. Com 2+ usuários, `ranking-v3` e o bloco de ranking do `dashboard-v3` filtram silenciosamente colegas → "1º de 1" e nomes vazios.
-- `useAuth` cai em `?? "user"` (role legada) em vez de `viewer` neutro.
-- `calcEntryPoints` (TS) precisa de espelho SQL para a RPC agregada bater com o preview do registro.
+Diferenciar os CTAs do header da Landing: "Entrar" continua indo para `/login`, e o botão principal vira **"Primeiro acesso"**, levando a uma nova página híbrida onde o usuário (a) informa um código de convite recebido ou (b) solicita um novo convite. Admins recebem essas solicitações em `/admin/convites`.
 
-## Plano de execução
+## Mudanças
 
-### 1) Migration nova `add_agency_ranking_rpc.sql`
-Somente adições, sem editar migrations antigas. Ordem:
+### 1. Header da Landing (`src/features/marketing/Landing.tsx`)
+- Renomear o botão "Acessar painel" para **"Primeiro acesso"** e apontar `to="/primeiro-acesso"`.
+- "Entrar" permanece igual (`/login`).
+- O CTA final da página ("Entrar no painel", linha 804) continua indo para `/login` — é usuário retornante.
 
-**a. Função `public.calc_entry_points_v3(quantity, amount, ppq, ppa, bucket, ppu)`**
-- `LANGUAGE sql IMMUTABLE SECURITY INVOKER SET search_path = public`.
-- Espelha 1:1 `src/features/production/points.ts`: se `ppq=0 AND ppa=0` → `round((q+a)*ppu)`; senão `round(q*ppq + (a/coalesce(nullif(bucket,0),1000))*ppa)`.
-- Comentário SQL apontando para `src/features/production/points.ts` (e vice-versa no TS).
+### 2. Nova rota pública `src/routes/primeiro-acesso.tsx`
+Layout único com dois blocos:
 
-**b. Função `public.get_agency_ranking(p_month date DEFAULT date_trunc('month', now())::date)`**
-- `RETURNS TABLE(user_id uuid, name text, avatar_url text, points integer)`.
-- `LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public`.
-- Escopo: `agency_id = public.get_user_agency_id(auth.uid())`; janela `[date_trunc('month', p_month), + 1 month)`.
-- Join `production_entries pe` + `products pr` + `profiles pf`; soma `calc_entry_points_v3(...)`; `GROUP BY user_id, name, avatar_url`; `HAVING sum > 0`; `ORDER BY points DESC, name ASC`.
-- `REVOKE EXECUTE ... FROM anon; GRANT EXECUTE ... TO authenticated;`
-- Retorna 0 linhas se `get_user_agency_id` for NULL (sem ag).
+**Bloco A — "Já tenho um código de convite"**
+- Input do código (8 caracteres, uppercase automático).
+- Botão "Continuar" → navega para `/convite/$code` (a rota existente exige login e chama `redeem_invite_code`; a página `/convite/$code` já orienta o usuário a criar conta se ainda não tiver).
 
-**c. Policies (apenas SELECT, aditivas — não mexem em INSERT/UPDATE/DELETE)**
-- `production_entries`: nova policy "Gerentes leem entradas da sua agência" → `has_role(auth.uid(),'gerente') AND agency_id = get_user_agency_id(auth.uid())`.
-- `daily_reports`: idem, nova policy espelhando a de admin com `gerente`.
-- `profiles`: nova policy "Gerentes leem perfis da sua agência" → `has_role(auth.uid(),'gerente') AND agency_id = get_user_agency_id(auth.uid())` (linha inteira, como admin).
-- Funcionário/viewer continuam sem SELECT amplo — leem colegas só pela RPC.
+**Bloco B — "Ainda não tenho convite? Solicitar"**
+- Campos: nome, email corporativo, agência (texto livre — não há tabela pública de agências acessível a anon), cargo (usa `CargoSelect`), mensagem opcional.
+- Validação com Zod (nome ≤100, email válido ≤255, agência ≤120, mensagem ≤500).
+- Ao enviar, insere em nova tabela `invite_requests`. Feedback de sucesso ("Solicitação enviada. Você receberá o código por email quando aprovada.") e limpa o formulário.
 
-### 2) Front — 3 edits cirúrgicos
+Meta head: título "Primeiro acesso — BanriTools", descrição pt-BR.
 
-**`src/features/production/points.ts`**: adicionar comentário no topo de `calcEntryPoints` apontando para `public.calc_entry_points_v3` na migration correspondente. Nenhuma mudança de lógica. Não renomear/remover.
+### 3. Nova tabela `invite_requests` (migration)
 
-**`src/routes/_authenticated.ranking-v3.tsx`**: substituir o `.from("production_entries").select(...)` + agregação no cliente por `supabase.rpc("get_agency_ranking")`. Manter realtime channel atual (invalidação por evento em `production_entries` filtrado por `agency_id` continua válida — dispara refetch da RPC). Ordem/desempate e "só quem produziu" já batem com a RPC.
+Colunas: `id`, `name`, `email`, `agency_name`, `cargo`, `cargo_especialidade`, `message`, `status` (`pending`/`approved`/`rejected`, default `pending`), `reviewed_by`, `reviewed_at`, `invite_id` (fk opcional para `user_invites` quando aprovado), `created_at`, `updated_at`.
 
-**`src/routes/_authenticated.dashboard-v3.tsx`**: o bloco que hoje faz `.from("production_entries").select("user_id, quantity, amount, products(...)")` para montar ranking da agência passa a usar `supabase.rpc("get_agency_ranking")`. O bloco de produção pessoal (linhas ~90) fica intacto — dono lê próprio extrato normalmente.
+Trigger `validate_invite_request_status` (não CHECK, segue padrão do projeto) e `set_updated_at`.
 
-**`src/hooks/useAuth.tsx`**: `?? "user"` → `?? "viewer"` (linha ~55). Verificar que `AppRole` já inclui `viewer` (o memory diz que sim).
+RLS + GRANTs:
+- `GRANT INSERT ON public.invite_requests TO anon, authenticated;` (para o formulário público funcionar).
+- `GRANT SELECT, UPDATE ON public.invite_requests TO authenticated;`
+- `GRANT ALL ON public.invite_requests TO service_role;`
+- Policy INSERT: `TO anon, authenticated USING (true) WITH CHECK (true)` — qualquer um pode solicitar. Rate-limit fica para depois se necessário.
+- Policy SELECT: `TO authenticated USING (public.has_role(auth.uid(),'admin'))`.
+- Policy UPDATE: `TO authenticated USING (has_role(...,'admin')) WITH CHECK (has_role(...,'admin'))`.
+- Sem policy DELETE (apenas service_role).
 
-### 3) Tipos
-Após aprovação da migration, `src/integrations/supabase/types.ts` é regenerado e expõe `get_agency_ranking` em `Database["public"]["Functions"]`. As chamadas `rpc(...)` ficam tipadas automaticamente.
+### 4. `/admin/convites` (`src/routes/_authenticated.admin_.convites.tsx`)
+- Nova aba/seção "Solicitações" listando `invite_requests` com status `pending`.
+- Cada linha mostra nome, email, agência solicitada, cargo, data.
+- Botão **"Aprovar e gerar código"** → cria um `user_invites` na agência do admin (usa `get_user_agency_id` + `gen_invite_code()`) e marca a solicitação como `approved` com `invite_id` preenchido. Exibe o código gerado para o admin copiar/enviar por fora.
+- Botão **"Rejeitar"** → seta status `rejected`.
+- Sem envio automático de email nesta iteração (não há infra transacional configurada); admin repassa o código manualmente.
 
-## Arquivos
-- **Criar**: `supabase/migrations/<ts>_agency_ranking_rpc.sql`
-- **Editar**: `src/routes/_authenticated.ranking-v3.tsx`, `src/routes/_authenticated.dashboard-v3.tsx`, `src/hooks/useAuth.tsx`, `src/features/production/points.ts` (só comentário)
-- **Não tocar**: rotas legadas/v2, `daily_reports` além da policy SELECT gerente, `routeTree.gen.ts`, `calcEntryPoints` lógica, policies de escrita.
+## Não muda
+
+- `/login` e cadastro direto: intactos.
+- `/convite/$code`: intacto.
+- Nenhuma alteração em `useAuth`, RPC de ranking, ou v3.
+- Nenhum arquivo auto-gerado tocado.
 
 ## Riscos
-- **Divergência TS↔SQL de pontos**: mitigado pelos comentários cruzados + fallback idêntico. Idealmente validar com 1 seed manual depois.
-- **RPC `SECURITY DEFINER` vazando ag alheia**: mitigado por `get_user_agency_id(auth.uid())` como único filtro de escopo + `REVOKE FROM anon`.
-- **Realtime**: `production_entries` filtrado por `agency_id` no channel do ranking-v3 exige que o cliente enxergue as linhas via RLS para receber eventos. Gerente passa a ver; funcionário só recebe eventos das próprias linhas — aceitável, pois refetch da RPC ainda ocorre no evento próprio; para refresh cross-user, o dashboard já tem interval/refetch on focus (a confirmar durante implementação; se não tiver, adiciono `refetchOnWindowFocus: true` no `useQuery`).
-- **`p_month` como `date`**: passar sempre o 1º dia do mês do lado do cliente ou omitir (default cobre "mês corrente"). Ambos call sites vão omitir por ora.
 
-## Critérios de aceite (como vou validar ao final)
-1. `select public.get_agency_ranking()` como funcionário retorna linhas de todos os colegas da ag com pts > 0, ordenados corretamente.
-2. Funcionário logado NÃO consegue `select * from production_entries where user_id <> auth.uid()` (0 linhas).
-3. Gerente logado consegue ler `production_entries`, `daily_reports` e `profiles` da própria ag; NÃO consegue de outra ag.
-4. `ranking-v3` e o card de ranking do `dashboard-v3` renderizam via RPC (grep confirma que não há mais `.from("production_entries")` para ranking).
-5. Build passa; `useAuth` retorna `"viewer"` quando não há linha em `user_roles`.
-6. `supabase--linter` sem novos avisos críticos.
+- **Spam no formulário público** (RLS abre INSERT para anon). Mitigação para esta iteração: nenhum campo é exibido publicamente e admin sempre revisa antes de gerar código. Se virar problema, próximo passo é rate-limit por IP via server route em `/api/public/*` + captcha.
+- Admin de agência A aprovando pedido de alguém que informou agência B: o código gerado vincula à agência do admin (comportamento de `user_invites`). Documentado no texto do card de aprovação.
+
+## Detalhes técnicos
+
+- Formulário público usa `supabase` (browser client + anon key) para o INSERT — não precisa de server function.
+- Aprovação em `/admin/convites` executa duas queries via `supabase`: INSERT em `user_invites` + UPDATE em `invite_requests`. Envolve em try/catch e mostra toast.
+- CargoSelect já existe em `src/features/auth/CargoSelect.tsx` e é reaproveitado.
+
+## Ordem de execução
+
+1. Migration `invite_requests` (aguarda aprovação e regenera types).
+2. Criar `src/routes/primeiro-acesso.tsx`.
+3. Editar `src/features/marketing/Landing.tsx` (renomear CTA + rota).
+4. Estender `src/routes/_authenticated.admin_.convites.tsx` com a seção Solicitações.

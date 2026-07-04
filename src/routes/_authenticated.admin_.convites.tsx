@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { PageContainer, PageHeader, InfoCard } from "@/components/ds";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { UnauthorizedState } from "@/components/states/UnauthorizedState";
-import { Users, Plus, Copy, Trash2, Link as LinkIcon, CheckCircle2, Pencil } from "lucide-react";
+import { Users, Plus, Copy, Trash2, Link as LinkIcon, CheckCircle2, Pencil, Inbox, X } from "lucide-react";
 import { toast } from "sonner";
 import type { AppRole } from "@/features/auth/types";
 import { listAgencyUsers, type AgencyUserRow } from "@/features/admin/users";
@@ -41,10 +41,23 @@ function status(inv: Invite): { label: string; tone: "success" | "warning" | "in
   return { label: "Ativo", tone: "success" };
 }
 
+interface InviteRequest {
+  id: string;
+  name: string;
+  email: string;
+  agency_name: string;
+  cargo: string | null;
+  cargo_especialidade: string | null;
+  message: string | null;
+  status: string;
+  created_at: string;
+}
+
 function Page() {
   const { user, userRole, profile } = useAuth();
   const [invites, setInvites] = useState<Invite[]>([]);
   const [users, setUsers] = useState<AgencyUserRow[]>([]);
+  const [requests, setRequests] = useState<InviteRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -52,6 +65,7 @@ function Page() {
   const [creating, setCreating] = useState(false);
   const [justCreated, setJustCreated] = useState<Invite | null>(null);
   const [editingUser, setEditingUser] = useState<AgencyUserRow | null>(null);
+  const [processingReqId, setProcessingReqId] = useState<string | null>(null);
 
   const canManage = userRole === "admin" || userRole === "gerente";
   const isOwner = userRole === "admin";
@@ -59,14 +73,18 @@ function Page() {
   const load = useCallback(async () => {
     if (!profile?.agency_id) { setLoading(false); return; }
     setLoading(true);
-    const [{ data: invData }, agencyUsers] = await Promise.all([
+    const [{ data: invData }, agencyUsers, { data: reqData }] = await Promise.all([
       supabase.from("user_invites").select("*").order("created_at", { ascending: false }),
       listAgencyUsers(profile.agency_id),
+      isOwner
+        ? supabase.from("invite_requests").select("*").eq("status", "pending").order("created_at", { ascending: false })
+        : Promise.resolve({ data: [] as InviteRequest[] }),
     ]);
     setInvites((invData ?? []) as unknown as Invite[]);
     setUsers(agencyUsers);
+    setRequests((reqData ?? []) as unknown as InviteRequest[]);
     setLoading(false);
-  }, [profile?.agency_id]);
+  }, [profile?.agency_id, isOwner]);
 
   useEffect(() => { if (canManage) load(); else setLoading(false); }, [canManage, load]);
 
@@ -106,6 +124,55 @@ function Page() {
   };
 
   const inviteLink = (code: string) => `${window.location.origin}/convite/${code}`;
+
+  const handleApproveRequest = async (req: InviteRequest) => {
+    if (!user || !profile?.agency_id) return;
+    setProcessingReqId(req.id);
+    const validRole: AppRole = req.cargo === "gerente_geral" || req.cargo === "gerente_adjunta"
+      ? "gerente"
+      : "funcionario";
+    const { data: invData, error: invErr } = await supabase
+      .from("user_invites")
+      .insert({
+        agency_id: profile.agency_id,
+        role: validRole,
+        name: req.name,
+        created_by: user.id,
+      })
+      .select("*")
+      .single();
+    if (invErr || !invData) {
+      setProcessingReqId(null);
+      toast.error(invErr?.message ?? "Erro ao gerar convite");
+      return;
+    }
+    const newInv = invData as unknown as Invite;
+    const { error: updErr } = await supabase
+      .from("invite_requests")
+      .update({ status: "approved", reviewed_by: user.id, reviewed_at: new Date().toISOString(), invite_id: newInv.id })
+      .eq("id", req.id);
+    setProcessingReqId(null);
+    if (updErr) { toast.error(updErr.message); return; }
+    setRequests((prev) => prev.filter((r) => r.id !== req.id));
+    setInvites((prev) => [newInv, ...prev]);
+    setJustCreated(newInv);
+    setOpen(true);
+    toast.success(`Convite gerado para ${req.name}`);
+  };
+
+  const handleRejectRequest = async (req: InviteRequest) => {
+    if (!user) return;
+    setProcessingReqId(req.id);
+    const { error } = await supabase
+      .from("invite_requests")
+      .update({ status: "rejected", reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+      .eq("id", req.id);
+    setProcessingReqId(null);
+    if (error) { toast.error(error.message); return; }
+    setRequests((prev) => prev.filter((r) => r.id !== req.id));
+    toast.success("Solicitação rejeitada");
+  };
+
 
   return (
     <PageContainer>
@@ -175,6 +242,69 @@ function Page() {
           </Dialog>
         }
       />
+
+      {isOwner && requests.length > 0 && (
+        <InfoCard
+          title="Solicitações pendentes"
+          description={`${requests.length} solicitação${requests.length === 1 ? "" : "ões"} aguardando revisão`}
+          bodyless
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40">
+                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <th className="p-3">Nome</th>
+                  <th className="p-3">Email</th>
+                  <th className="p-3">Agência informada</th>
+                  <th className="p-3">Cargo</th>
+                  <th className="p-3">Data</th>
+                  <th className="p-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {requests.map((r) => (
+                  <tr key={r.id} className="border-t border-border align-top">
+                    <td className="p-3 font-medium">
+                      {r.name}
+                      {r.message && (
+                        <p className="mt-1 text-xs italic text-muted-foreground">"{r.message}"</p>
+                      )}
+                    </td>
+                    <td className="p-3 text-muted-foreground">{r.email}</td>
+                    <td className="p-3">{r.agency_name}</td>
+                    <td className="p-3">{cargoLabel(r.cargo as Parameters<typeof cargoLabel>[0], r.cargo_especialidade as Parameters<typeof cargoLabel>[1])}</td>
+                    <td className="p-3 text-muted-foreground">{new Date(r.created_at).toLocaleDateString("pt-BR")}</td>
+                    <td className="p-3">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleApproveRequest(r)}
+                          disabled={processingReqId === r.id}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Aprovar e gerar código
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRejectRequest(r)}
+                          disabled={processingReqId === r.id}
+                        >
+                          <X className="h-3.5 w-3.5 text-destructive" /> Rejeitar
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="border-t border-border p-3 text-xs text-muted-foreground">
+            <Inbox className="mr-1 inline h-3 w-3" />
+            O código gerado vincula o novo usuário à <strong>sua</strong> agência. Se a agência
+            informada for outra, encaminhe a solicitação ao admin correspondente antes de aprovar.
+          </p>
+        </InfoCard>
+      )}
 
       <InfoCard title="Equipe" description={`${users.length} usuário${users.length === 1 ? "" : "s"} na agência`} bodyless>
         {users.length === 0 ? (
