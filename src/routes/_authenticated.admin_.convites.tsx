@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { PageContainer, PageHeader, InfoCard } from "@/components/ds";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { UnauthorizedState } from "@/components/states/UnauthorizedState";
-import { Users, Plus, Copy, Trash2, Link as LinkIcon, CheckCircle2, Pencil } from "lucide-react";
+import { Users, Plus, Copy, Trash2, Link as LinkIcon, CheckCircle2, Pencil, Inbox, X } from "lucide-react";
 import { toast } from "sonner";
 import type { AppRole } from "@/features/auth/types";
 import { listAgencyUsers, type AgencyUserRow } from "@/features/admin/users";
