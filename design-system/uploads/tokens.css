@@ -1,0 +1,159 @@
+/* ============================================================
+   Banritools — Design Tokens (Fundação) v0.1
+   Cores de marca: MIV Banrisul. Variantes acessíveis: WCAG 2.1 verificado.
+   Portável: CSS custom properties puras + mapeamento Tailwind v4.
+   ============================================================ */
+
+:root {
+  /* --- Primitivos: Primary (Azul Banrisul) --- */
+  --primary-50:  #E8F4FF;
+  --primary-100: #CFE8FF;
+  --primary-200: #9CD2FF;
+  --primary-300: #5CB7FF;
+  --primary-400: #1F9FFF;
+  --primary-500: #0094FF; /* marca */
+  --primary-600: #0077DB;
+  --primary-700: #0061B0;
+  --primary-800: #00477D;
+  --primary-900: #002E52;
+  --primary-950: #001A30;
+
+  /* --- Primitivos: Navy (Azul Escuro de marca) --- */
+  --navy-600: #1A1A6E;
+  --navy-700: #0D0D5C;
+  --navy-800: #000050; /* marca */
+  --navy-900: #00003A;
+
+  /* --- Primitivos: Turquoise / Purple (acento, data-viz) --- */
+  --turquoise-400: #52E3D8;
+  --turquoise-500: #1CD8CA; /* marca */
+  --turquoise-600: #12A99E;
+  --turquoise-700: #0C857C;
+  --turquoise-800: #085E58;
+
+  --purple-400: #AD93FB;
+  --purple-500: #936FFA; /* marca */
+  --purple-600: #7544EE;
+  --purple-700: #5B30C4;
+  --purple-800: #421F94;
+
+  /* --- Primitivos: Neutros --- */
+  --gray-0:   #FFFFFF;
+  --gray-50:  #F7F8FA;
+  --gray-100: #EDF0F5;
+  --gray-200: #DEE3EC;
+  --gray-300: #C5CCDA;
+  --gray-400: #98A2B5;
+  --gray-500: #697387;
+  --gray-600: #4B5566;
+  --gray-700: #353D4B;
+  --gray-800: #1F2530;
+  --gray-900: #121620;
+  --gray-950: #0A0D14;
+
+  /* --- Primitivos: Status --- */
+  --success-500: #1FB866;
+  --success-600: #138A4A;
+  --success-700: #0E6E3B;
+  --warning-400: #F6B43C;
+  --warning-500: #E89510;
+  --warning-700: #8A5808;
+  --error-500: #F0463C;
+  --error-600: #D32A20;
+  --error-700: #A81F17;
+
+  /* --- Semânticos: tema claro (default) --- */
+  --bg:            var(--gray-50);
+  --surface:       var(--gray-0);
+  --surface-2:     var(--gray-100);
+  --border:        var(--gray-200);
+  --text:          var(--gray-900);
+  --text-muted:    var(--gray-600);
+  --text-disabled: var(--gray-400);
+  --primary:        var(--primary-500); /* acento, ícones, foco, títulos grandes */
+  --primary-strong: var(--primary-600); /* botão sólido, texto interativo */
+  --on-primary:     var(--gray-0);
+  --link:           var(--primary-700);
+  --brand-deep:     var(--navy-800);    /* heros, cabeçalhos de marca */
+  --success: var(--success-700);
+  --warning: var(--warning-700);
+  --error:   var(--error-600);
+  --focus-ring: var(--primary-500);
+
+  /* --- Tipografia --- */
+  --font-display: "Exo 2", system-ui, sans-serif;
+  --font-body:    "Source Sans 3", system-ui, sans-serif;
+  --tracking-display: 0.01em;
+
+  /* --- Raio --- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  /* --- Elevação --- */
+  --shadow-sm: 0 1px 2px rgba(0,0,80,.06);
+  --shadow-md: 0 4px 12px rgba(0,0,80,.08);
+  --shadow-lg: 0 12px 32px rgba(0,0,80,.12);
+
+  /* --- Motion --- */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* --- Semânticos: tema escuro --- */
+.dark {
+  --bg:            var(--gray-950);
+  --surface:       var(--gray-900);
+  --surface-2:     var(--gray-800);
+  --border:        var(--gray-700);
+  --text:          var(--gray-50);
+  --text-muted:    var(--gray-300);
+  --text-disabled: var(--gray-500);
+  --primary:        var(--primary-400);
+  --primary-strong: var(--primary-500);
+  --on-primary:     var(--gray-0);
+  --link:           var(--primary-300);
+  --brand-deep:     var(--navy-800);
+  --success: var(--success-500);
+  --warning: var(--warning-400);
+  --error:   var(--error-500);
+  --focus-ring: var(--primary-400);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.5);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,.6);
+}
+
+/* ============================================================
+   Mapeamento Tailwind v4 — expõe os semânticos como utilitários
+   (bg-bg, text-text, bg-primary, etc.). Importe após o @import "tailwindcss".
+   ============================================================ */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-disabled: var(--text-disabled);
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-on-primary: var(--on-primary);
+  --color-link: var(--link);
+  --color-brand-deep: var(--brand-deep);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+}

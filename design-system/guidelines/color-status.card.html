@@ -1,0 +1,44 @@
+<!-- @dsCard group="Colors" viewport="700x180" name="Status — Success / Warning / Error" subtitle="Feedback hues; text uses the dark step for AA contrast." -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface); font-family: var(--font-body); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .grp .lbl { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .row { display: flex; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 8px; }
+  .sw { flex: 1; height: 40px; display: flex; align-items: flex-end; padding: 4px 6px; font-size: 10px; font-weight: 600; color: #fff; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-full); font-size: 12px; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="grp">
+    <div class="lbl">Success</div>
+    <div class="row">
+      <div class="sw" style="background:var(--success-500)">500</div>
+      <div class="sw" style="background:var(--success-600)">600</div>
+      <div class="sw" style="background:var(--success-700)">700</div>
+    </div>
+    <span class="pill" style="background:var(--success-soft);color:var(--success);border:1px solid var(--success-border)">R$ 2.550 ↑</span>
+  </div>
+  <div class="grp">
+    <div class="lbl">Warning</div>
+    <div class="row">
+      <div class="sw" style="background:var(--warning-400);color:#5a3a05">400</div>
+      <div class="sw" style="background:var(--warning-500)">500</div>
+      <div class="sw" style="background:var(--warning-700)">700</div>
+    </div>
+    <span class="pill" style="background:var(--warning-soft);color:var(--warning);border:1px solid var(--warning-border)">Atenção</span>
+  </div>
+  <div class="grp">
+    <div class="lbl">Error</div>
+    <div class="row">
+      <div class="sw" style="background:var(--error-500)">500</div>
+      <div class="sw" style="background:var(--error-600)">600</div>
+      <div class="sw" style="background:var(--error-700)">700</div>
+    </div>
+    <span class="pill" style="background:var(--error-soft);color:var(--error);border:1px solid var(--error-border)">Erro</span>
+  </div>
+</body>
+</html>

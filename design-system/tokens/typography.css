@@ -1,0 +1,49 @@
+/* ============================================================
+   Banritools — Typography Tokens
+   Wordmark "banritools": Poppins (600).
+   Display/titles: Exo 2 (600/700).  Body: Source Sans 3.
+   Numbers & currency: Source Sans 3 + tabular-nums.
+   ============================================================ */
+
+:root {
+  /* Families */
+  --font-brand:   "Poppins", "Exo 2", system-ui, sans-serif; /* wordmark "banritools" — sempre Poppins */
+  --font-display: "Exo 2", system-ui, -apple-system, sans-serif;
+  --font-body:    "Source Sans 3", system-ui, -apple-system, sans-serif;
+  --font-mono:    ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Type scale (base 16px) */
+  --text-display: 3rem;     /* 48 — Exo 2 700 */
+  --text-h1:      2.25rem;  /* 36 — Exo 2 700 */
+  --text-h2:      1.875rem; /* 30 — Exo 2 600 */
+  --text-h3:      1.5rem;   /* 24 — Exo 2 600 */
+  --text-xl:      1.25rem;  /* 20 — Source Sans 3 600 */
+  --text-lg:      1.125rem; /* 18 — Source Sans 3 500 */
+  --text-base:    1rem;     /* 16 — Source Sans 3 400 */
+  --text-sm:      0.875rem; /* 14 */
+  --text-xs:      0.75rem;  /* 12 */
+
+  /* Larger display sizes for hero stats (KPI / ranking position) */
+  --text-stat:    2.75rem;  /* 44 */
+  --text-stat-lg: 4rem;     /* 64 */
+
+  /* Line heights */
+  --leading-display: 1.1;
+  --leading-tight:   1.2;
+  --leading-snug:    1.33;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.6;
+
+  /* Weights */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+  --weight-extrabold:800;
+
+  /* Letter spacing */
+  --tracking-display: 0.01em;  /* echoes the logotype spacing */
+  --tracking-tight:  -0.01em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.06em;  /* uppercase eyebrow labels */
+}

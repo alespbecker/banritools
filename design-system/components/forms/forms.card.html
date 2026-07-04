@@ -1,0 +1,55 @@
+<!-- @dsCard group="Components" viewport="700x520" name="Forms — Input, Select, Checkbox, Radio, Switch" subtitle="Field controls with label, icon, helper & error states." -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 22px; background: var(--bg); font-family: var(--font-body); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 22px; align-items: start; }
+  .sec { margin-bottom: 18px; }
+  .h { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-subtle); margin: 0 0 12px; }
+  .rowf { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Input, Select, Checkbox, Switch, Icon } = window.BanritoolsDesignSystem_38adfd;
+
+function Demo() {
+  return (
+    <div>
+      <div className="grid">
+        <Input label="Nome do produto" defaultValue="Capitalização" />
+        <Input label="Valor (R$)" icon={<Icon name="dollar-sign" size={16} />} placeholder="0,00" />
+        <Select label="Tipo de métrica" defaultValue="qv">
+          <option value="qv">Quantidade + Valor</option>
+          <option value="q">Apenas quantidade</option>
+        </Select>
+        <Input label="E-mail" error="E-mail inválido" defaultValue="alessandro@" />
+        <Input label="Observação" optional helper="Visível só para a gestão" placeholder="Opcional" />
+        <Input label="Pontos por unidade" icon={<Icon name="star" size={16} />} defaultValue="50" />
+      </div>
+      <div className="sec">
+        <p className="h">Checkbox · Radio · Switch</p>
+        <div className="rowf">
+          <Checkbox label="Utilizar biometria" defaultChecked />
+          <Checkbox label="Lembrar deste dispositivo" />
+          <Checkbox label="Pessoa física" radio name="tipo" defaultChecked />
+          <Checkbox label="Pessoa jurídica" radio name="tipo" />
+          <Switch label="Notificações por push" defaultChecked />
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+</script>
+</body>
+</html>

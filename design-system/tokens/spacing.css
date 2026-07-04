@@ -1,0 +1,59 @@
+/* ============================================================
+   Banritools — Spacing, Radius, Motion, Z-index
+   Spacing: 4px base, 8pt rhythm.
+   ============================================================ */
+
+:root {
+  /* Spacing scale */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* Radius */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   14px;   /* default card radius */
+  --radius-xl:   20px;
+  --radius-2xl:  28px;
+  --radius-full: 9999px;
+
+  /* Motion */
+  --duration-fast: 120ms; /* @kind other */
+  --duration-base: 200ms; /* @kind other */
+  --duration-slow: 320ms; /* @kind other */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1); /* @kind other */
+  --ease-out:      cubic-bezier(0.16, 1, 0.3, 1); /* @kind other */
+  --ease-in-out:   cubic-bezier(0.65, 0, 0.35, 1); /* @kind other */
+
+  /* Z-index */
+  --z-base:    1; /* @kind other */
+  --z-sticky:  100; /* @kind other */
+  --z-fab:     200; /* @kind other */
+  --z-overlay: 300; /* @kind other */
+  --z-modal:   400; /* @kind other */
+  --z-toast:   500; /* @kind other */
+  --z-tooltip: 600; /* @kind other */
+
+  /* Layout */
+  --container-max: 1200px; /* @kind spacing */
+  --bp-sm: 640px; /* @kind spacing */
+  --bp-md: 768px; /* @kind spacing */
+  --bp-lg: 1024px; /* @kind spacing */
+  --bp-xl: 1280px; /* @kind spacing */
+
+  /* Component sizing */
+  --control-h-sm: 32px;
+  --control-h-md: 40px;
+  --control-h-lg: 48px;
+  --tap-target:   44px;  /* min touch target (mobile-first) */
+}

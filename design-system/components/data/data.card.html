@@ -1,0 +1,72 @@
+<!-- @dsCard group="Components" viewport="700x540" name="Data — StatCard, RankRow, ListRow, Currency" subtitle="Dashboard KPIs, leaderboard rows, list items." -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 22px; background: var(--bg); font-family: var(--font-body); }
+  .h { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-subtle); margin: 0 0 12px; }
+  .sec { margin-bottom: 22px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const NS = window.BanritoolsDesignSystem_38adfd;
+const { StatCard, RankRow, ListRow, CurrencyBRL, Card, Avatar, Badge, ProgressBar, Icon } = NS;
+
+function Demo() {
+  return (
+    <div>
+      <div className="sec">
+        <p className="h">StatCard — KPI grid</p>
+        <div className="grid2">
+          <StatCard label="ENGAJAMENTO" value="78%" sub="14 de 18 ativos" icon={<Icon name="activity" size={20} />} trend={<Badge variant="success">+12%</Badge>} />
+          <StatCard label="MÉDIA POR ATIVO" value="42" sub="Unidades / colaborador" iconColor="success" icon={<Icon name="gauge" size={20} />} />
+          <StatCard label="TOP PERFORMER" value="9.150" sub="pts no mês" iconColor="purple" icon={<Icon name="trophy" size={20} />} />
+          <StatCard label="GAP DO RANKING" value="320" sub="Pontos entre 1º e último" iconColor="turquoise" icon={<Icon name="target" size={20} />} />
+        </div>
+      </div>
+      <div className="sec">
+        <p className="h">RankRow — leaderboard</p>
+        <Card padding="none">
+          <RankRow position={1} name="Alessandro Becker" points="9.150 pts" me
+            avatar={<Avatar name="Alessandro Becker" />}
+            tags={<><Badge variant="brand">Você</Badge><Badge variant="warning">Líder</Badge></>}
+            progress={<ProgressBar value={100} variant="warning" label="evolução" />} />
+          <RankRow position={2} name="Marina Petry" points="8.830 pts"
+            avatar={<Avatar name="Marina Petry" color="purple" />}
+            progress={<ProgressBar value={96} label="evolução" />} />
+          <RankRow position={3} name="Rafael Souza" points="7.420 pts"
+            avatar={<Avatar name="Rafael Souza" color="turquoise" />}
+            progress={<ProgressBar value={81} label="evolução" />} />
+        </Card>
+      </div>
+      <div className="sec">
+        <p className="h">ListRow · CurrencyBRL</p>
+        <Card padding="none">
+          <ListRow leading={<span className="bt-icontile bt-icontile--purple"><Icon name="shield" size={18} /></span>}
+            title="Seguro Vida" subtitle="Seguros · 50 pts/unidade"
+            trailing={<CurrencyBRL value={1250} positive />} onClick={() => {}} />
+          <ListRow leading={<span className="bt-icontile"><Icon name="piggy-bank" size={18} /></span>}
+            title="Capitalização" subtitle="Capitalização · 20 pts/unidade"
+            trailing={<CurrencyBRL value={9480} positive />} onClick={() => {}} />
+          <ListRow leading={<span className="bt-icontile bt-icontile--turquoise"><Icon name="credit-card" size={18} /></span>}
+            title="Cheque Especial" subtitle="Crédito · 25 pts/unidade"
+            trailing={<Badge variant="warning" dot>Pendente</Badge>} onClick={() => {}} />
+        </Card>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+</script>
+</body>
+</html>

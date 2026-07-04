@@ -1,0 +1,33 @@
+<!-- @dsCard group="Brand" viewport="700x180" name="Logo on backgrounds" subtitle="Prefer white or navy. On color, use the mono mark for contrast." -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface); font-family: var(--font-body); display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .tile { height: 116px; border-radius: var(--radius-lg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border: 1px solid var(--border); }
+  .cap { font-size: 11px; font-weight: 600; }
+  .lock { display: flex; align-items: center; gap: 9px; }
+  .word { font-family: var(--font-brand); font-weight: 600; font-size: 17px; }
+</style>
+</head>
+<body>
+  <div class="tile" style="background:#fff">
+    <div class="lock"><img src="../assets/logo-mark.svg" width="30" height="30" alt=""><span class="word" style="color:#121620">banritools</span></div>
+    <span class="cap" style="color:#697387">on white ✓</span>
+  </div>
+  <div class="tile" style="background:var(--navy-800)">
+    <div class="lock"><img src="../assets/logo-mark.svg" width="30" height="30" alt=""><span class="word" style="color:#fff">banritools</span></div>
+    <span class="cap" style="color:rgba(255,255,255,.7)">on navy ✓</span>
+  </div>
+  <div class="tile" style="background:linear-gradient(135deg,var(--turquoise-500),var(--purple-500))">
+    <div class="lock"><img src="../assets/logo-mark-mono.svg" width="30" height="30" style="color:#fff" alt=""><span class="word" style="color:#fff">banritools</span></div>
+    <span class="cap" style="color:rgba(255,255,255,.85)">mono on color ✓</span>
+  </div>
+  <div class="tile" style="background:var(--primary-300)">
+    <div class="lock"><img src="../assets/logo-mark.svg" width="30" height="30" alt="" style="opacity:.55"><span class="word" style="color:var(--primary-400)">banritools</span></div>
+    <span class="cap" style="color:#fff">✕ low contrast</span>
+  </div>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!-- @dsCard group="Components" viewport="700x440" name="Navigation — AppBar, Tabs, Segmented, BottomNav" subtitle="App bar, underline tabs, segmented control, mobile tab bar." -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 22px; background: var(--bg); font-family: var(--font-body); }
+  .h { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-subtle); margin: 0 0 12px; }
+  .sec { margin-bottom: 22px; }
+  .frame { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); }
+  .phone { max-width: 360px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const NS = window.BanritoolsDesignSystem_38adfd;
+const { AppBar, Tabs, SegmentedControl, BottomNav, IconButton, Avatar, Icon } = NS;
+
+function Demo() {
+  const [tab, setTab] = React.useState("info");
+  const [range, setRange] = React.useState("mes");
+  const [nav, setNav] = React.useState("inicio");
+  const logo = <img src="../../assets/logo-mark.svg" width="24" height="24" alt="" />;
+  return (
+    <div>
+      <div className="sec">
+        <p className="h">AppBar</p>
+        <div className="frame">
+          <AppBar logo={logo}
+            leading={<IconButton aria-label="Menu"><Icon name="menu" /></IconButton>}
+            actions={<><IconButton aria-label="Atualizar"><Icon name="refresh-cw" /></IconButton><IconButton aria-label="Notificações" className="bt-appbar__dot"><Icon name="bell" /></IconButton><Avatar name="Alessandro Becker" size="sm" /></>} />
+        </div>
+      </div>
+      <div className="sec">
+        <p className="h">Tabs · Segmented control</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <Tabs value={tab} onChange={setTab} items={[
+            { value: "info", label: "Informações" },
+            { value: "var", label: "Variantes (5)" },
+            { value: "campos", label: "Esquema de campos" },
+          ]} />
+          <SegmentedControl value={range} onChange={setRange} items={[
+            { value: "mes", label: "Mês" },
+            { value: "tri", label: "Trimestre" },
+            { value: "ano", label: "Ano" },
+          ]} />
+        </div>
+      </div>
+      <div className="sec">
+        <p className="h">BottomNav</p>
+        <div className="frame phone">
+          <BottomNav value={nav} onChange={setNav} items={[
+            { value: "inicio", label: "Início", icon: <Icon name="house" size={22} /> },
+            { value: "registrar", label: "Registrar", icon: <Icon name="square-pen" size={22} /> },
+            { value: "ranking", label: "Ranking", icon: <Icon name="trophy" size={22} /> },
+            { value: "metas", label: "Metas", icon: <Icon name="target" size={22} /> },
+            { value: "perfil", label: "Perfil", icon: <Icon name="user" size={22} /> },
+          ]} />
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+</script>
+</body>
+</html>

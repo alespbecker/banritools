@@ -1,0 +1,54 @@
+<!-- @dsCard group="Components" viewport="700x420" name="Feedback — Banner & Dialog" subtitle="Inline alerts and the modal dialog." -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  body { margin: 0; padding: 22px; background: var(--bg); font-family: var(--font-body); }
+  .h { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-subtle); margin: 0 0 12px; }
+  .sec { margin-bottom: 22px; }
+  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .dialogwrap { position: relative; height: 230px; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .dialogwrap .bt-dialog-overlay { position: absolute; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const NS = window.BanritoolsDesignSystem_38adfd;
+const { Banner, Dialog, Button, Icon } = NS;
+
+function Demo() {
+  return (
+    <div>
+      <div className="sec">
+        <p className="h">Banner — tones</p>
+        <div className="stack">
+          <Banner tone="success" icon={<Icon name="circle-check" size={18} />} title="Lançamento salvo">Sua produção de hoje somou +2.550 pts.</Banner>
+          <Banner tone="info" icon={<Icon name="info" size={18} />} title="Meta atualizada">A meta de junho foi revisada pela gestão.</Banner>
+          <Banner tone="warning" icon={<Icon name="triangle-alert" size={18} />} title="2 produtos pendentes">Lance até o fim do dia para contar no ranking.</Banner>
+          <Banner tone="error" icon={<Icon name="circle-x" size={18} />} title="Falha ao salvar">Verifique sua conexão e tente novamente.</Banner>
+        </div>
+      </div>
+      <div className="sec">
+        <p className="h">Dialog</p>
+        <div className="dialogwrap">
+          <Dialog open title="Confirmar lançamento" closeOnOverlay={false}
+            footer={<><Button variant="secondary">Cancelar</Button><Button variant="primary">Salvar</Button></>}>
+            Você está prestes a lançar R$ 50,00 em Seguro Vida (+2.550 pts).
+          </Dialog>
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+</script>
+</body>
+</html>
