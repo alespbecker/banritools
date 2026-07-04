@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({
       ...prev,
       profile: profileRes.data ?? prev.profile,
-      userRole: (roleRes.data?.role as AppRole) ?? "user",
+      userRole: (roleRes.data?.role as AppRole) ?? "viewer",
     }));
   }, []);
 

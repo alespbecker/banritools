@@ -84,7 +84,7 @@ function Page() {
         { data: meEntries, error: e1 },
         { data: meContacts },
         { data: meGoals },
-        { data: agEntries },
+        agRankingRes,
       ] = await Promise.all([
         supabase
           .from("production_entries")
@@ -101,14 +101,10 @@ function Page() {
           .or(`user_id.eq.${user.id},scope.eq.agency`)
           .lte("period_start", today)
           .gte("period_end", today),
+        // Ranking agregado da agência via RPC (não expõe extrato de colegas)
         profile?.agency_id
-          ? supabase
-              .from("production_entries")
-              .select("user_id, quantity, amount, products(points_per_unit, points_per_quantity, points_per_amount, amount_bucket)")
-              .eq("agency_id", profile.agency_id)
-              .eq("status", "confirmed")
-              .gte("entry_date", monthStartStr)
-          : Promise.resolve({ data: [] as never[] }),
+          ? supabase.rpc("get_agency_ranking")
+          : Promise.resolve({ data: [] as { user_id: string; name: string | null; avatar_url: string | null; points: number }[] }),
       ]);
 
       if (e1) throw e1;
@@ -116,18 +112,10 @@ function Page() {
       setContacts((meContacts ?? []) as ContactRow[]);
       setGoals((meGoals ?? []) as GoalRow[]);
 
-      const byUser = new Map<string, number>();
-      (agEntries ?? []).forEach((row) => {
-        const er = row as unknown as {
-          user_id: string; quantity: number | null; amount: number | null;
-          products: { points_per_unit: number | null; points_per_quantity: number | null; points_per_amount: number | null; amount_bucket: number | null } | null;
-        };
-        const pts = calcEntryPoints(er, er.products);
-        byUser.set(er.user_id, (byUser.get(er.user_id) ?? 0) + pts);
-      });
+      const agRows = (agRankingRes.data ?? []) as { user_id: string; points: number }[];
       setAgencyEntries(
-        Array.from(byUser.entries())
-          .map(([user_id, pts]) => ({ user_id, pts }))
+        agRows
+          .map((r) => ({ user_id: r.user_id, pts: Number(r.points ?? 0) }))
           .sort((a, b) => b.pts - a.pts),
       );
     } catch (err) {

@@ -915,12 +915,32 @@ export type Database = {
         }
         Returns: undefined
       }
+      calc_entry_points_v3: {
+        Args: {
+          _amount: number
+          _bucket: number
+          _ppa: number
+          _ppq: number
+          _ppu: number
+          _quantity: number
+        }
+        Returns: number
+      }
       calculate_report_points: {
         Args: { r: Database["public"]["Tables"]["daily_reports"]["Row"] }
         Returns: number
       }
       check_badges: { Args: { _user_id: string }; Returns: undefined }
       gen_invite_code: { Args: never; Returns: string }
+      get_agency_ranking: {
+        Args: { p_month?: string }
+        Returns: {
+          avatar_url: string
+          name: string
+          points: number
+          user_id: string
+        }[]
+      }
       get_level: { Args: { pts: number }; Returns: number }
       get_user_agency_id: { Args: { _user_id: string }; Returns: string }
       has_role: {

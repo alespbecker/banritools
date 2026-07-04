@@ -1,131 +1,62 @@
+# Correção crítica de leitura por agência (ranking + painel)
 
-# Parte 1 — Landing page de apresentação
+## Diagnóstico confirmado
+- `production_entries` e `profiles` só liberam SELECT ao próprio dono e admin. Com 2+ usuários, `ranking-v3` e o bloco de ranking do `dashboard-v3` filtram silenciosamente colegas → "1º de 1" e nomes vazios.
+- `useAuth` cai em `?? "user"` (role legada) em vez de `viewer` neutro.
+- `calcEntryPoints` (TS) precisa de espelho SQL para a RPC agregada bater com o preview do registro.
 
-Hoje `/` apenas redireciona para `/login` ou `/dashboard-v3`. Vou transformar `/` em uma landing pública (estilo AirPods) e mover o redirect para um gate condicional: usuários autenticados continuam indo direto para o dashboard; visitantes veem a landing.
+## Plano de execução
 
-### Estrutura da página (scroll-driven)
+### 1) Migration nova `add_agency_ranking_rpc.sql`
+Somente adições, sem editar migrations antigas. Ordem:
 
-Inspirada na página dos AirPods: cada seção "pina" enquanto o usuário rola e o produto (no nosso caso, o **hexágono do logo + dashboards mockados**) anima em resposta ao scroll. Implementado com Motion (`framer-motion`) usando `useScroll` + `useTransform` — já está no projeto, sem dependências novas.
+**a. Função `public.calc_entry_points_v3(quantity, amount, ppq, ppa, bucket, ppu)`**
+- `LANGUAGE sql IMMUTABLE SECURITY INVOKER SET search_path = public`.
+- Espelha 1:1 `src/features/production/points.ts`: se `ppq=0 AND ppa=0` → `round((q+a)*ppu)`; senão `round(q*ppq + (a/coalesce(nullif(bucket,0),1000))*ppa)`.
+- Comentário SQL apontando para `src/features/production/points.ts` (e vice-versa no TS).
 
-```
-┌──────────────────────────────────────────┐
-│ 1. HERO                                  │
-│    Logo gigante animado (hexágonos       │
-│    girando/montando) + headline:         │
-│    "banritools — sua produção,           │
-│    em tempo real."                       │
-├──────────────────────────────────────────┤
-│ 2. PIN: REGISTRO RÁPIDO                  │
-│    Mockup do card de produto cresce      │
-│    da direita conforme rola; números     │
-│    do odômetro sobem.                    │
-├──────────────────────────────────────────┤
-│ 3. PIN: PAINEL DA AGÊNCIA                │
-│    KPIs aparecem em sequência (stagger), │
-│    gráfico desenha de 0→100% no scroll.  │
-├──────────────────────────────────────────┤
-│ 4. PIN: RANKING & GAMIFICAÇÃO            │
-│    Pódio 3D sobe; badges entram em órbita│
-├──────────────────────────────────────────┤
-│ 5. RELATÓRIOS                            │
-│    PDF "folheia" páginas conforme rola.  │
-├──────────────────────────────────────────┤
-│ 6. CTA FINAL                             │
-│    "Entrar" / "Tenho um convite"         │
-└──────────────────────────────────────────┘
-```
+**b. Função `public.get_agency_ranking(p_month date DEFAULT date_trunc('month', now())::date)`**
+- `RETURNS TABLE(user_id uuid, name text, avatar_url text, points integer)`.
+- `LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public`.
+- Escopo: `agency_id = public.get_user_agency_id(auth.uid())`; janela `[date_trunc('month', p_month), + 1 month)`.
+- Join `production_entries pe` + `products pr` + `profiles pf`; soma `calc_entry_points_v3(...)`; `GROUP BY user_id, name, avatar_url`; `HAVING sum > 0`; `ORDER BY points DESC, name ASC`.
+- `REVOKE EXECUTE ... FROM anon; GRANT EXECUTE ... TO authenticated;`
+- Retorna 0 linhas se `get_user_agency_id` for NULL (sem ag).
 
-### Detalhes técnicos
-- Nova rota `src/routes/_marketing.tsx` (layout sem sidebar) + `src/routes/_marketing.index.tsx` (a landing).
-- `src/routes/index.tsx` vira: `if (isAuthenticated) <Navigate to="/dashboard-v3" />; else <Navigate to="/apresentacao" />` — ou mais simples, monta a landing inline.
-- Componentes em `src/features/marketing/`: `Hero.tsx`, `ScrollScene.tsx` (wrapper com `position: sticky` + `useScroll`), `SectionRegistro.tsx`, `SectionPainel.tsx`, `SectionRanking.tsx`, `SectionRelatorios.tsx`, `CtaFinal.tsx`.
-- Sem imagens novas — reutilizo `Logo.tsx` e desenho os mockups em SVG/HTML com os tokens do DS v2.
-- `prefers-reduced-motion`: substituo animações por fade simples.
-- SEO: `head()` próprio com title/description/og.
+**c. Policies (apenas SELECT, aditivas — não mexem em INSERT/UPDATE/DELETE)**
+- `production_entries`: nova policy "Gerentes leem entradas da sua agência" → `has_role(auth.uid(),'gerente') AND agency_id = get_user_agency_id(auth.uid())`.
+- `daily_reports`: idem, nova policy espelhando a de admin com `gerente`.
+- `profiles`: nova policy "Gerentes leem perfis da sua agência" → `has_role(auth.uid(),'gerente') AND agency_id = get_user_agency_id(auth.uid())` (linha inteira, como admin).
+- Funcionário/viewer continuam sem SELECT amplo — leem colegas só pela RPC.
 
----
+### 2) Front — 3 edits cirúrgicos
 
-# Parte 2 — Sistema de pontos coerente
+**`src/features/production/points.ts`**: adicionar comentário no topo de `calcEntryPoints` apontando para `public.calc_entry_points_v3` na migration correspondente. Nenhuma mudança de lógica. Não renomear/remover.
 
-### Diagnóstico
+**`src/routes/_authenticated.ranking-v3.tsx`**: substituir o `.from("production_entries").select(...)` + agregação no cliente por `supabase.rpc("get_agency_ranking")`. Manter realtime channel atual (invalidação por evento em `production_entries` filtrado por `agency_id` continua válida — dispara refetch da RPC). Ordem/desempate e "só quem produziu" já batem com a RPC.
 
-Fórmula atual: `pts = (quantity + amount) × points_per_unit`. Isso é matematicamente incorreto para produtos por valor:
-- **Consignado** com `points_per_unit = 1` e amount de R$ 770.600 → **770.600 pontos** em um único lançamento.
-- **Cartão de Crédito** (5 unidades × 30) → 150 pontos.
-- Resultado: gaps de milhões; ranking dominado por quem registra valor; quantidade vira ruído.
+**`src/routes/_authenticated.dashboard-v3.tsx`**: o bloco que hoje faz `.from("production_entries").select("user_id, quantity, amount, products(...)")` para montar ranking da agência passa a usar `supabase.rpc("get_agency_ranking")`. O bloco de produção pessoal (linhas ~90) fica intacto — dono lê próprio extrato normalmente.
 
-Os produtos `metric_type='amount'` já têm `points_per_unit` arbitrariamente baixo (0,002 nos legados, 1–2 nos novos) tentando "compensar" — solução frágil.
+**`src/hooks/useAuth.tsx`**: `?? "user"` → `?? "viewer"` (linha ~55). Verificar que `AppRole` já inclui `viewer` (o memory diz que sim).
 
-### Proposta: pontos por "lote" + separação de quantidade e valor
+### 3) Tipos
+Após aprovação da migration, `src/integrations/supabase/types.ts` é regenerado e expõe `get_agency_ranking` em `Database["public"]["Functions"]`. As chamadas `rpc(...)` ficam tipadas automaticamente.
 
-Adicionar duas colunas explícitas em `products`:
+## Arquivos
+- **Criar**: `supabase/migrations/<ts>_agency_ranking_rpc.sql`
+- **Editar**: `src/routes/_authenticated.ranking-v3.tsx`, `src/routes/_authenticated.dashboard-v3.tsx`, `src/hooks/useAuth.tsx`, `src/features/production/points.ts` (só comentário)
+- **Não tocar**: rotas legadas/v2, `daily_reports` além da policy SELECT gerente, `routeTree.gen.ts`, `calcEntryPoints` lógica, policies de escrita.
 
-| coluna                | tipo    | significado                                              |
-|-----------------------|---------|----------------------------------------------------------|
-| `points_per_quantity` | numeric | pontos por **1 unidade** vendida                         |
-| `points_per_amount`   | numeric | pontos por **R$ 1.000** contratados (lote configurável)  |
-| `amount_bucket`       | integer | tamanho do lote em R$ (default 1000)                     |
+## Riscos
+- **Divergência TS↔SQL de pontos**: mitigado pelos comentários cruzados + fallback idêntico. Idealmente validar com 1 seed manual depois.
+- **RPC `SECURITY DEFINER` vazando ag alheia**: mitigado por `get_user_agency_id(auth.uid())` como único filtro de escopo + `REVOKE FROM anon`.
+- **Realtime**: `production_entries` filtrado por `agency_id` no channel do ranking-v3 exige que o cliente enxergue as linhas via RLS para receber eventos. Gerente passa a ver; funcionário só recebe eventos das próprias linhas — aceitável, pois refetch da RPC ainda ocorre no evento próprio; para refresh cross-user, o dashboard já tem interval/refetch on focus (a confirmar durante implementação; se não tiver, adiciono `refetchOnWindowFocus: true` no `useQuery`).
+- **`p_month` como `date`**: passar sempre o 1º dia do mês do lado do cliente ou omitir (default cobre "mês corrente"). Ambos call sites vão omitir por ora.
 
-**Nova fórmula única:**
-```
-pts(entry) = quantity   * product.points_per_quantity
-           + (amount / product.amount_bucket) * product.points_per_amount
-```
-Ambos os termos são aditivos. Produtos só-quantidade têm `points_per_amount = 0`; só-valor têm `points_per_quantity = 0`; mistos têm os dois. `metric_type` continua existindo apenas para definir quais campos o formulário mostra.
-
-### Calibração sugerida (alvo: top performer ~3.000–6.000 pts/mês; gap entre 1º e 10º ~ centenas)
-
-| Produto                          | qty pts | R$/lote | pts/lote |
-|----------------------------------|--------:|--------:|---------:|
-| Seguro Vida                      | 50      | —       | —        |
-| Seguro AP Smart                  | 30      | —       | —        |
-| Capitalização                    | 20      | —       | —        |
-| Previdência                      | 15      | 1.000   | 1        |
-| Conta Empresarial PJ             | 60      | —       | —        |
-| Máquina Vero                     | 50      | —       | —        |
-| Portabilidade de Salário         | 40      | —       | —        |
-| Cartão de Crédito                | 30      | —       | —        |
-| Banricompras                     | 5       | —       | —        |
-| Crédito Minuto (cada)            | 10      | 1.000   | 2        |
-| Cheque Especial                  | 5       | 1.000   | 1        |
-| Pacotes / Serviços               | 15      | —       | —        |
-| Investimentos / CDB Auto         | 5       | 10.000  | 2        |
-| **Consignado**                   | —       | 1.000   | 3        |
-| **Crédito Fidelidade**           | —       | 1.000   | 2        |
-| Recuperação (E2 e E3 unificados) | —       | 1.000   | 4        |
-| NPS                              | 5       | —       | —        |
-
-Resultado prático: o consignado de R$ 770.600 acima passa de 770k → **2.312 pts** (770,6 × 3). Cartões e seguros voltam a competir.
-
-Valores ficam **editáveis em `/admin/produtos`** — a tabela acima é o seed inicial.
-
-### Migração / compatibilidade
-
-1. **Migration SQL**:
-   - `ALTER TABLE products ADD COLUMN points_per_quantity numeric NOT NULL DEFAULT 0`
-   - `ALTER TABLE products ADD COLUMN points_per_amount   numeric NOT NULL DEFAULT 0`
-   - `ALTER TABLE products ADD COLUMN amount_bucket       integer NOT NULL DEFAULT 1000`
-   - `UPDATE products SET …` com os valores da tabela acima (por slug).
-   - Manter `points_per_unit` por enquanto (deprecated; remover em segunda passada).
-
-2. **Front-end**: substituir a fórmula em **3 lugares** (`_authenticated.admin.tsx`, `_authenticated.dashboard-v3.tsx`, `_authenticated.ranking-v3.tsx`) por um helper único `calcEntryPoints(entry, product)` em `src/features/production/points.ts`. Single source of truth, fácil migrar.
-
-3. **Admin / Produtos**: adicionar dois inputs (pts/unidade, pts por R$ X) + display do `amount_bucket`.
-
-4. **Exibição para o gestor**: no card de produto e no relatório, mostrar a regra em texto curto: *"Seguro Vida — 50 pts por unidade"* / *"Consignado — 3 pts a cada R$ 1.000"*. Transparente e explicável.
-
-5. **Gamificação legada** (`points_log`, `user_points`, `ranking_monthly`, `daily_reports`, `calculate_report_points`): permanecem intactos. O dashboard novo já calcula client-side a partir de `production_entries`, então a mudança é puramente cosmética para o usuário final.
-
-### Não vou mexer (escopo)
-- Tabela `daily_reports` e suas triggers de pontos (legado, sem leitura no UI ativo).
-- Badges / níveis / `get_level()` — podem ser reavaliados depois quando virmos a nova escala em produção.
-
----
-
-# Ordem de execução proposta
-
-1. Pontos (migration + helper + 3 substituições + UI admin) — base sólida primeiro.
-2. Landing page (rota + seções + scroll animations).
-3. Smoke test em mobile e desktop; conferir números do `/admin` antes/depois.
-
-Confirma? Posso ajustar a tabela de pontos antes de aplicar se quiser calibrar outro alvo (ex.: top ~10.000 pts/mês).
+## Critérios de aceite (como vou validar ao final)
+1. `select public.get_agency_ranking()` como funcionário retorna linhas de todos os colegas da ag com pts > 0, ordenados corretamente.
+2. Funcionário logado NÃO consegue `select * from production_entries where user_id <> auth.uid()` (0 linhas).
+3. Gerente logado consegue ler `production_entries`, `daily_reports` e `profiles` da própria ag; NÃO consegue de outra ag.
+4. `ranking-v3` e o card de ranking do `dashboard-v3` renderizam via RPC (grep confirma que não há mais `.from("production_entries")` para ranking).
+5. Build passa; `useAuth` retorna `"viewer"` quando não há linha em `user_roles`.
+6. `supabase--linter` sem novos avisos críticos.
