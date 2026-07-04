@@ -243,6 +243,69 @@ function Page() {
         }
       />
 
+      {isOwner && requests.length > 0 && (
+        <InfoCard
+          title="Solicitações pendentes"
+          description={`${requests.length} solicitação${requests.length === 1 ? "" : "ões"} aguardando revisão`}
+          bodyless
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40">
+                <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
+                  <th className="p-3">Nome</th>
+                  <th className="p-3">Email</th>
+                  <th className="p-3">Agência informada</th>
+                  <th className="p-3">Cargo</th>
+                  <th className="p-3">Data</th>
+                  <th className="p-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {requests.map((r) => (
+                  <tr key={r.id} className="border-t border-border align-top">
+                    <td className="p-3 font-medium">
+                      {r.name}
+                      {r.message && (
+                        <p className="mt-1 text-xs italic text-muted-foreground">"{r.message}"</p>
+                      )}
+                    </td>
+                    <td className="p-3 text-muted-foreground">{r.email}</td>
+                    <td className="p-3">{r.agency_name}</td>
+                    <td className="p-3">{cargoLabel(r.cargo, r.cargo_especialidade)}</td>
+                    <td className="p-3 text-muted-foreground">{new Date(r.created_at).toLocaleDateString("pt-BR")}</td>
+                    <td className="p-3">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleApproveRequest(r)}
+                          disabled={processingReqId === r.id}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Aprovar e gerar código
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRejectRequest(r)}
+                          disabled={processingReqId === r.id}
+                        >
+                          <X className="h-3.5 w-3.5 text-destructive" /> Rejeitar
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="border-t border-border p-3 text-xs text-muted-foreground">
+            <Inbox className="mr-1 inline h-3 w-3" />
+            O código gerado vincula o novo usuário à <strong>sua</strong> agência. Se a agência
+            informada for outra, encaminhe a solicitação ao admin correspondente antes de aprovar.
+          </p>
+        </InfoCard>
+      )}
+
       <InfoCard title="Equipe" description={`${users.length} usuário${users.length === 1 ? "" : "s"} na agência`} bodyless>
         {users.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">Nenhum usuário cadastrado ainda.</div>
