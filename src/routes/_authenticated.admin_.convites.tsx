@@ -125,6 +125,55 @@ function Page() {
 
   const inviteLink = (code: string) => `${window.location.origin}/convite/${code}`;
 
+  const handleApproveRequest = async (req: InviteRequest) => {
+    if (!user || !profile?.agency_id) return;
+    setProcessingReqId(req.id);
+    const validRole: AppRole = req.cargo === "gerente_geral" || req.cargo === "gerente_adjunta"
+      ? "gerente"
+      : "funcionario";
+    const { data: invData, error: invErr } = await supabase
+      .from("user_invites")
+      .insert({
+        agency_id: profile.agency_id,
+        role: validRole,
+        name: req.name,
+        created_by: user.id,
+      })
+      .select("*")
+      .single();
+    if (invErr || !invData) {
+      setProcessingReqId(null);
+      toast.error(invErr?.message ?? "Erro ao gerar convite");
+      return;
+    }
+    const newInv = invData as unknown as Invite;
+    const { error: updErr } = await supabase
+      .from("invite_requests")
+      .update({ status: "approved", reviewed_by: user.id, reviewed_at: new Date().toISOString(), invite_id: newInv.id })
+      .eq("id", req.id);
+    setProcessingReqId(null);
+    if (updErr) { toast.error(updErr.message); return; }
+    setRequests((prev) => prev.filter((r) => r.id !== req.id));
+    setInvites((prev) => [newInv, ...prev]);
+    setJustCreated(newInv);
+    setOpen(true);
+    toast.success(`Convite gerado para ${req.name}`);
+  };
+
+  const handleRejectRequest = async (req: InviteRequest) => {
+    if (!user) return;
+    setProcessingReqId(req.id);
+    const { error } = await supabase
+      .from("invite_requests")
+      .update({ status: "rejected", reviewed_by: user.id, reviewed_at: new Date().toISOString() })
+      .eq("id", req.id);
+    setProcessingReqId(null);
+    if (error) { toast.error(error.message); return; }
+    setRequests((prev) => prev.filter((r) => r.id !== req.id));
+    toast.success("Solicitação rejeitada");
+  };
+
+
   return (
     <PageContainer>
       <PageHeader
