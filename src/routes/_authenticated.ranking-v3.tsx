@@ -15,7 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { motion, AnimatePresence } from "framer-motion";
-import { calcEntryPoints } from "@/features/production/points";
+
 
 import { ErrorState } from "@/components/states/ErrorState";
 import { EmptyState } from "@/components/states/EmptyState";
@@ -43,40 +43,17 @@ function Page() {
     if (!profile?.agency_id) { setLoading(false); return; }
     if (showSpinner) setLoading(true);
     setError(null);
-    const start = new Date(); start.setDate(1);
-    const startStr = start.toISOString().split("T")[0];
 
-    const { data: entries, error: e } = await supabase
-      .from("production_entries")
-      .select("user_id, quantity, amount, products(points_per_unit, points_per_quantity, points_per_amount, amount_bucket)")
-      .eq("agency_id", profile.agency_id!)
-      .eq("status", "confirmed")
-      .gte("entry_date", startStr);
+    // Ranking agregado via RPC SECURITY DEFINER — colegas veem placar,
+    // nunca extrato linha a linha (RLS + minimização LGPD).
+    const { data, error: e } = await supabase.rpc("get_agency_ranking");
     if (e) { setError(e.message); setLoading(false); return; }
 
-    const byUser = new Map<string, number>();
-    (entries ?? []).forEach((row) => {
-      type EntryRow = {
-        user_id: string; quantity: number | null; amount: number | null;
-        products: { points_per_unit: number | null; points_per_quantity: number | null; points_per_amount: number | null; amount_bucket: number | null } | null;
-      };
-      const er = row as unknown as EntryRow;
-      const pts = calcEntryPoints(er, er.products);
-      byUser.set(er.user_id, (byUser.get(er.user_id) ?? 0) + pts);
-    });
-
-    if (byUser.size === 0) { setRows([]); setLoading(false); return; }
-
-    const { data: profiles } = await supabase
-      .from("profiles").select("id, name").in("id", Array.from(byUser.keys()));
-
-    const out = Array.from(byUser.entries())
-      .map(([uid, pts]) => ({
-        user_id: uid,
-        name: profiles?.find((p) => p.id === uid)?.name ?? "—",
-        pts,
-      }))
-      .sort((a, b) => b.pts - a.pts);
+    const out: Row[] = (data ?? []).map((r) => ({
+      user_id: r.user_id,
+      name: r.name ?? "—",
+      pts: Number(r.points ?? 0),
+    }));
     setRows(out);
     setLoading(false);
   }, [profile?.agency_id]);

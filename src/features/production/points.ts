@@ -1,5 +1,9 @@
 /**
- * Cálculo de pontos da produção — fonte única de verdade.
+ * Cálculo de pontos da produção — fonte única de verdade (client).
+ *
+ * ⚠️ SINCRONIZAR com o espelho SQL `public.calc_entry_points_v3`
+ *    (migration `..._agency_ranking_rpc.sql`). As duas implementações
+ *    DEVEM produzir o mesmo resultado — se mudar aqui, mude lá.
  *
  * Fórmula:
  *   pts = quantity * points_per_quantity
