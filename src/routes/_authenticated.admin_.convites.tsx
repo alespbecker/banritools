@@ -272,7 +272,7 @@ function Page() {
                     </td>
                     <td className="p-3 text-muted-foreground">{r.email}</td>
                     <td className="p-3">{r.agency_name}</td>
-                    <td className="p-3">{cargoLabel(r.cargo, r.cargo_especialidade)}</td>
+                    <td className="p-3">{cargoLabel(r.cargo as Parameters<typeof cargoLabel>[0], r.cargo_especialidade as Parameters<typeof cargoLabel>[1])}</td>
                     <td className="p-3 text-muted-foreground">{new Date(r.created_at).toLocaleDateString("pt-BR")}</td>
                     <td className="p-3">
                       <div className="flex items-center justify-end gap-2">
