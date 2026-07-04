@@ -1,46 +1,52 @@
 ---
 name: banritools-design
 description: Use this skill to generate well-branded interfaces and assets for Banritools (plataforma interna de produtividade comercial do Banrisul), either for production or throwaway prototypes/mocks/etc. Contains essential design guidelines, colors, type, fonts, assets, and UI kit components for prototyping.
-user-invocable: true
 ---
 
 # Banritools Design System
 
-Read `readme.md` first — it holds the brand context, content fundamentals,
-visual foundations, iconography and the file index. Then explore the rest.
+Read `references/brand.md` first — brand context, content fundamentals, visual
+foundations, iconography, file index. The full canonical bundle (tokens, CSS,
+components, ui_kits, guidelines, assets, MIV Banrisul PDF) lives in the
+project at **`design-system/`** — treat it as read-only reference.
 
-## What's here
-- `styles.css` — single entry point. Link this; it `@import`s all tokens,
-  fonts, base layer and component styles.
-- `tokens/` — color (palette + semantic + dark), type, spacing/radius/motion, fonts.
-- `components/` — React primitives (`core/`, `forms/`, `data/`, `navigation/`,
-  `feedback/`), each with `.jsx` + `.d.ts` + `.prompt.md`.
-- `ui_kits/consultor/` — mobile consultant app (dark). `ui_kits/admin/` — web admin panel (light).
-- `guidelines/` — foundation specimen cards.
-- `assets/` — logo (three hexagons), app icon.
+## What's in this skill
+- `references/brand.md` — brief completo pt-BR (marca, tom, foundations).
+- `references/contrato-de-tokens.md` — fonte de verdade dos tokens.
+- `references/inventario-componentes.md` — inventário priorizado.
+- `references/achados-ux.md` — auditoria de UX do app atual.
+- `references/plano-mestre.md`, `references/brief-inicial.md` — plano e brief.
+- `references/tokens.json` — export canônico dos tokens.
+
+## What's in the project bundle (`design-system/`)
+- `styles.css` — entry único (importa fonts → palette → colors → typography → spacing → base → components).
+- `tokens/` — cores (palette + semantic + dark), tipografia, spacing, fonts.
+- `components/` — 21 React primitives em `core/`, `forms/`, `data/`, `navigation/`, `feedback/` (cada um com `.jsx` + `.d.ts` + `.prompt.md`).
+- `ui_kits/consultor/` — app mobile do consultor (dark).
+- `ui_kits/admin/` — painel admin web (light).
+- `guidelines/` — 17 specimen cards HTML.
+- `assets/` — `logo-mark.svg`, `logo-mark-mono.svg`, `app-icon.svg` (três porcas hexagonais). Também disponíveis em `src/assets/brand/`.
 
 ## Critical rules (do not break)
-- **Accessibility:** `#0094FF` (`--primary`) is for accents, icons, focus and
-  large titles ONLY — it fails WCAG on normal text. Body text & links use
-  `--link` (#0061B0); solid buttons use `--primary-strong` (#0077DB) + white
-  label; positive R$ values use `--success` (#0E6E3B).
-- **Always semantic tokens, never raw hex** in components.
-- **Light + dark** both supported (`:root` / `.dark`).
-- **Numbers & currency** use `tabular-nums`; money in pt-BR (`R$ 1.250,00`).
-- **Type:** Exo 2 (titles), Source Sans 3 (body/numbers). **Icons:** Lucide,
-  2px stroke. **No emoji.**
+- **Accessibility:** `#0094FF` (`--primary`) é para acentos, ícones, focus ring
+  e títulos grandes APENAS — falha WCAG em texto normal. Body/links usam
+  `--link` (#0061B0); botões sólidos usam `--primary-strong` (#0077DB) + label
+  branca; valores positivos em R$ usam `--success` (#0E6E3B).
+- **Sempre tokens semânticos, nunca hex cru** em componentes.
+- **Light + dark** ambos suportados (`:root` / `.dark`).
+- **Números e moeda** usam `tabular-nums`; dinheiro em pt-BR (`R$ 1.250,00`).
+- **Type:** Exo 2 (títulos), Source Sans 3 (corpo/números), Poppins (só wordmark). **Icons:** Lucide, 2px stroke. **No emoji.**
 - **Voice:** pt-BR, fala com "você", direto e encorajador; rótulos de seção em
   CAIXA ALTA discreta; títulos em Sentence case.
 
 ## How to use
-- **Visual artifacts** (slides, mocks, throwaway prototypes): copy the assets
-  you need out of `assets/`, link `styles.css`, and write static HTML. Mount
-  React components from `_ds_bundle.js` via
-  `const { Button } = window.BanritoolsDesignSystem_38adfd` (in this project;
-  in a download the namespace is printed by the bundle — read `_ds_manifest.json`).
-- **Production code:** read the `.prompt.md` files and tokens to design as a
-  brand expert; copy assets and token CSS into your codebase.
+- **Produção (código no app):** leia os `.prompt.md` de cada componente em
+  `design-system/components/**/` e os tokens em `design-system/tokens/**/`.
+  Copie tokens para `src/styles.css` e implemente componentes usando a base
+  shadcn existente + os tokens semânticos do Banritools.
+- **Artefatos visuais (mocks, slides):** linke `design-system/styles.css` em
+  HTML estático e use os componentes prontos.
 
-If invoked with no guidance, ask what the user wants to build, ask a few
-focused questions, and act as an expert designer — output HTML artifacts or
-production code as the need dictates.
+Se invocado sem orientação, pergunte o que o usuário quer construir, faça
+algumas perguntas focadas, e atue como designer expert da marca — HTML
+artifact ou código de produção conforme necessário.
