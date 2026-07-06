@@ -6,6 +6,7 @@ import {
   useTransform,
   useReducedMotion,
   useMotionValueEvent,
+  useInView,
   type MotionValue,
 } from "framer-motion";
 import { Logo, LogoHexes } from "@/components/Logo";
@@ -29,21 +30,14 @@ import {
 } from "lucide-react";
 
 /**
- * Landing pública estilo "AirPods Pro" — cada seção pinada com sticky.
- *
- * Princípios desta revisão:
- *  - Animações começam IMEDIATAMENTE quando o pin engata (range 0..~0.55)
- *    e terminam ANTES do pin soltar, para evitar elemento parado.
- *  - Seções pinadas usam altura curta (108vh) ⇒ só 8vh úteis de scroll,
- *    encurtando o espaço entre dobras.
- *  - Elementos que entram pela lateral começam com opacity 0 explícito
- *    via `initial`, e seu MotionValue só multiplica depois (evita flash).
- *  - Hero: hexágonos e wordmark amarrados ao PROGRESSO de scroll, não à
- *    velocidade. Avanço = explode/roleta. Recuo = reverte. Parado = mantém.
+ * Landing pública — Hero pinado com scrub (assinatura da página) e demais
+ * seções com animações `whileInView` (disparam 1× ao entrar). Sem sticky
+ * curto que causava "estalos". Respeita `useReducedMotion` em tudo.
  */
 
-const STICKY_OFFSET: ["start start", "end end"] = ["start start", "end end"];
-const SECTION_H = "h-[108vh]";
+const EASE_STANDARD = [0.2, 0, 0, 1] as const;
+const HERO_H = "h-[220vh]";
+const IN_VIEW = { once: true, margin: "-15% 0px" } as const;
 
 /* ============ TOP BAR + tema ============ */
 function ThemeToggle() {
@@ -80,7 +74,7 @@ function TopBar() {
           </Link>
           <Link
             to="/primeiro-acesso"
-            className="text-sm font-medium px-4 py-1.5 rounded-full bg-primary text-primary-foreground hover:bg-[#1CD8CA] hover:text-white transition"
+            className="text-sm font-medium px-4 py-1.5 rounded-full bg-primary text-primary-foreground hover:bg-[#0077DB] hover:text-white transition"
           >
             Primeiro acesso
           </Link>
@@ -98,13 +92,13 @@ function SectionEyebrow({ icon: Icon, label }: { icon: React.ComponentType<{ cla
   );
 }
 
-/* ============ 1. HERO — amarrado ao progresso ============ */
+/* ============ 1. HERO — scrub por scroll, janela ampla ============ */
 function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
-  // O range 0..0.6 garante que a "explosão" total acontece antes da seção sair.
-  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
-  const explode = useTransform(scrollYProgress, [0, 0.6], reduced ? [0, 0] : [0, 1], { clamp: true });
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
+  // Janela ampla: explosão total acontece ao longo de ~120vh de scroll útil.
+  const explode = useTransform(scrollYProgress, [0, 0.55], reduced ? [0, 0] : [0, 1], { clamp: true });
 
   const topY = useTransform(explode, [0, 1], [0, -120]);
   const leftX = useTransform(explode, [0, 1], [0, -100]);
@@ -114,21 +108,15 @@ function Hero() {
   const hexRot = useTransform(explode, [0, 1], [0, 180]);
   const hexRotInv = useTransform(hexRot, (r) => -r);
 
-  // Wordmark vira roleta proporcional ao explode (1 = totalmente numérico).
-  const [spinAmount, setSpinAmount] = useState(0);
-  useMotionValueEvent(explode, "change", (v) => setSpinAmount(v));
-
   return (
-    <section ref={ref} className="relative h-[115vh]">
-      <div className="sticky top-0 h-screen flex flex-col items-center justify-center overflow-hidden">
-        {/* Entrada inicial do logo */}
+    <section ref={ref} className={`relative ${HERO_H}`}>
+      <div className="sticky top-0 h-[100svh] flex flex-col items-center justify-center overflow-hidden">
         <motion.div
           initial={{ opacity: 0, scale: 0.25, filter: "blur(12px)" }}
           animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
           transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
           className="relative"
         >
-          {/* Rotação contínua sutil só enquanto não há explosão */}
           <motion.div
             animate={reduced ? undefined : { rotate: 360 }}
             transition={{ duration: 30, ease: "linear", repeat: Infinity }}
@@ -155,7 +143,7 @@ function Hero() {
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
           className="mt-3 flex flex-col items-center text-center px-6 max-w-3xl"
         >
-          <SlotWordmark spinAmount={spinAmount} />
+          <SlotWordmark spinAmount={explode} />
           <p className="mt-10 text-sm md:text-base text-muted-foreground font-light max-w-xl">
             Um jogo com cara de gerenciador: veja em tempo real a produção da agência
             e divirta-se enquanto vende.
@@ -182,7 +170,6 @@ function HexOnly({ color, points }: { color: string; points: string }) {
 }
 
 function Particles({ intensity }: { intensity: MotionValue<number> }) {
-  // 10 sparks (menos que antes — mais performático). Hooks fora do callback.
   const sparks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
   const colors = ["#0094FF", "#1CD8CA", "#936FFA", "#B794FF"];
   return (
@@ -209,24 +196,33 @@ function Spark({ index, total, color, intensity }: { index: number; total: numbe
   );
 }
 
-/** Wordmark "roleta": mesma tipografia em qualquer estado; só o conteúdo de
- *  cada letra alterna para dígitos quando spinAmount > 0. Mantém exatamente
- *  o estilo do Wordmark original (Poppins 350, tracking 0.048em). */
-function SlotWordmark({ spinAmount }: { spinAmount: number }) {
-  const letters = "banritools".split("");
-  const spinning = spinAmount > 0.04;
-  const [digits, setDigits] = useState<number[]>(() => letters.map(() => 0));
-  useEffect(() => {
-    if (!spinning) return;
-    const id = window.setInterval(() => {
-      setDigits(letters.map(() => Math.floor(Math.random() * 10)));
-    }, 80);
-    return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spinning]);
+/** Wordmark "roleta" — sem setState/setInterval. Escreve direto no DOM
+ *  via ref.textContent, escutando a MotionValue com throttle de 80ms.
+ *  Zero re-render React durante o scroll. */
+function SlotWordmark({ spinAmount }: { spinAmount: MotionValue<number> }) {
+  const spanRef = useRef<HTMLSpanElement>(null);
+  const lastTickRef = useRef(0);
+  const reduced = useReducedMotion();
+  const BASE = "banritools";
+
+  useMotionValueEvent(spinAmount, "change", (v) => {
+    const el = spanRef.current;
+    if (!el) return;
+    if (reduced || v <= 0.04) {
+      if (el.textContent !== BASE) el.textContent = BASE;
+      return;
+    }
+    const now = performance.now();
+    if (now - lastTickRef.current < 80) return;
+    lastTickRef.current = now;
+    let out = "";
+    for (let i = 0; i < BASE.length; i++) out += Math.floor(Math.random() * 10).toString();
+    el.textContent = out;
+  });
 
   return (
     <span
+      ref={spanRef}
       className="lowercase tracking-[0.048em]"
       style={{
         fontFamily: "Poppins, sans-serif",
@@ -237,19 +233,12 @@ function SlotWordmark({ spinAmount }: { spinAmount: number }) {
         textRendering: "geometricPrecision",
       }}
     >
-      {spinning
-        ? letters.map((_, i) => <span key={i}>{digits[i]}</span>)
-        : "banritools"}
+      {BASE}
     </span>
   );
 }
 
 /* ============ 2. VIDEO MOCK do Painel da Agência ============ */
-/**
- * "Vídeo" do app rodando — animação CSS/Framer determinística (não loopa).
- * Acionada por IntersectionObserver. Cursor anda e "clica" em elementos.
- * Máscara fade-out na base via mask-image.
- */
 function VideoMock() {
   const ref = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(false);
@@ -267,15 +256,14 @@ function VideoMock() {
     return () => io.disconnect();
   }, []);
 
-  // Pontos do mouse (em % do container) e "clicks" no caminho.
   const cursorPath = reduced
     ? [{ x: 50, y: 50, t: 0 }]
     : [
         { x: 8, y: 18, t: 0 },
-        { x: 22, y: 38, t: 1.2 },     // hover KPI 1
-        { x: 46, y: 38, t: 2.4 },     // hover KPI 2 (click)
+        { x: 22, y: 38, t: 1.2 },
+        { x: 46, y: 38, t: 2.4 },
         { x: 70, y: 38, t: 3.6 },
-        { x: 60, y: 72, t: 5.0 },     // ranking
+        { x: 60, y: 72, t: 5.0 },
         { x: 30, y: 80, t: 6.2 },
       ];
 
@@ -286,13 +274,10 @@ function VideoMock() {
           className="relative rounded-2xl border border-border bg-card/70 backdrop-blur-md overflow-hidden shadow-2xl shadow-primary/10"
           style={{
             aspectRatio: "16/9",
-            WebkitMaskImage:
-              "linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)",
-            maskImage:
-              "linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)",
+            maskImage: "linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)",
           }}
         >
-          {/* "App chrome" */}
           <div className="absolute inset-x-0 top-0 h-9 bg-background/80 border-b border-border/50 flex items-center gap-2 px-4">
             <Logo size={14} />
             <span className="text-[11px] lowercase tracking-[0.048em] text-foreground" style={{ fontFamily: "Poppins, sans-serif" }}>
@@ -301,7 +286,6 @@ function VideoMock() {
           </div>
 
           <div className="absolute inset-0 pt-12 px-6 pb-8 grid grid-rows-[auto_1fr] gap-4">
-            {/* KPIs */}
             <div className="grid grid-cols-4 gap-3">
               {[
                 { l: "Produtos", v: "847", c: "#0094FF" },
@@ -313,7 +297,6 @@ function VideoMock() {
               ))}
             </div>
 
-            {/* Ranking bars */}
             <div className="rounded-xl border border-border/60 bg-background/40 p-4">
               <div className="text-[11px] text-muted-foreground mb-3">Top 10 — Produção (pts)</div>
               <div className="flex items-end gap-2 h-[80%]">
@@ -334,7 +317,6 @@ function VideoMock() {
             </div>
           </div>
 
-          {/* Cursor animado */}
           {!reduced && (
             <motion.div
               initial={{ opacity: 0, left: `${cursorPath[0].x}%`, top: `${cursorPath[0].y}%` }}
@@ -348,7 +330,7 @@ function VideoMock() {
                   : { opacity: 0 }
               }
               transition={{ duration: 7, ease: "easeInOut", times: [0, 0.05, 0.2, 0.4, 0.55, 0.75, 0.95, 1] }}
-              className="absolute will-change-transform z-20"
+              className="absolute will-change-transform z-20 hidden md:block"
               style={{ transform: "translate(-4px,-4px)" }}
             >
               <MousePointer2 className="h-5 w-5 text-foreground drop-shadow-[0_2px_6px_rgba(0,0,0,0.5)]" />
@@ -389,6 +371,31 @@ function MockKpi({ l, v, c, active, delay, highlight }: { l: string; v: string; 
   );
 }
 
+/* ============ Section wrapper (whileInView + stagger) ============ */
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE_STANDARD } },
+};
+
+function InViewSection({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <motion.section
+      className={`relative py-24 md:py-32 ${className}`}
+      variants={containerVariants}
+      initial="hidden"
+      whileInView="show"
+      viewport={IN_VIEW}
+    >
+      {children}
+    </motion.section>
+  );
+}
+
 /* ============ 3. REGISTRO RÁPIDO ============ */
 const MOCK_PRODUCTS = [
   { name: "Seguro Vida", cat: "Seguros", rate: "50 pts/unidade", color: "#0094FF", qty: 27, pts: 1350 },
@@ -398,51 +405,45 @@ const MOCK_PRODUCTS = [
 ];
 
 function SectionRegistro() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
-
   return (
-    <section ref={ref} className={`relative ${SECTION_H}`}>
-      <div className="sticky top-0 h-screen flex items-center">
-        <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
-          <div>
-            <SectionEyebrow icon={Zap} label="Registro rápido" />
-            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
-              Lance a venda no
-              <br />
-              <span className="bg-gradient-to-r from-[#0094FF] via-[#1CD8CA] to-[#936FFA] bg-clip-text text-transparent">
-                tempo que ela acontece.
-              </span>
-            </h2>
-            <p className="text-lg text-muted-foreground font-light">
-              Cards por produto, quantidade e valor. Variantes só aparecem quando
-              precisam. Sem planilha, sem fricção.
-            </p>
-          </div>
+    <InViewSection>
+      <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
+        <motion.div variants={itemVariants}>
+          <SectionEyebrow icon={Zap} label="Registro rápido" />
+          <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
+            Lance a venda no
+            <br />
+            <span className="bg-gradient-to-r from-[#0094FF] via-[#1CD8CA] to-[#936FFA] bg-clip-text text-transparent">
+              tempo que ela acontece.
+            </span>
+          </h2>
+          <p className="text-lg text-muted-foreground font-light">
+            Cards por produto, quantidade e valor. Variantes só aparecem quando
+            precisam. Sem planilha, sem fricção.
+          </p>
+        </motion.div>
 
-          <div className="relative h-[420px]">
-            {MOCK_PRODUCTS.map((p, i) => (
-              <RegistroCard key={p.name} product={p} index={i} progress={scrollYProgress} />
-            ))}
-          </div>
+        <div className="relative h-[420px]">
+          {MOCK_PRODUCTS.map((p, i) => (
+            <RegistroCard key={p.name} product={p} index={i} />
+          ))}
         </div>
       </div>
-    </section>
+    </InViewSection>
   );
 }
 
-function RegistroCard({ product, index, progress }: { product: (typeof MOCK_PRODUCTS)[number]; index: number; progress: MotionValue<number> }) {
+function RegistroCard({ product, index }: { product: (typeof MOCK_PRODUCTS)[number]; index: number }) {
   const reduced = useReducedMotion();
-  const start = index * 0.10;
-  const end = start + 0.20;
-  const x = useTransform(progress, [start, end], reduced ? [0, 0] : [220, 0]);
-  const op = useTransform(progress, [start, end], [0, 1]);
   const top = 30 + index * 18;
   const z = MOCK_PRODUCTS.length - index;
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      style={{ x, opacity: op, top: `${top}px`, zIndex: z }}
+      variants={{
+        hidden: { opacity: 0, x: reduced ? 0 : 220 },
+        show: { opacity: 1, x: 0, transition: { duration: 0.7, ease: EASE_STANDARD } },
+      }}
+      style={{ top: `${top}px`, zIndex: z }}
       className="absolute left-0 right-0 will-change-transform"
     >
       <MockRegistro product={product} />
@@ -487,73 +488,99 @@ function MockRegistro({ product }: { product: (typeof MOCK_PRODUCTS)[number] }) 
 /* ============ 4. PAINEL DA AGÊNCIA ============ */
 function SectionPainel() {
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
+  const inView = useInView(ref, { once: true, margin: "-15% 0px" });
   const reduced = useReducedMotion();
 
-  const k1 = useTransform(scrollYProgress, [0, 0.45], [0, 847]);
-  const k2 = useTransform(scrollYProgress, [0, 0.5], [0, 2_341_900]);
-  const k3 = useTransform(scrollYProgress, [0, 0.55], [0, 12]);
-  const k4 = useTransform(scrollYProgress, [0, 0.6], [0, 36_540]);
-  const draw = useTransform(scrollYProgress, [0.05, 0.55], reduced ? [1, 1] : [0, 1]);
-  const wrapOpacity = useTransform(scrollYProgress, [0, 0.15], [0, 1]);
-
   return (
-    <section ref={ref} className={`relative ${SECTION_H}`}>
-      <div className="sticky top-0 h-screen flex items-center">
-        <motion.div style={{ opacity: wrapOpacity }} className="mx-auto max-w-6xl w-full px-6">
-          <div className="text-center mb-10">
-            <SectionEyebrow icon={BarChart3} label="Painel da agência" />
-            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
-              Tudo o que o gerente precisa,
-              <br />
-              <span className="text-muted-foreground font-light">em uma única tela.</span>
-            </h2>
-          </div>
+    <motion.section
+      ref={ref}
+      className="relative py-24 md:py-32"
+      variants={containerVariants}
+      initial="hidden"
+      whileInView="show"
+      viewport={IN_VIEW}
+    >
+      <div className="mx-auto max-w-6xl w-full px-6">
+        <motion.div variants={itemVariants} className="text-center mb-10">
+          <SectionEyebrow icon={BarChart3} label="Painel da agência" />
+          <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
+            Tudo o que o gerente precisa,
+            <br />
+            <span className="text-muted-foreground font-light">em uma única tela.</span>
+          </h2>
+        </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <Kpi label="Produtos vendidos" value={k1} fmt={(n) => n.toLocaleString("pt-BR")} />
-            <Kpi label="Volume contratado" value={k2} fmt={(n) => `R$ ${(n / 1000).toFixed(0)}k`} />
-            <Kpi label="Funcionários ativos" value={k3} fmt={(n) => n.toLocaleString("pt-BR")} />
-            <Kpi label="Pontos do mês" value={k4} fmt={(n) => n.toLocaleString("pt-BR")} />
-          </div>
+        <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <KpiInView active={inView} reduced={!!reduced} label="Produtos vendidos" target={847} fmt={(n) => n.toLocaleString("pt-BR")} />
+          <KpiInView active={inView} reduced={!!reduced} label="Volume contratado" target={2_341_900} fmt={(n) => `R$ ${(n / 1000).toFixed(0)}k`} />
+          <KpiInView active={inView} reduced={!!reduced} label="Funcionários ativos" target={12} fmt={(n) => n.toLocaleString("pt-BR")} />
+          <KpiInView active={inView} reduced={!!reduced} label="Pontos do mês" target={36_540} fmt={(n) => n.toLocaleString("pt-BR")} />
+        </motion.div>
 
-          <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6">
-            <div className="text-sm font-medium mb-4">Top 10 — Produção (pts)</div>
-            <svg viewBox="0 0 600 180" className="w-full h-44">
-              {[8400, 7200, 6850, 5900, 5400, 4900, 4200, 3700, 3100, 2600].map((v, i) => {
-                const h = (v / 8400) * 140;
-                return (
-                  <motion.rect key={i} x={20 + i * 58} y={160 - h} width={40} height={h} rx={4} fill="url(#g)" style={{ scaleY: draw, originY: "160px" }} />
-                );
-              })}
-              <defs>
-                <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#0094FF" />
-                  <stop offset="100%" stopColor="#1CD8CA" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
+        <motion.div variants={itemVariants} className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6">
+          <div className="text-sm font-medium mb-4">Top 10 — Produção (pts)</div>
+          <svg viewBox="0 0 600 180" className="w-full h-44">
+            {[8400, 7200, 6850, 5900, 5400, 4900, 4200, 3700, 3100, 2600].map((v, i) => {
+              const h = (v / 8400) * 140;
+              return (
+                <motion.rect
+                  key={i}
+                  x={20 + i * 58}
+                  y={160 - h}
+                  width={40}
+                  height={h}
+                  rx={4}
+                  fill="url(#g)"
+                  initial={{ scaleY: reduced ? 1 : 0 }}
+                  animate={inView ? { scaleY: 1 } : { scaleY: reduced ? 1 : 0 }}
+                  transition={{ duration: 0.7, delay: 0.15 + i * 0.05, ease: EASE_STANDARD }}
+                  style={{ originY: "160px", transformBox: "fill-box" as never }}
+                />
+              );
+            })}
+            <defs>
+              <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="#0094FF" />
+                <stop offset="100%" stopColor="#1CD8CA" />
+              </linearGradient>
+            </defs>
+          </svg>
         </motion.div>
       </div>
-    </section>
+    </motion.section>
   );
 }
 
-function Kpi({ label, value, fmt }: { label: string; value: MotionValue<number>; fmt: (n: number) => string }) {
-  const display = useTransform(value, (v) => fmt(Math.round(v)));
+function KpiInView({ active, reduced, label, target, fmt }: { active: boolean; reduced: boolean; label: string; target: number; fmt: (n: number) => string }) {
+  const [value, setValue] = useState(reduced ? target : 0);
+  useEffect(() => {
+    if (!active) return;
+    if (reduced) {
+      setValue(target);
+      return;
+    }
+    const start = performance.now();
+    const dur = 900;
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / dur);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setValue(target * eased);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [active, reduced, target]);
   return (
     <div className="rounded-xl border border-border bg-card/80 backdrop-blur-sm p-4">
       <div className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">{label}</div>
-      <motion.div className="text-2xl font-semibold tabular-nums">{display}</motion.div>
+      <div className="text-2xl font-semibold tabular-nums">{fmt(Math.round(value))}</div>
     </div>
   );
 }
 
 /* ============ 5. METAS ============ */
 function SectionMetas() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
   const reduced = useReducedMotion();
   const goals = [
     { label: "Seguro Vida", pct: 92, color: "#0094FF" },
@@ -563,52 +590,52 @@ function SectionMetas() {
   ];
 
   return (
-    <section ref={ref} className={`relative ${SECTION_H}`}>
-      <div className="sticky top-0 h-screen flex items-center">
-        <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
-          <div className="order-2 md:order-1">
-            <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6 space-y-5">
-              <div className="text-sm font-medium">Metas de novembro</div>
-              {goals.map((g, i) => (
-                <Goal key={g.label} g={g} index={i} progress={scrollYProgress} reduced={!!reduced} />
-              ))}
-            </div>
+    <InViewSection>
+      <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
+        <motion.div variants={itemVariants} className="order-2 md:order-1">
+          <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6 space-y-5">
+            <div className="text-sm font-medium">Metas do mês</div>
+            {goals.map((g, i) => (
+              <Goal key={g.label} g={g} index={i} reduced={!!reduced} />
+            ))}
           </div>
+        </motion.div>
 
-          <div className="order-1 md:order-2">
-            <SectionEyebrow icon={Target} label="Metas & progresso" />
-            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
-              Cada produto,
-              <br />
-              <span className="bg-gradient-to-r from-[#1CD8CA] to-[#0094FF] bg-clip-text text-transparent">
-                seu próprio alvo.
-              </span>
-            </h2>
-            <p className="text-lg text-muted-foreground font-light">
-              Defina metas por funcionário, agência ou time. A barra avança em
-              tempo real conforme a produção é registrada.
-            </p>
-          </div>
-        </div>
+        <motion.div variants={itemVariants} className="order-1 md:order-2">
+          <SectionEyebrow icon={Target} label="Metas & progresso" />
+          <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
+            Cada produto,
+            <br />
+            <span className="bg-gradient-to-r from-[#1CD8CA] to-[#0094FF] bg-clip-text text-transparent">
+              seu próprio alvo.
+            </span>
+          </h2>
+          <p className="text-lg text-muted-foreground font-light">
+            Defina metas por funcionário, agência ou time. A barra avança em
+            tempo real conforme a produção é registrada.
+          </p>
+        </motion.div>
       </div>
-    </section>
+    </InViewSection>
   );
 }
 
-function Goal({ g, index, progress, reduced }: { g: { label: string; pct: number; color: string }; index: number; progress: MotionValue<number>; reduced: boolean }) {
-  const start = index * 0.06;
-  const end = 0.4 + index * 0.04;
-  const pct = useTransform(progress, [start, end], reduced ? [g.pct, g.pct] : [0, g.pct]);
-  const width = useTransform(pct, (v) => `${v}%`);
-  const label = useTransform(pct, (v) => `${Math.round(v)}%`);
+function Goal({ g, index, reduced }: { g: { label: string; pct: number; color: string }; index: number; reduced: boolean }) {
   return (
     <div>
       <div className="flex items-center justify-between text-xs mb-1.5">
         <span className="text-muted-foreground">{g.label}</span>
-        <motion.span className="tabular-nums font-medium">{label}</motion.span>
+        <span className="tabular-nums font-medium">{g.pct}%</span>
       </div>
       <div className="h-2 rounded-full bg-muted overflow-hidden">
-        <motion.div style={{ width, background: g.color }} className="h-full rounded-full" />
+        <motion.div
+          initial={{ width: reduced ? `${g.pct}%` : 0 }}
+          whileInView={{ width: `${g.pct}%` }}
+          viewport={IN_VIEW}
+          transition={{ duration: 0.8, delay: 0.1 + index * 0.08, ease: EASE_STANDARD }}
+          style={{ background: g.color }}
+          className="h-full rounded-full"
+        />
       </div>
     </div>
   );
@@ -616,61 +643,61 @@ function Goal({ g, index, progress, reduced }: { g: { label: string; pct: number
 
 /* ============ 6. RANKING ============ */
 function SectionRanking() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
   const reduced = useReducedMotion();
-  const p1 = useTransform(scrollYProgress, [0.10, 0.55], reduced ? [1, 1] : [0, 1]);
-  const p2 = useTransform(scrollYProgress, [0.05, 0.50], reduced ? [1, 1] : [0, 1]);
-  const p3 = useTransform(scrollYProgress, [0.00, 0.45], reduced ? [1, 1] : [0, 1]);
-
   return (
-    <section ref={ref} className={`relative ${SECTION_H}`}>
-      <div className="sticky top-0 h-screen flex items-center">
-        <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
-          <div>
-            <SectionEyebrow icon={Trophy} label="Ranking & gamificação" />
-            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
-              Competição saudável,
-              <br />
-              <span className="bg-gradient-to-r from-[#936FFA] to-[#0094FF] bg-clip-text text-transparent">
-                resultado coletivo.
-              </span>
-            </h2>
-            <p className="text-lg text-muted-foreground font-light">
-              Pontos calibrados de forma transparente, badges por conquistas e
-              ranking mensal atualizado em tempo real.
-            </p>
-          </div>
+    <InViewSection>
+      <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
+        <motion.div variants={itemVariants}>
+          <SectionEyebrow icon={Trophy} label="Ranking & gamificação" />
+          <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
+            Competição saudável,
+            <br />
+            <span className="bg-gradient-to-r from-[#936FFA] to-[#0094FF] bg-clip-text text-transparent">
+              resultado coletivo.
+            </span>
+          </h2>
+          <p className="text-lg text-muted-foreground font-light">
+            Pontos calibrados de forma transparente, badges por conquistas e
+            ranking mensal atualizado em tempo real.
+          </p>
+        </motion.div>
 
-          <div className="flex items-end justify-center gap-3 h-[280px]">
-            <PodiumBar height={180} place={2} name="Marina" pts={4820} color="#1CD8CA" scaleY={p2} />
-            <PodiumBar height={240} place={1} name="Ricardo" pts={5340} color="#0094FF" scaleY={p1} />
-            <PodiumBar height={140} place={3} name="João" pts={4210} color="#936FFA" scaleY={p3} />
-          </div>
-        </div>
+        <motion.div variants={itemVariants} className="flex items-end justify-center gap-3 h-[280px]">
+          <PodiumBar height={180} place={2} name="Marina" pts={4820} color="#1CD8CA" delay={0.1} reduced={!!reduced} />
+          <PodiumBar height={240} place={1} name="Ricardo" pts={5340} color="#0094FF" delay={0.25} reduced={!!reduced} />
+          <PodiumBar height={140} place={3} name="João" pts={4210} color="#936FFA" delay={0} reduced={!!reduced} />
+        </motion.div>
       </div>
-    </section>
+    </InViewSection>
   );
 }
 
-function PodiumBar({ height, place, name, pts, color, scaleY }: { height: number; place: number; name: string; pts: number; color: string; scaleY: MotionValue<number> }) {
+function PodiumBar({ height, place, name, pts, color, delay, reduced }: { height: number; place: number; name: string; pts: number; color: string; delay: number; reduced: boolean }) {
   return (
     <div className="flex flex-col items-center w-24">
       <div className="text-sm font-medium mb-1">{name}</div>
       <div className="text-xs text-muted-foreground mb-2 tabular-nums">{pts.toLocaleString("pt-BR")} pts</div>
-      <motion.div style={{ height, background: color, scaleY, originY: 1 }} className="w-full rounded-t-lg flex items-start justify-center pt-2 will-change-transform">
-        <span className="text-white font-semibold text-lg">{place}º</span>
-      </motion.div>
+      {/* Container de altura fixa; a barra interna cresce por `height`. Número
+          fica sobreposto e absoluto, imune à animação (não distorce). */}
+      <div className="relative w-full" style={{ height }}>
+        <motion.div
+          initial={{ height: reduced ? height : 0 }}
+          whileInView={{ height }}
+          viewport={IN_VIEW}
+          transition={{ duration: 0.8, delay, ease: EASE_STANDARD }}
+          style={{ background: color }}
+          className="absolute bottom-0 left-0 right-0 rounded-t-lg will-change-[height]"
+        />
+        <span className="absolute top-2 left-0 right-0 text-center text-white font-semibold text-lg pointer-events-none">
+          {place}º
+        </span>
+      </div>
     </div>
   );
 }
 
-/* ============ 7. CONQUISTAS / BADGES (refinado) ============ */
+/* ============ 7. CONQUISTAS / BADGES ============ */
 function SectionConquistas() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
-  const reduced = useReducedMotion();
-
   const badges = [
     { Icon: Flame,   label: "Sequência 7 dias",     color: "#1CD8CA" },
     { Icon: Trophy,  label: "Top 3 do mês",          color: "#0094FF" },
@@ -681,42 +708,45 @@ function SectionConquistas() {
   ];
 
   return (
-    <section ref={ref} className={`relative ${SECTION_H}`}>
-      <div className="sticky top-0 h-screen flex items-center">
-        <div className="mx-auto max-w-6xl w-full px-6">
-          <div className="text-center mb-10 max-w-2xl mx-auto">
-            <SectionEyebrow icon={Award} label="Conquistas" />
-            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-4">
-              Cada marca,
-              <br />
-              <span className="bg-gradient-to-r from-[#936FFA] via-[#0094FF] to-[#1CD8CA] bg-clip-text text-transparent">
-                um motivo a mais.
-              </span>
-            </h2>
-            <p className="text-base md:text-lg text-muted-foreground font-light">
-              Badges automáticas que reconhecem consistência, volume e superação.
-            </p>
-          </div>
+    <InViewSection>
+      <div className="mx-auto max-w-6xl w-full px-6">
+        <motion.div variants={itemVariants} className="text-center mb-10 max-w-2xl mx-auto">
+          <SectionEyebrow icon={Award} label="Conquistas" />
+          <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-4">
+            Cada marca,
+            <br />
+            <span className="bg-gradient-to-r from-[#936FFA] via-[#0094FF] to-[#1CD8CA] bg-clip-text text-transparent">
+              um motivo a mais.
+            </span>
+          </h2>
+          <p className="text-base md:text-lg text-muted-foreground font-light">
+            Badges automáticas que reconhecem consistência, volume e superação.
+          </p>
+        </motion.div>
 
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-5 max-w-4xl mx-auto">
-            {badges.map((b, i) => (
-              <Badge key={b.label} b={b} index={i} progress={scrollYProgress} reduced={!!reduced} />
-            ))}
-          </div>
-        </div>
+        <motion.div
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
+          className="grid grid-cols-3 md:grid-cols-6 gap-5 max-w-4xl mx-auto"
+        >
+          {badges.map((b) => (
+            <Badge key={b.label} b={b} />
+          ))}
+        </motion.div>
       </div>
-    </section>
+    </InViewSection>
   );
 }
 
-function Badge({ b, index, progress, reduced }: { b: { Icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; label: string; color: string }; index: number; progress: MotionValue<number>; reduced: boolean }) {
-  const start = index * 0.06;
-  const end = start + 0.18;
-  const scale = useTransform(progress, [start, end], reduced ? [1, 1] : [0.5, 1]);
-  const opacity = useTransform(progress, [start, end], [0, 1]);
+function Badge({ b }: { b: { Icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; label: string; color: string } }) {
   const Icon = b.Icon;
   return (
-    <motion.div initial={{ opacity: 0 }} style={{ scale, opacity }} className="flex flex-col items-center text-center will-change-transform">
+    <motion.div
+      variants={{
+        hidden: { opacity: 0, scale: 0.85 },
+        show: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: EASE_STANDARD } },
+      }}
+      className="flex flex-col items-center text-center will-change-transform"
+    >
       <div
         className="w-20 h-20 rounded-2xl flex items-center justify-center mb-2"
         style={{
@@ -733,56 +763,61 @@ function Badge({ b, index, progress, reduced }: { b: { Icon: React.ComponentType
 
 /* ============ 8. RELATÓRIOS ============ */
 function SectionRelatorios() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: STICKY_OFFSET });
   const reduced = useReducedMotion();
-  const flip = useTransform(scrollYProgress, [0, 0.6], reduced ? [0, 0] : [12, -16]);
-  const reveal = useTransform(scrollYProgress, [0.02, 0.55], reduced ? [1, 1] : [0, 1]);
-
   return (
-    <section ref={ref} className={`relative ${SECTION_H}`}>
-      <div className="sticky top-0 h-screen flex items-center">
-        <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
-          <motion.div className="relative h-[380px] [perspective:1400px]">
-            <motion.div style={{ rotateY: flip }} className="absolute inset-0 rounded-xl border border-border bg-card/90 backdrop-blur-sm shadow-2xl shadow-primary/20 overflow-hidden [transform-style:preserve-3d]">
-              <div className="h-9 bg-[#0a1a2f] flex items-center px-4 gap-2">
-                <Logo size={16} />
-                <span className="text-white text-xs lowercase tracking-[0.048em]" style={{ fontFamily: "Poppins, sans-serif" }}>
-                  banritools — relatório de produção
-                </span>
-              </div>
-              <div className="p-5 space-y-2">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <ReportRow key={i} index={i} reveal={reveal} />
-                ))}
-              </div>
-            </motion.div>
+    <InViewSection>
+      <div className="mx-auto max-w-6xl w-full px-6 grid md:grid-cols-2 gap-12 items-center">
+        <motion.div variants={itemVariants} className="relative h-[380px] [perspective:1400px]">
+          <motion.div
+            initial={{ rotateY: reduced ? 0 : 12 }}
+            whileInView={{ rotateY: reduced ? 0 : -6 }}
+            viewport={IN_VIEW}
+            transition={{ duration: 1.1, ease: EASE_STANDARD }}
+            className="absolute inset-0 rounded-xl border border-border bg-card/90 backdrop-blur-sm shadow-2xl shadow-primary/20 overflow-hidden [transform-style:preserve-3d]"
+          >
+            <div className="h-9 bg-[#0a1a2f] flex items-center px-4 gap-2">
+              <Logo size={16} />
+              <span className="text-white text-xs lowercase tracking-[0.048em]" style={{ fontFamily: "Poppins, sans-serif" }}>
+                banritools — relatório de produção
+              </span>
+            </div>
+            <div className="p-5 space-y-2">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <ReportRow key={i} index={i} reduced={!!reduced} />
+              ))}
+            </div>
           </motion.div>
+        </motion.div>
 
-          <div>
-            <SectionEyebrow icon={FileText} label="Relatórios" />
-            <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
-              Exporta detalhado
-              <br />
-              ou resumido.
-              <br />
-              <span className="text-muted-foreground font-light">PDF e Excel.</span>
-            </h2>
-            <p className="text-lg text-muted-foreground font-light">
-              Cabeçalho com a marca, números formatados em pt-BR e totais já calculados. Pronto para reunião.
-            </p>
-          </div>
-        </div>
+        <motion.div variants={itemVariants}>
+          <SectionEyebrow icon={FileText} label="Relatórios" />
+          <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-5">
+            Exporta detalhado
+            <br />
+            ou resumido.
+            <br />
+            <span className="text-muted-foreground font-light">PDF e Excel.</span>
+          </h2>
+          <p className="text-lg text-muted-foreground font-light">
+            Cabeçalho com a marca, números formatados em pt-BR e totais já calculados. Pronto para reunião.
+          </p>
+        </motion.div>
       </div>
-    </section>
+    </InViewSection>
   );
 }
 
-function ReportRow({ index, reveal }: { index: number; reveal: MotionValue<number> }) {
-  const w = useTransform(reveal, (v) => `${Math.min(100, v * 100) * ((60 + (index * 7) % 35) / 100)}%`);
+function ReportRow({ index, reduced }: { index: number; reduced: boolean }) {
+  const targetPct = (60 + (index * 7) % 35);
   return (
     <div className="grid grid-cols-5 gap-2 text-[11px]">
-      <motion.div className="h-3 bg-muted rounded col-span-2" style={{ width: w }} />
+      <motion.div
+        className="h-3 bg-muted rounded col-span-2"
+        initial={{ width: reduced ? `${targetPct}%` : 0 }}
+        whileInView={{ width: `${targetPct}%` }}
+        viewport={IN_VIEW}
+        transition={{ duration: 0.6, delay: 0.1 + index * 0.04, ease: EASE_STANDARD }}
+      />
       <div className="h-3 bg-muted rounded" />
       <div className="h-3 bg-muted rounded" />
       <div className="h-3 bg-primary/40 rounded" />
@@ -801,7 +836,7 @@ function CtaFinal() {
           Acesse com seu e-mail corporativo ou use um convite recebido do seu gerente.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <Link to="/login" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-medium hover:bg-[#1CD8CA] hover:text-white transition">
+          <Link to="/login" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-primary-foreground font-medium hover:bg-[#0077DB] hover:text-white transition">
             Entrar no painel <ArrowRight className="h-4 w-4" />
           </Link>
           <a href="#top" className="inline-flex items-center px-6 py-3 rounded-full border border-border hover:bg-muted transition text-sm">
@@ -819,7 +854,7 @@ function CtaFinal() {
 export function Landing() {
   void LogoHexes;
   return (
-    <div id="top" className="relative bg-background text-foreground min-h-screen overflow-hidden">
+    <div id="top" className="relative bg-background text-foreground min-h-screen overflow-x-clip">
       <div className="ambient-glow" aria-hidden="true">
         <span />
         <span />
