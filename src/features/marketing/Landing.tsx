@@ -97,8 +97,10 @@ function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
-  // Janela ampla: explosão total acontece ao longo de ~120vh de scroll útil.
-  const explode = useTransform(scrollYProgress, [0, 0.55], reduced ? [0, 0] : [0, 1], { clamp: true });
+  // Explosão progride ao longo de ~85% do pin; últimos ~15% costuram a saída.
+  const explode = useTransform(scrollYProgress, [0, 0.85], reduced ? [0, 0] : [0, 1], { clamp: true });
+  const exitOpacity = useTransform(scrollYProgress, [0.88, 0.99], reduced ? [1, 1] : [1, 0], { clamp: true });
+  const exitY = useTransform(scrollYProgress, [0.88, 0.99], reduced ? [0, 0] : [0, -40], { clamp: true });
 
   const topY = useTransform(explode, [0, 1], [0, -120]);
   const leftX = useTransform(explode, [0, 1], [0, -100]);
@@ -111,6 +113,7 @@ function Hero() {
   return (
     <section ref={ref} className={`relative ${HERO_H}`}>
       <div className="sticky top-0 h-[100svh] flex flex-col items-center justify-center overflow-hidden">
+        <motion.div style={{ opacity: exitOpacity, y: exitY }} className="flex flex-col items-center justify-center w-full will-change-transform">
         <motion.div
           initial={{ opacity: 0, scale: 0.25, filter: "blur(12px)" }}
           animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
@@ -155,6 +158,7 @@ function Hero() {
             <span>Role para descobrir</span>
             <span className="animate-bounce">↓</span>
           </div>
+        </motion.div>
         </motion.div>
       </div>
     </section>
@@ -423,11 +427,17 @@ function SectionRegistro() {
           </p>
         </motion.div>
 
-        <div className="relative h-[420px]">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.35 }}
+          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.18 } } }}
+          className="relative h-[420px]"
+        >
           {MOCK_PRODUCTS.map((p, i) => (
             <RegistroCard key={p.name} product={p} index={i} />
           ))}
-        </div>
+        </motion.div>
       </div>
     </InViewSection>
   );
@@ -440,8 +450,8 @@ function RegistroCard({ product, index }: { product: (typeof MOCK_PRODUCTS)[numb
   return (
     <motion.div
       variants={{
-        hidden: { opacity: 0, x: reduced ? 0 : 220 },
-        show: { opacity: 1, x: 0, transition: { duration: 0.7, ease: EASE_STANDARD } },
+        hidden: { opacity: 0, x: reduced ? 0 : 96 },
+        visible: { opacity: 1, x: 0, transition: { duration: reduced ? 0 : 0.55, ease: EASE_STANDARD } },
       }}
       style={{ top: `${top}px`, zIndex: z }}
       className="absolute left-0 right-0 will-change-transform"
