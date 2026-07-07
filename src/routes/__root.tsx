@@ -72,10 +72,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
           (function(){
             try {
               var t = localStorage.getItem('banritools-theme');
-              if (t === 'light') document.documentElement.classList.add('light');
-              else document.documentElement.classList.add('dark');
+              if (t === 'dark') document.documentElement.classList.add('dark');
+              else document.documentElement.classList.add('light');
               if (localStorage.getItem('ds:v2') !== '0') document.documentElement.classList.add('ds-v2');
-            } catch(e) { document.documentElement.classList.add('dark'); }
+            } catch(e) { document.documentElement.classList.add('light'); }
           })();
         `}} />
       </head>
