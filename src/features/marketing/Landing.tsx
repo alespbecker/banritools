@@ -5,10 +5,13 @@ import {
   useScroll,
   useTransform,
   useReducedMotion,
-  useMotionValueEvent,
   useInView,
+  useVelocity,
+  useSpring,
+  useAnimationFrame,
   type MotionValue,
 } from "framer-motion";
+import { RoamingHexes } from "@/features/marketing/RoamingHexes";
 import { Logo, LogoHexes } from "@/components/Logo";
 import { useTheme } from "@/hooks/useTheme";
 import {
@@ -42,12 +45,39 @@ const IN_VIEW = { once: true, margin: "-15% 0px" } as const;
 /* ============ TOP BAR + tema ============ */
 function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const [pulse, setPulse] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("bt_theme_nudge");
+      const parsed = raw ? JSON.parse(raw) as { shows?: number; done?: boolean } : {};
+      if (parsed.done) return;
+      const shows = (parsed.shows ?? 0) + 1;
+      if (shows > 2) {
+        localStorage.setItem("bt_theme_nudge", JSON.stringify({ shows, done: true }));
+        return;
+      }
+      localStorage.setItem("bt_theme_nudge", JSON.stringify({ shows, done: false }));
+      setPulse(true);
+      const t = setTimeout(() => setPulse(false), 12000);
+      return () => clearTimeout(t);
+    } catch { /* ignore */ }
+  }, []);
+
+  const handleClick = () => {
+    try {
+      localStorage.setItem("bt_theme_nudge", JSON.stringify({ shows: 99, done: true }));
+    } catch { /* ignore */ }
+    setPulse(false);
+    toggleTheme();
+  };
+
   return (
     <button
       type="button"
-      onClick={toggleTheme}
+      onClick={handleClick}
       aria-label={theme === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
-      className="h-8 w-8 grid place-items-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition"
+      className={`h-8 w-8 grid place-items-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition ${pulse ? "fab-radar" : ""}`}
     >
       {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
@@ -56,7 +86,7 @@ function ThemeToggle() {
 
 function TopBar() {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/60 border-b border-border/40">
+    <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm bg-background/60 border-b border-border/40">
       <div className="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5">
           <Logo size={26} />
@@ -102,13 +132,34 @@ function Hero() {
   const exitOpacity = useTransform(scrollYProgress, [0.88, 0.99], reduced ? [1, 1] : [1, 0], { clamp: true });
   const exitY = useTransform(scrollYProgress, [0.88, 0.99], reduced ? [0, 0] : [0, -40], { clamp: true });
 
+  // Deslocamentos 2D (mantidos) + eixo Z + rotações em X/Y para leitura 3D real.
   const topY = useTransform(explode, [0, 1], [0, -120]);
+  const topZ = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, 90]);
+  const topRotY = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, 160]);
+  const topBrightness = useTransform(explode, [0, 1], [1, 1.15]);
+
   const leftX = useTransform(explode, [0, 1], [0, -100]);
   const leftY = useTransform(explode, [0, 1], [0, 60]);
+  const leftZ = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, -70]);
+  const leftRotX = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, -140]);
+  const leftBrightness = useTransform(explode, [0, 1], [1, 0.85]);
+  const leftBlur = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, 1.5]);
+
   const rightX = useTransform(explode, [0, 1], [0, 100]);
   const rightY = useTransform(explode, [0, 1], [0, 60]);
-  const hexRot = useTransform(explode, [0, 1], [0, 180]);
-  const hexRotInv = useTransform(hexRot, (r) => -r);
+  const rightZ = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, 40]);
+  const rightRotY = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, -120]);
+
+  // Filtros compostos (brightness + shadow dependente de |z|).
+  const topFilter = useTransform([topBrightness, topZ] as unknown as MotionValue<number>[], (arr) => {
+    const [b, z] = arr as unknown as [number, number];
+    const shadow = Math.abs(z) > 20 ? `drop-shadow(0 ${8 + z / 6}px ${18 + z / 4}px rgba(0,148,255,0.35))` : "none";
+    return `brightness(${b}) ${shadow}`;
+  });
+  const leftFilter = useTransform([leftBrightness, leftBlur] as unknown as MotionValue<number>[], (arr) => {
+    const [b, bl] = arr as unknown as [number, number];
+    return `brightness(${b}) blur(${bl}px)`;
+  });
 
   return (
     <section ref={ref} className={`relative ${HERO_H}`}>
@@ -119,20 +170,31 @@ function Hero() {
           animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
           transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
           className="relative"
+          style={{ perspective: 1100 }}
         >
           <motion.div
             animate={reduced ? undefined : { rotate: 360 }}
             transition={{ duration: 30, ease: "linear", repeat: Infinity }}
             className="will-change-transform"
+            style={{ transformStyle: "preserve-3d" }}
           >
-            <div className="relative" style={{ width: 120, height: 120 }}>
-              <motion.div style={{ y: topY, rotate: hexRot }} className="absolute inset-0 will-change-transform">
+            <div className="relative" style={{ width: 120, height: 120, transformStyle: "preserve-3d" }}>
+              <motion.div
+                style={{ y: topY, z: topZ, rotateY: topRotY, filter: topFilter, transformStyle: "preserve-3d" }}
+                className="absolute inset-0 will-change-transform"
+              >
                 <HexOnly color="#0094FF" points="50,17 64.72,25.5 64.72,42.5 50,51 35.28,42.5 35.28,25.5" />
               </motion.div>
-              <motion.div style={{ x: leftX, y: leftY, rotate: hexRotInv }} className="absolute inset-0 will-change-transform">
+              <motion.div
+                style={{ x: leftX, y: leftY, z: leftZ, rotateX: leftRotX, filter: leftFilter, transformStyle: "preserve-3d" }}
+                className="absolute inset-0 will-change-transform"
+              >
                 <HexOnly color="#1CD8CA" points="33.548,45.5 48.268,54 48.268,71 33.548,79.5 18.828,71 18.828,54" />
               </motion.div>
-              <motion.div style={{ x: rightX, y: rightY, rotate: hexRot }} className="absolute inset-0 will-change-transform">
+              <motion.div
+                style={{ x: rightX, y: rightY, z: rightZ, rotateY: rightRotY, transformStyle: "preserve-3d" }}
+                className="absolute inset-0 will-change-transform"
+              >
                 <HexOnly color="#936FFA" points="66.452,45.5 81.172,54 81.172,71 66.452,79.5 51.732,71 51.732,54" />
               </motion.div>
               <Particles intensity={explode} />
@@ -200,25 +262,42 @@ function Spark({ index, total, color, intensity }: { index: number; total: numbe
   );
 }
 
-/** Wordmark "roleta" — sem setState/setInterval. Escreve direto no DOM
- *  via ref.textContent, escutando a MotionValue com throttle de 80ms.
- *  Zero re-render React durante o scroll. */
-function SlotWordmark({ spinAmount }: { spinAmount: MotionValue<number> }) {
+/** Wordmark "roleta" com inércia. Energia derivada da velocidade global de
+ *  scroll: giro acelera/desacelera com ease. Escrita direta via textContent
+ *  (zero setState). Reduced motion => sempre "banritools". */
+function SlotWordmark({ spinAmount: _spinAmount }: { spinAmount: MotionValue<number> }) {
+  void _spinAmount;
   const spanRef = useRef<HTMLSpanElement>(null);
   const lastTickRef = useRef(0);
+  const settleRef = useRef(0);
   const reduced = useReducedMotion();
   const BASE = "banritools";
 
-  useMotionValueEvent(spinAmount, "change", (v) => {
+  const { scrollY } = useScroll();
+  const rawVel = useVelocity(scrollY);
+  const rawEnergy = useTransform(rawVel, (v) => Math.min(1, Math.abs(v) / 1600));
+  const energy = useSpring(rawEnergy, { stiffness: 110, damping: 28 });
+
+  useAnimationFrame((t) => {
     const el = spanRef.current;
     if (!el) return;
-    if (reduced || v <= 0.04) {
+    if (reduced) {
       if (el.textContent !== BASE) el.textContent = BASE;
       return;
     }
-    const now = performance.now();
-    if (now - lastTickRef.current < 80) return;
-    lastTickRef.current = now;
+    const e = energy.get();
+    if (e < 0.05) {
+      if (settleRef.current === 0) settleRef.current = t;
+      if (t - settleRef.current > 120 && el.textContent !== BASE) {
+        el.textContent = BASE;
+      }
+      return;
+    }
+    settleRef.current = 0;
+    // Interpola intervalo: energy=1 -> 50ms, energy=0.05 -> 220ms
+    const interval = 220 - (220 - 50) * e;
+    if (t - lastTickRef.current < interval) return;
+    lastTickRef.current = t;
     let out = "";
     for (let i = 0; i < BASE.length; i++) out += Math.floor(Math.random() * 10).toString();
     el.textContent = out;
@@ -227,6 +306,7 @@ function SlotWordmark({ spinAmount }: { spinAmount: MotionValue<number> }) {
   return (
     <span
       ref={spanRef}
+      aria-label={BASE}
       className="lowercase tracking-[0.048em]"
       style={{
         fontFamily: "Poppins, sans-serif",
@@ -275,7 +355,7 @@ function VideoMock() {
     <section ref={ref} className="relative">
       <div className="mx-auto max-w-6xl px-6 -mt-8 md:-mt-12 mb-8">
         <div
-          className="relative rounded-2xl border border-border bg-card/70 backdrop-blur-md overflow-hidden shadow-2xl shadow-primary/10"
+          className="relative rounded-2xl border border-border bg-card/70 backdrop-blur-sm overflow-hidden shadow-2xl shadow-primary/10"
           style={{
             aspectRatio: "16/9",
             WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)",
@@ -464,7 +544,7 @@ function RegistroCard({ product, index }: { product: (typeof MOCK_PRODUCTS)[numb
 function MockRegistro({ product }: { product: (typeof MOCK_PRODUCTS)[number] }) {
   return (
     <div
-      className="rounded-2xl border bg-card/90 backdrop-blur-sm shadow-2xl p-5 max-w-md mx-auto"
+      className="rounded-2xl border bg-card/80 backdrop-blur-sm shadow-2xl p-5 max-w-md mx-auto"
       style={{ borderColor: `${product.color}55`, boxShadow: `0 20px 50px -20px ${product.color}55` }}
     >
       <div className="flex items-center justify-between mb-3">
@@ -783,7 +863,7 @@ function SectionRelatorios() {
             whileInView={{ rotateY: reduced ? 0 : -6 }}
             viewport={IN_VIEW}
             transition={{ duration: 1.1, ease: EASE_STANDARD }}
-            className="absolute inset-0 rounded-xl border border-border bg-card/90 backdrop-blur-sm shadow-2xl shadow-primary/20 overflow-hidden [transform-style:preserve-3d]"
+            className="absolute inset-0 rounded-xl border border-border bg-card/80 backdrop-blur-sm shadow-2xl shadow-primary/20 overflow-hidden [transform-style:preserve-3d]"
           >
             <div className="h-9 bg-[#0a1a2f] flex items-center px-4 gap-2">
               <Logo size={16} />
@@ -871,6 +951,8 @@ export function Landing() {
         <span />
         <span />
       </div>
+      <RoamingHexes />
+      <div className="landing-noise" aria-hidden="true" />
       <div className="relative z-10">
         <TopBar />
         <Hero />
