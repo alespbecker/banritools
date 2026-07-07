@@ -5,7 +5,7 @@ import {
   useScroll,
   useTransform,
   useReducedMotion,
-  useMotionValueEvent,
+  useVelocity,
   useInView,
   useVelocity,
   useSpring,
