@@ -263,25 +263,42 @@ function Spark({ index, total, color, intensity }: { index: number; total: numbe
   );
 }
 
-/** Wordmark "roleta" — sem setState/setInterval. Escreve direto no DOM
- *  via ref.textContent, escutando a MotionValue com throttle de 80ms.
- *  Zero re-render React durante o scroll. */
-function SlotWordmark({ spinAmount }: { spinAmount: MotionValue<number> }) {
+/** Wordmark "roleta" com inércia. Energia derivada da velocidade global de
+ *  scroll: giro acelera/desacelera com ease. Escrita direta via textContent
+ *  (zero setState). Reduced motion => sempre "banritools". */
+function SlotWordmark({ spinAmount: _spinAmount }: { spinAmount: MotionValue<number> }) {
+  void _spinAmount;
   const spanRef = useRef<HTMLSpanElement>(null);
   const lastTickRef = useRef(0);
+  const settleRef = useRef(0);
   const reduced = useReducedMotion();
   const BASE = "banritools";
 
-  useMotionValueEvent(spinAmount, "change", (v) => {
+  const { scrollY } = useScroll();
+  const rawVel = useVelocity(scrollY);
+  const rawEnergy = useTransform(rawVel, (v) => Math.min(1, Math.abs(v) / 1600));
+  const energy = useSpring(rawEnergy, { stiffness: 110, damping: 28 });
+
+  useAnimationFrame((t) => {
     const el = spanRef.current;
     if (!el) return;
-    if (reduced || v <= 0.04) {
+    if (reduced) {
       if (el.textContent !== BASE) el.textContent = BASE;
       return;
     }
-    const now = performance.now();
-    if (now - lastTickRef.current < 80) return;
-    lastTickRef.current = now;
+    const e = energy.get();
+    if (e < 0.05) {
+      if (settleRef.current === 0) settleRef.current = t;
+      if (t - settleRef.current > 120 && el.textContent !== BASE) {
+        el.textContent = BASE;
+      }
+      return;
+    }
+    settleRef.current = 0;
+    // Interpola intervalo: energy=1 -> 50ms, energy=0.05 -> 220ms
+    const interval = 220 - (220 - 50) * e;
+    if (t - lastTickRef.current < interval) return;
+    lastTickRef.current = t;
     let out = "";
     for (let i = 0; i < BASE.length; i++) out += Math.floor(Math.random() * 10).toString();
     el.textContent = out;
@@ -290,6 +307,7 @@ function SlotWordmark({ spinAmount }: { spinAmount: MotionValue<number> }) {
   return (
     <span
       ref={spanRef}
+      aria-label={BASE}
       className="lowercase tracking-[0.048em]"
       style={{
         fontFamily: "Poppins, sans-serif",
