@@ -427,11 +427,17 @@ function SectionRegistro() {
           </p>
         </motion.div>
 
-        <div className="relative h-[420px]">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.35 }}
+          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.18 } } }}
+          className="relative h-[420px]"
+        >
           {MOCK_PRODUCTS.map((p, i) => (
             <RegistroCard key={p.name} product={p} index={i} />
           ))}
-        </div>
+        </motion.div>
       </div>
     </InViewSection>
   );
@@ -444,8 +450,8 @@ function RegistroCard({ product, index }: { product: (typeof MOCK_PRODUCTS)[numb
   return (
     <motion.div
       variants={{
-        hidden: { opacity: 0, x: reduced ? 0 : 220 },
-        show: { opacity: 1, x: 0, transition: { duration: 0.7, ease: EASE_STANDARD } },
+        hidden: { opacity: 0, x: reduced ? 0 : 96 },
+        visible: { opacity: 1, x: 0, transition: { duration: reduced ? 0 : 0.55, ease: EASE_STANDARD } },
       }}
       style={{ top: `${top}px`, zIndex: z }}
       className="absolute left-0 right-0 will-change-transform"
