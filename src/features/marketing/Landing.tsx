@@ -159,6 +159,7 @@ function Hero() {
             <span className="animate-bounce">↓</span>
           </div>
         </motion.div>
+        </motion.div>
       </div>
     </section>
   );
