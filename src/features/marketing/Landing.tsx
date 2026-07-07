@@ -133,13 +133,34 @@ function Hero() {
   const exitOpacity = useTransform(scrollYProgress, [0.88, 0.99], reduced ? [1, 1] : [1, 0], { clamp: true });
   const exitY = useTransform(scrollYProgress, [0.88, 0.99], reduced ? [0, 0] : [0, -40], { clamp: true });
 
+  // Deslocamentos 2D (mantidos) + eixo Z + rotações em X/Y para leitura 3D real.
   const topY = useTransform(explode, [0, 1], [0, -120]);
+  const topZ = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, 90]);
+  const topRotY = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, 160]);
+  const topBrightness = useTransform(explode, [0, 1], [1, 1.15]);
+
   const leftX = useTransform(explode, [0, 1], [0, -100]);
   const leftY = useTransform(explode, [0, 1], [0, 60]);
+  const leftZ = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, -70]);
+  const leftRotX = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, -140]);
+  const leftBrightness = useTransform(explode, [0, 1], [1, 0.85]);
+  const leftBlur = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, 1.5]);
+
   const rightX = useTransform(explode, [0, 1], [0, 100]);
   const rightY = useTransform(explode, [0, 1], [0, 60]);
-  const hexRot = useTransform(explode, [0, 1], [0, 180]);
-  const hexRotInv = useTransform(hexRot, (r) => -r);
+  const rightZ = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, 40]);
+  const rightRotY = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, -120]);
+
+  // Filtros compostos (brightness + shadow dependente de |z|).
+  const topFilter = useTransform([topBrightness, topZ] as unknown as MotionValue<number>[], (arr) => {
+    const [b, z] = arr as unknown as [number, number];
+    const shadow = Math.abs(z) > 20 ? `drop-shadow(0 ${8 + z / 6}px ${18 + z / 4}px rgba(0,148,255,0.35))` : "none";
+    return `brightness(${b}) ${shadow}`;
+  });
+  const leftFilter = useTransform([leftBrightness, leftBlur] as unknown as MotionValue<number>[], (arr) => {
+    const [b, bl] = arr as unknown as [number, number];
+    return `brightness(${b}) blur(${bl}px)`;
+  });
 
   return (
     <section ref={ref} className={`relative ${HERO_H}`}>
@@ -150,20 +171,31 @@ function Hero() {
           animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
           transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
           className="relative"
+          style={{ perspective: 1100 }}
         >
           <motion.div
             animate={reduced ? undefined : { rotate: 360 }}
             transition={{ duration: 30, ease: "linear", repeat: Infinity }}
             className="will-change-transform"
+            style={{ transformStyle: "preserve-3d" }}
           >
-            <div className="relative" style={{ width: 120, height: 120 }}>
-              <motion.div style={{ y: topY, rotate: hexRot }} className="absolute inset-0 will-change-transform">
+            <div className="relative" style={{ width: 120, height: 120, transformStyle: "preserve-3d" }}>
+              <motion.div
+                style={{ y: topY, z: topZ, rotateY: topRotY, filter: topFilter, transformStyle: "preserve-3d" }}
+                className="absolute inset-0 will-change-transform"
+              >
                 <HexOnly color="#0094FF" points="50,17 64.72,25.5 64.72,42.5 50,51 35.28,42.5 35.28,25.5" />
               </motion.div>
-              <motion.div style={{ x: leftX, y: leftY, rotate: hexRotInv }} className="absolute inset-0 will-change-transform">
+              <motion.div
+                style={{ x: leftX, y: leftY, z: leftZ, rotateX: leftRotX, filter: leftFilter, transformStyle: "preserve-3d" }}
+                className="absolute inset-0 will-change-transform"
+              >
                 <HexOnly color="#1CD8CA" points="33.548,45.5 48.268,54 48.268,71 33.548,79.5 18.828,71 18.828,54" />
               </motion.div>
-              <motion.div style={{ x: rightX, y: rightY, rotate: hexRot }} className="absolute inset-0 will-change-transform">
+              <motion.div
+                style={{ x: rightX, y: rightY, z: rightZ, rotateY: rightRotY, transformStyle: "preserve-3d" }}
+                className="absolute inset-0 will-change-transform"
+              >
                 <HexOnly color="#936FFA" points="66.452,45.5 81.172,54 81.172,71 66.452,79.5 51.732,71 51.732,54" />
               </motion.div>
               <Particles intensity={explode} />
