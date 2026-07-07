@@ -1,83 +1,76 @@
-BLOCO 0 — Estabilização das animações da Landing
+# Ajustes finais — Atmosfera + Hero da Landing
 
-Escopo restrito a `src/features/marketing/Landing.tsx` (+ `src/components/Logo.tsx` se necessário). Sem novas deps, sem mexer em rotas autenticadas/tema/tokens globais/textos além do especificado.
+Escopo: `src/features/marketing/Landing.tsx`, novo `src/features/marketing/RoamingHexes.tsx`, `src/hooks/useTheme.ts`, e utilitários em `src/styles.css`. Sem novas dependências.
 
-## 1. Plano
+## A1 — SlotWordmark com inércia (ease-in/out)
 
-### A. Hero — mantém scrub, corrige janela e wordmark
+Substituir o modelo atual (throttle fixo 80ms atrelado a `explode`) por um baseado em energia real do scroll:
 
-- Aumentar a janela de scrub: seção passa de `h-[115vh]` para `h-[220vh]` (sticky `h-screen` continua, gerando ~120vh úteis).
-- Consertar o loop de re-render do `SlotWordmark`:
-  - Remover `useMotionValueEvent(explode, "change", setSpinAmount)` (setState por frame).
-  - Remover o `setInterval(80ms)` de dígitos aleatórios.
-  - Novo `SlotWordmark`: recebe a `MotionValue<number>` (`explode`) diretamente. Cada letra é um `<motion.span>` cujo conteúdo é atualizado via `useMotionValueEvent` **local, condicionado por throttle de tempo (>=80ms)** e escrito no DOM com `ref.current.textContent` — zero re-render React. Fallback: quando `spinAmount <= 0.04`, mostra "banritools".
-  - `useReducedMotion`: desativa spin completamente (texto fixo "banritools").
-- Passar `spinAmount` como MotionValue (não number) para o novo componente.
+- Dentro de `SlotWordmark`, criar `scrollY` via `useScroll()` global e derivar `vel = useVelocity(scrollY)`.
+- `energy = useSpring(useTransform(vel, v => Math.min(1, Math.abs(v) / 1600)), { stiffness: 110, damping: 28 })` (K calibrado empiricamente).
+- Loop em `useAnimationFrame((t) => …)`: guardar `lastTick` e `interval = lerp(220, 50, energy.get())`; quando `energy < 0.05` por >120ms, escrever `BASE` ("banritools") e pausar. Escrita continua via `textContent` (zero setState).
+- Prop `spinAmount` deixa de ser necessária, mas mantida por compat (ignora). `aria-label="banritools"` no `<span>` para leitores de tela; visualmente segue mostrando dígitos aleatórios.
+- Reduced motion: nunca gira; textContent = BASE.
 
-### B. 6 seções (Registro, Painel, Metas, Ranking, Conquistas, Relatórios) — trocar sticky+scrub por `whileInView`
+## A2 — Explosão 3D (CSS 3D via framer, sem lib)
 
-Padrão único para as 6:
+No `Hero`:
 
-- Container: `<section className="relative py-24 md:py-32">` (altura natural, sem `h-[108vh]`, sem sticky, sem `h-screen`).
-- Wrapper de conteúdo com `initial={{ opacity: 0, y: 24 }}`, `whileInView={{ opacity: 1, y: 0 }}`, `viewport={{ once: true, margin: "-15% 0px" }}`, `transition={{ duration: 0.6, ease: [0.2,0,0,1] }}`.
-- Stagger via `staggerChildren: 0.08` no pai + variants nos filhos.
-- Substituir cada `useScroll`/`useTransform` pelas animações equivalentes disparadas 1× ao entrar:
-  - **Registro**: dígitos do form vão de 0→valor final via `animate` on-mount-in-view (tween 700ms).
-  - **Painel**: barras crescem `scaleY 0→v/8400` com stagger por barra.
-  - **Metas**: barra de progresso `width 0→pct` (tween 800ms, ease standard). Trocar `"Metas de novembro"` hardcoded por `Metas do mês` (regra: não mudar textos além do especificado — este está listado como bug de diagnóstico).
-  - **Ranking**: podium **sem `scaleY**`. Trocar por animação de `height` (0→target) via `motion.div` com `height` inicial 0 e `animate` para o alvo; o número "1º/2º/3º" fica fora do elemento animado (sobreposto absoluto no topo da barra, `pointer-events-none`) para não distorcer.
-  - **Conquistas**: entrada com stagger dos badges (`opacity` + `scale` 0.9→1).
-  - **Relatórios**: `rotateY` do card fica; dispara via `whileInView` (0→180 → volta a 0 num loop único, ou fica no estado final — manter mesmo comportamento visual final atual, só disparado 1× ao entrar).
-- Todos respeitam `useReducedMotion` → sem animação, estado final direto.
+- Contêiner de 120×120 que envolve os 3 hexágonos ganha `style={{ perspective: 1100, transformStyle: "preserve-3d" }}`. Cada `motion.div` filho recebe `transform-style: preserve-3d`.
+- Novos `useTransform(explode, …)`:
+  - Topo: `z: 0→90`, `rotateY: 0→160`, `filter: brightness(1→1.15)`.
+  - Esquerdo: `z: 0→-70`, `rotateX: 0→-140`, `filter: brightness(1→0.85) blur(0→1.5px)`.
+  - Direito: `z: 0→40`, `rotateY: 0→-120`.
+- Substituir `rotate` 2D atual por esses `rotateX/rotateY` por hex (mantém `x`/`y` existentes). Adiciona `drop-shadow` proporcional ao |z| (`0 8px 18px rgba(cor,0.35)` no hex mais próximo; hex afastado sem sombra).
+- Reduced motion: todos os transforms Z/rotateX/rotateY em `[0,0]` (comportamento estático mantido).
 
-### C. Wrapper raiz
+## A3 — `RoamingHexes` (3 hexágonos wireframe passeando)
 
-- Remover `overflow-hidden` de `<div id="top" className="…overflow-hidden">` (linha ~822). Substituir por `overflow-x-clip` (não vira scroll container, preserva `position: sticky` no iOS).
+Novo arquivo `src/features/marketing/RoamingHexes.tsx`:
 
-### D. Micro-ajustes
+- Componente client-only (guard `typeof window`). Retorna `<div className="fixed inset-0 pointer-events-none" style={{ zIndex: 1 }}>` com 3 `<svg>` absolutos.
+- Cada hex: `viewBox="0 0 100 100"`, polígono pointy-top, `fill="none"`, `stroke={cor}`, `strokeWidth={1.25}`, `strokeLinejoin="round"`. Tamanhos 360/420/300px. Cores `#0094FF`/`#1CD8CA`/`#936FFA`. Wrapper style: `filter: drop-shadow(0 0 10px cor) drop-shadow(0 0 28px cor66)`, `opacity: 0.3`.
+- Estado (via refs, sem React state): `{x, y, vx, vy, rot, vRot}` por hex, velocidades 18–30 px/s, rotação 4°/s. `requestAnimationFrame` escreve `el.style.transform = translate3d(x,y,0) rotate(rot)` diretamente. Inverter vx/vy ao tocar bordas (DVD-style). Recalcular limites em `resize`.
+- Pausar quando `document.hidden` (visibilitychange). Cleanup no unmount.
+- Reduced motion: renderiza posições fixas decorativas espalhadas, sem rAF.
+- Inserido em `Landing()` como irmão de `.ambient-glow`, fora do wrapper `z-10` (fica atrás do conteúdo, na frente do fundo).
 
-- Trocar `h-screen` do Hero sticky por `h-[100svh]` (evita pulo da barra do Safari mobile). Idem qualquer outro `h-screen` remanescente após remoção das 6 seções.
-- CTA hover: substituir `hover:bg-[#1CD8CA] text-white` por hover que mantém contraste AA — usar `hover:bg-[#0094FF]` (mesmo tom do primário, texto branco 4.5:1 OK) OU manter `#1CD8CA` mas com `text-[#0F172A]` (dark navy). Vou usar a 2ª opção (preserva a cor de marca teal).
-- `VideoMock`: cursor animado só renderiza em `md:` → adicionar `hidden md:block` no wrapper do cursor.
+## A4 — Tema: light default + nudge
 
-## 2. Arquivos/trechos a alterar
+`src/hooks/useTheme.ts`: mudar init para default `light` quando `localStorage.getItem("banritools-theme")` for `null`; qualquer valor salvo é respeitado.
 
-- `**src/features/marketing/Landing.tsx**`
-  - const `SECTION_H` removida (ou mantida só para o Hero como `HERO_H = "h-[220vh]"`).
-  - `SectionHero`: nova altura, `h-[100svh]` no sticky, wordmark passa MotionValue.
-  - `SlotWordmark`: reescrito sem setState/setInterval.
-  - `SectionRegistro`, `SectionPainel`, `SectionMetas`, `SectionRanking`, `SectionConquistas`, `SectionRelatorios`: remover `useScroll/useTransform/sticky/h-[108vh]`, aplicar padrão `whileInView` + variants.
-  - `PodiumBar`: refator para animar `height` e mover número para fora do bloco animado.
-  - Wrapper raiz: `overflow-hidden` → `overflow-x-clip`.
-  - CTAs: ajustar classes de hover.
-  - `VideoMock`: cursor com `hidden md:block`.
-  - Trocar `"Metas de novembro"` por `"Metas do mês"`.
-- `**src/components/Logo.tsx**`: provavelmente não precisa mudar. Só toco se o `SlotWordmark` for movido para lá — mas ele é interno à landing, fica no próprio arquivo.
+Novo estado no `ThemeToggle` da landing:
 
-## 3. Riscos
+- Ler/escrever `localStorage["bt_theme_nudge"] = { shows: number, done: boolean }`.
+- Ao montar: se `done`, não faz nada. Senão, se `shows < 2`, ativa `pulse=true` e incrementa `shows` (persistido). Auto-desativa após 12s.
+- `onClick`: seta `done=true`, para pulse imediatamente.
+- Visual: mesmo `.fab-radar` do RegisterFAB (já existe em `styles.css`) aplicado condicionalmente ao botão (`className={pulse ? "... fab-radar" : "..."}`). Sem tooltip.
+- Reduced motion: sem animação (`.fab-radar` já respeita).
 
-- **Ranking sem `scaleY**`: mudar para `height` animado pode reflowar o layout — mitigado usando `motion.div` com altura absoluta dentro de container de altura fixa (`h-[240px]`), então só a barra interna cresce.
-- `**overflow-x-clip**`: não suportado em Safari <16. Fallback aceitável (Safari antigo mostra scroll horizontal se algo vazar; hoje nada vaza porque os hexágonos ficam contidos no Hero).
-- **Wordmark via `textContent` direto**: precisa de `useRef` em cada `<span>`. Alternativa mais simples: um único `<span>` cujo `textContent` inteiro é reescrito. Vou usar a alternativa simples.
-- **Perda de "efeito assinatura" nas 6 seções**: aceito pelo brief — o Hero segura a assinatura.
-- **Regressão visual em estados finais**: os finais devem parecer iguais aos atuais (mesmas cores, tamanhos, textos).
+## A5 — Ruído + menos blur
 
-## 4. Critérios de aceite (como vou validar)
+- Novo utilitário CSS em `src/styles.css`: `.landing-noise` — `position: fixed; inset:0; pointer-events:none; z-index:2; opacity:.03; mix-blend-mode:soft-light; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");`. Reduced-motion irrelevante (estático).
+- Inserir `<div className="landing-noise" aria-hidden />` em `Landing()`.
+- Downgrade de blur na landing (SOMENTE `Landing.tsx`): substituir todas ocorrências `backdrop-blur-md` → `backdrop-blur-sm`; `bg-card/90` → `bg-card/80` mantendo `border-border` p/ contraste. Ocorrências identificadas: linhas 59 (TopBar), 278, 467, 530, 585, 606, 786.
 
-- Build/typecheck OK (harness roda automaticamente).
-- Playwright headless em `http://localhost:8080/`: capturar screenshots do Hero em `scrollY = 0, 400, 800, 1200` e das 6 seções ao entrar no viewport. Conferir:
-  - Wordmark do Hero não flickera (comparar frames 400↔500).
-  - Sticky do Hero permanece pinado ao longo da janela ampliada.
-  - Barras do Ranking crescem sem esticar o número.
-  - `"Metas do mês"` presente.
-  - Cursor do VideoMock ausente em viewport 375px, presente em 1280px.
-- Console limpo (sem warnings novos de framer-motion).
-- Testar `prefers-reduced-motion: reduce` via emulação → todas as seções renderizam no estado final sem animar.
+## Arquivos
 
-## 5. Perguntas antes de implementar
+- `src/features/marketing/Landing.tsx` — refatorar Hero (A2) + SlotWordmark (A1) + ThemeToggle nudge (A4) + inserir `<RoamingHexes/>` e `.landing-noise` (A3/A5) + swap dos blurs (A5).
+- `src/features/marketing/RoamingHexes.tsx` — novo.
+- `src/hooks/useTheme.ts` — default `light`.
+- `src/styles.css` — adicionar `.landing-noise` e (se necessário) manter `.fab-radar` já existente.
 
-Nenhuma bloqueante. Sigo a estratégia aprovada. Se preferir cor de hover diferente para o CTA (item D), me diga; caso contrário aplico `#1CD8CA` + texto `#0F172A`.
+## Riscos
 
-Resposta p pergunta acima:
+- Perspective 3D em Safari iOS: `preserve-3d` no filho às vezes é ignorado se o pai tem `overflow-hidden`. O wrapper sticky do Hero tem `overflow-hidden`; testar em 390px — se cortar, mover o perspective para dentro do sticky (após overflow) mantendo o efeito.
+- `useVelocity` do `scrollYProgress` local pode ficar zerado quando o Hero sai da tela — por isso usar `useScroll()` global (`window`).
+- Nudge no primeiro acesso pode conflitar com SSR: inicializar `pulse=false`, ativar em `useEffect` (client-only).
+- RoamingHexes atrás do conteúdo: `z-index:1` fica abaixo de `.relative z-10`. Confirmar que `.ambient-glow` continua em `z:0` (é `position: fixed; z-index:0` no CSS atual).
 
-No item D, use hover:bg-[#0077DB] com texto branco
+## Validação
+
+- `tsgo --noEmit`.
+- Playwright 1280×1800 e 390×844: screenshot do Hero em `scrollY=0`, `400`, `800`, `1400`; verificar profundidade visível dos hexágonos, wordmark girando com aceleração/desaceleração ao dar scroll pulsado, roaming hexes visíveis discretos, ruído perceptível apenas em zoom.
+- Limpar `localStorage` e recarregar 2×: pulse aparece nas 2 primeiras visitas; após clicar, nunca mais.
+- Testar com DevTools `Rendering → prefers-reduced-motion: reduce`: sem animações; hexes estáticos; wordmark "banritools".
+- Console limpo.
