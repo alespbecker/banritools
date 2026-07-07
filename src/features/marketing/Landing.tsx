@@ -113,6 +113,7 @@ function Hero() {
   return (
     <section ref={ref} className={`relative ${HERO_H}`}>
       <div className="sticky top-0 h-[100svh] flex flex-col items-center justify-center overflow-hidden">
+        <motion.div style={{ opacity: exitOpacity, y: exitY }} className="flex flex-col items-center justify-center w-full will-change-transform">
         <motion.div
           initial={{ opacity: 0, scale: 0.25, filter: "blur(12px)" }}
           animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
