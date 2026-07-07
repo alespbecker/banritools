@@ -86,7 +86,7 @@ function ThemeToggle() {
 
 function TopBar() {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-background/60 border-b border-border/40">
+    <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm bg-background/60 border-b border-border/40">
       <div className="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5">
           <Logo size={26} />
@@ -355,7 +355,7 @@ function VideoMock() {
     <section ref={ref} className="relative">
       <div className="mx-auto max-w-6xl px-6 -mt-8 md:-mt-12 mb-8">
         <div
-          className="relative rounded-2xl border border-border bg-card/70 backdrop-blur-md overflow-hidden shadow-2xl shadow-primary/10"
+          className="relative rounded-2xl border border-border bg-card/70 backdrop-blur-sm overflow-hidden shadow-2xl shadow-primary/10"
           style={{
             aspectRatio: "16/9",
             WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)",
@@ -544,7 +544,7 @@ function RegistroCard({ product, index }: { product: (typeof MOCK_PRODUCTS)[numb
 function MockRegistro({ product }: { product: (typeof MOCK_PRODUCTS)[number] }) {
   return (
     <div
-      className="rounded-2xl border bg-card/90 backdrop-blur-sm shadow-2xl p-5 max-w-md mx-auto"
+      className="rounded-2xl border bg-card/80 backdrop-blur-sm shadow-2xl p-5 max-w-md mx-auto"
       style={{ borderColor: `${product.color}55`, boxShadow: `0 20px 50px -20px ${product.color}55` }}
     >
       <div className="flex items-center justify-between mb-3">
@@ -863,7 +863,7 @@ function SectionRelatorios() {
             whileInView={{ rotateY: reduced ? 0 : -6 }}
             viewport={IN_VIEW}
             transition={{ duration: 1.1, ease: EASE_STANDARD }}
-            className="absolute inset-0 rounded-xl border border-border bg-card/90 backdrop-blur-sm shadow-2xl shadow-primary/20 overflow-hidden [transform-style:preserve-3d]"
+            className="absolute inset-0 rounded-xl border border-border bg-card/80 backdrop-blur-sm shadow-2xl shadow-primary/20 overflow-hidden [transform-style:preserve-3d]"
           >
             <div className="h-9 bg-[#0a1a2f] flex items-center px-4 gap-2">
               <Logo size={16} />
