@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 
 export function useTheme() {
   const [theme, setThemeState] = useState<"dark" | "light">(() => {
-    if (typeof window === "undefined") return "dark";
-    return (localStorage.getItem("banritools-theme") as "dark" | "light") || "dark";
+    if (typeof window === "undefined") return "light";
+    const saved = localStorage.getItem("banritools-theme") as "dark" | "light" | null;
+    return saved ?? "light";
   });
 
   useEffect(() => {
