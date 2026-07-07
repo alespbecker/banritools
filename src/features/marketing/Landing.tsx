@@ -46,12 +46,39 @@ const IN_VIEW = { once: true, margin: "-15% 0px" } as const;
 /* ============ TOP BAR + tema ============ */
 function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const [pulse, setPulse] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("bt_theme_nudge");
+      const parsed = raw ? JSON.parse(raw) as { shows?: number; done?: boolean } : {};
+      if (parsed.done) return;
+      const shows = (parsed.shows ?? 0) + 1;
+      if (shows > 2) {
+        localStorage.setItem("bt_theme_nudge", JSON.stringify({ shows, done: true }));
+        return;
+      }
+      localStorage.setItem("bt_theme_nudge", JSON.stringify({ shows, done: false }));
+      setPulse(true);
+      const t = setTimeout(() => setPulse(false), 12000);
+      return () => clearTimeout(t);
+    } catch { /* ignore */ }
+  }, []);
+
+  const handleClick = () => {
+    try {
+      localStorage.setItem("bt_theme_nudge", JSON.stringify({ shows: 99, done: true }));
+    } catch { /* ignore */ }
+    setPulse(false);
+    toggleTheme();
+  };
+
   return (
     <button
       type="button"
-      onClick={toggleTheme}
+      onClick={handleClick}
       aria-label={theme === "dark" ? "Mudar para tema claro" : "Mudar para tema escuro"}
-      className="h-8 w-8 grid place-items-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition"
+      className={`h-8 w-8 grid place-items-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition ${pulse ? "fab-radar" : ""}`}
     >
       {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </button>
