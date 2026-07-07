@@ -951,6 +951,8 @@ export function Landing() {
         <span />
         <span />
       </div>
+      <RoamingHexes />
+      <div className="landing-noise" aria-hidden="true" />
       <div className="relative z-10">
         <TopBar />
         <Hero />
