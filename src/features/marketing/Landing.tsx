@@ -97,8 +97,10 @@ function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
-  // Janela ampla: explosão total acontece ao longo de ~120vh de scroll útil.
-  const explode = useTransform(scrollYProgress, [0, 0.55], reduced ? [0, 0] : [0, 1], { clamp: true });
+  // Explosão progride ao longo de ~85% do pin; últimos ~15% costuram a saída.
+  const explode = useTransform(scrollYProgress, [0, 0.85], reduced ? [0, 0] : [0, 1], { clamp: true });
+  const exitOpacity = useTransform(scrollYProgress, [0.88, 0.99], reduced ? [1, 1] : [1, 0], { clamp: true });
+  const exitY = useTransform(scrollYProgress, [0.88, 0.99], reduced ? [0, 0] : [0, -40], { clamp: true });
 
   const topY = useTransform(explode, [0, 1], [0, -120]);
   const leftX = useTransform(explode, [0, 1], [0, -100]);
