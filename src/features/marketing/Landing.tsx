@@ -7,8 +7,12 @@ import {
   useReducedMotion,
   useMotionValueEvent,
   useInView,
+  useVelocity,
+  useSpring,
+  useAnimationFrame,
   type MotionValue,
 } from "framer-motion";
+import { RoamingHexes } from "@/features/marketing/RoamingHexes";
 import { Logo, LogoHexes } from "@/components/Logo";
 import { useTheme } from "@/hooks/useTheme";
 import {
