@@ -281,11 +281,11 @@ function SlotWordmark() {
               colRefs.current[i] = el;
             }}
             className="block will-change-transform"
-            style={{ transitionProperty: "transform, filter" }}
+            style={{ transitionProperty: "transform, filter", fontFamily: "Poppins, sans-serif" }}
           >
-            <span className="block text-center" style={{ height: CHAR_H, lineHeight: `${CHAR_H}px` }}>{ch}</span>
+            <span className="block text-center" style={{ height: CHAR_H, lineHeight: `${CHAR_H}px`, fontFamily: "Poppins, sans-serif" }}>{ch}</span>
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
-              <span key={d} className="block text-center tabular-nums" style={{ height: CHAR_H, lineHeight: `${CHAR_H}px` }}>{d}</span>
+              <span key={d} className="block text-center tabular-nums" style={{ height: CHAR_H, lineHeight: `${CHAR_H}px`, fontFamily: "Poppins, sans-serif" }}>{d}</span>
             ))}
           </span>
         </span>
