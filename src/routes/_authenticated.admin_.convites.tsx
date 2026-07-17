@@ -14,7 +14,7 @@ import { UnauthorizedState } from "@/components/states/UnauthorizedState";
 import { Users, Plus, Copy, Trash2, Link as LinkIcon, CheckCircle2, Pencil, Inbox, X } from "lucide-react";
 import { toast } from "sonner";
 import type { AppRole } from "@/features/auth/types";
-import { listAgencyUsers, type AgencyUserRow } from "@/features/admin/users";
+import { listAgencyUsers, deleteAgencyUser, type AgencyUserRow } from "@/features/admin/users";
 import { UserEditDialog } from "@/features/admin/UserEditDialog";
 import { cargoLabel } from "@/features/auth/cargos";
 
