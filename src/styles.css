@@ -72,7 +72,9 @@
   --radius: 0.625rem;
 
   /* Backgrounds — escala bg-primary / secondary / tertiary */
-  --background: oklch(0.16 0.025 265);   /* #0B1220 */
+  --background: #070910;
+  --surface: #0D1018;
+  --surface-2: #181E28;
   --foreground: oklch(0.98 0.003 250);   /* #F9FAFB */
 
   --card: oklch(0.21 0.028 265);         /* #111827 (bg-secondary) */
