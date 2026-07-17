@@ -9,7 +9,6 @@ import {
   useVelocity,
   useSpring,
   useAnimationFrame,
-  type MotionValue,
 } from "framer-motion";
 import { RoamingHexes } from "@/features/marketing/RoamingHexes";
 import { Logo, LogoHexes } from "@/components/Logo";
