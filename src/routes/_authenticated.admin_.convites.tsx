@@ -421,6 +421,48 @@ function Page() {
           currentAdminId={user.id}
         />
       )}
+
+      <Dialog open={!!deletingUser} onOpenChange={(v) => !v && !deleting && setDeletingUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
+            <p>
+              Tem certeza que deseja excluir <strong>{deletingUser?.name ?? deletingUser?.email}</strong>?
+            </p>
+            <p className="text-muted-foreground">
+              Esta ação é permanente e remove o acesso, o perfil e todos os lançamentos, metas e interações
+              vinculados a este usuário. Não é possível desfazer.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingUser(null)} disabled={deleting}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleting}
+              onClick={async () => {
+                if (!deletingUser) return;
+                setDeleting(true);
+                try {
+                  await deleteAgencyUser(deletingUser.id);
+                  toast.success("Usuário excluído");
+                  setDeletingUser(null);
+                  await load();
+                } catch (e) {
+                  toast.error((e as Error).message);
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" /> Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }
