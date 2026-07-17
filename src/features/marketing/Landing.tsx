@@ -190,7 +190,6 @@ function HexOnly({ color, points }: { color: string; points: string }) {
       style={{
         strokeLinejoin: "round",
         strokeLinecap: "round",
-        filter: `drop-shadow(0 0 16px ${color})`,
       }}
     >
       <polygon fill={color} stroke={color} strokeWidth="2" points={points} />
@@ -198,98 +197,21 @@ function HexOnly({ color, points }: { color: string; points: string }) {
   );
 }
 
-/** Wordmark "roleta" — cada letra é uma coluna vertical [letra, 0..9].
- *  Enquanto há energia de scroll, colunas cyclam dígitos (transição curta).
- *  Ao parar, cada coluna volta à letra com stagger 60ms da direita para a
- *  esquerda, 700ms, cubic-bezier(0.23,1,0.32,1). */
+/** Wordmark estático "banritools" em Poppins. */
 function SlotWordmark() {
-  const BASE = "banritools";
-  const N = BASE.length;
-  const CHAR_H = 48;
-  const reduced = useReducedMotion();
-  const colRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const lastTickRef = useRef(0);
-  const spinningRef = useRef(false);
-
-  const { scrollY } = useScroll();
-  const rawVel = useVelocity(scrollY);
-  const rawEnergy = useTransform(rawVel, (v) => Math.min(1, Math.abs(v) / 1600));
-  const energy = useSpring(rawEnergy, { stiffness: 110, damping: 28 });
-
-  const setCol = (i: number, idx: number, spinning: boolean) => {
-    const el = colRefs.current[i];
-    if (!el) return;
-    if (spinning) {
-      el.style.transitionDuration = "140ms";
-      el.style.transitionDelay = "0ms";
-      el.style.transitionTimingFunction = "linear";
-      el.style.filter = "blur(1.5px)";
-    } else {
-      el.style.transitionDuration = "700ms";
-      el.style.transitionDelay = `${(N - 1 - i) * 60}ms`;
-      el.style.transitionTimingFunction = "cubic-bezier(0.23, 1, 0.32, 1)";
-      el.style.filter = "blur(0px)";
-    }
-    el.style.transform = `translateY(-${idx * CHAR_H}px)`;
-  };
-
-  useAnimationFrame((t) => {
-    if (reduced) {
-      for (let i = 0; i < N; i++) setCol(i, 0, false);
-      return;
-    }
-    const e = energy.get();
-    if (e < 0.05) {
-      if (spinningRef.current) {
-        spinningRef.current = false;
-        for (let i = 0; i < N; i++) setCol(i, 0, false);
-      }
-      return;
-    }
-    spinningRef.current = true;
-    const interval = 220 - (220 - 50) * e;
-    if (t - lastTickRef.current < interval) return;
-    lastTickRef.current = t;
-    for (let i = 0; i < N; i++) {
-      const digit = Math.floor(Math.random() * 10);
-      setCol(i, digit + 1, true);
-    }
-  });
-
   return (
     <span
-      aria-label={BASE}
-      className="inline-flex lowercase"
+      className="inline-block lowercase"
       style={{
         fontFamily: "Poppins, sans-serif",
-        fontWeight: 350,
+        fontWeight: 500,
         fontSize: 48,
-        lineHeight: `${CHAR_H}px`,
-        height: CHAR_H,
+        lineHeight: 1,
         letterSpacing: "0.048em",
         WebkitFontSmoothing: "antialiased",
       }}
     >
-      {BASE.split("").map((ch, i) => (
-        <span
-          key={i}
-          className="relative inline-block overflow-hidden align-top"
-          style={{ height: CHAR_H, width: "0.6em" }}
-        >
-          <span
-            ref={(el) => {
-              colRefs.current[i] = el;
-            }}
-            className="block will-change-transform"
-            style={{ transitionProperty: "transform, filter", fontFamily: "Poppins, sans-serif" }}
-          >
-            <span className="block text-center" style={{ height: CHAR_H, lineHeight: `${CHAR_H}px`, fontFamily: "Poppins, sans-serif" }}>{ch}</span>
-            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
-              <span key={d} className="block text-center tabular-nums" style={{ height: CHAR_H, lineHeight: `${CHAR_H}px`, fontFamily: "Poppins, sans-serif" }}>{d}</span>
-            ))}
-          </span>
-        </span>
-      ))}
+      banritools
     </span>
   );
 }
