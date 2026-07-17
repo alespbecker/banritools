@@ -259,14 +259,15 @@ function SlotWordmark() {
   return (
     <span
       aria-label={BASE}
-      className="inline-flex lowercase font-medium"
+      className="inline-flex lowercase"
       style={{
         fontFamily: "Poppins, sans-serif",
-        fontWeight: 500,
+        fontWeight: 350,
         fontSize: 48,
         lineHeight: `${CHAR_H}px`,
         height: CHAR_H,
         letterSpacing: "0.048em",
+        WebkitFontSmoothing: "antialiased",
       }}
     >
       {BASE.split("").map((ch, i) => (
