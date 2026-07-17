@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   motion,
-  useScroll,
-  useTransform,
   useReducedMotion,
   useInView,
 } from "framer-motion";
