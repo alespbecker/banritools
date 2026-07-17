@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   motion,
-  useScroll,
-  useTransform,
   useReducedMotion,
   useInView,
 } from "framer-motion";
@@ -35,7 +33,6 @@ import {
  */
 
 const EASE_STANDARD = [0.2, 0, 0, 1] as const;
-const HERO_H = "h-[220vh]";
 const IN_VIEW = { once: true, margin: "-15% 0px" } as const;
 
 /* ============ TOP BAR + tema ============ */
@@ -120,16 +117,11 @@ function SectionEyebrow({ icon: Icon, label }: { icon: React.ComponentType<{ cla
 
 /* ============ 1. HERO — logotipo rota, wordmark em roleta ============ */
 function Hero() {
-  const ref = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
-  const exitOpacity = useTransform(scrollYProgress, [0.88, 0.99], reduced ? [1, 1] : [1, 0], { clamp: true });
-  const exitY = useTransform(scrollYProgress, [0.88, 0.99], reduced ? [0, 0] : [0, -40], { clamp: true });
 
   return (
-    <section ref={ref} className={`relative ${HERO_H}`}>
-      <div className="sticky top-0 h-[100svh] flex flex-col items-center justify-center overflow-hidden">
-        <motion.div style={{ opacity: exitOpacity, y: exitY }} className="flex flex-col items-center justify-center w-full will-change-transform">
+    <section className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden">
+      <div className="flex flex-col items-center justify-center w-full">
         <motion.div
           initial={{ opacity: 0, scale: 0.25, filter: "blur(12px)" }}
           animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
@@ -172,11 +164,11 @@ function Hero() {
             <span className="animate-bounce">↓</span>
           </div>
         </motion.div>
-        </motion.div>
       </div>
     </section>
   );
 }
+
 
 function HexOnly({ color, points }: { color: string; points: string }) {
   return (
