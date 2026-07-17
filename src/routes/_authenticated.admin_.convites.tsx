@@ -65,6 +65,8 @@ function Page() {
   const [creating, setCreating] = useState(false);
   const [justCreated, setJustCreated] = useState<Invite | null>(null);
   const [editingUser, setEditingUser] = useState<AgencyUserRow | null>(null);
+  const [deletingUser, setDeletingUser] = useState<AgencyUserRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [processingReqId, setProcessingReqId] = useState<string | null>(null);
 
   const canManage = userRole === "admin" || userRole === "gerente";
