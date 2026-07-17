@@ -6,9 +6,6 @@ import {
   useTransform,
   useReducedMotion,
   useInView,
-  useVelocity,
-  useSpring,
-  useAnimationFrame,
 } from "framer-motion";
 import { RoamingHexes } from "@/features/marketing/RoamingHexes";
 import { Logo, LogoHexes } from "@/components/Logo";
