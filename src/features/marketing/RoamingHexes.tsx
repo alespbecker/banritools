@@ -1,10 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 
 /**
- * Camada decorativa: 3 hexágonos wireframe grandes passeando pela viewport
- * (DVD-style). Movimento por rAF escrevendo transform direto no DOM.
- * Fica atrás do conteúdo (z=1) e na frente do background/ambient-glow (z=0).
+ * Camada decorativa: 3 hexágonos wireframe passeando pela viewport
+ * (DVD-style). Cantos arredondados (~5px viewBox), stroke fino, glow
+ * suave. No mobile o tamanho é 1/3 do desktop.
  */
 
 type HexDef = {
@@ -18,13 +18,37 @@ type HexDef = {
   vRot: number;
 };
 
-const HEX_POINTS = "50,4 91.57,27 91.57,73 50,96 8.43,73 8.43,27";
+// Hexágono com cantos arredondados via cubic-bezier em cada vértice.
+// Gerado a partir dos 6 vértices originais com raio ≈ 5 (em unidades viewBox 0..100).
+function roundedHexPath(pts: Array<[number, number]>, r: number): string {
+  const n = pts.length;
+  let d = "";
+  for (let i = 0; i < n; i++) {
+    const prev = pts[(i - 1 + n) % n];
+    const curr = pts[i];
+    const next = pts[(i + 1) % n];
+    const v1x = prev[0] - curr[0], v1y = prev[1] - curr[1];
+    const v2x = next[0] - curr[0], v2y = next[1] - curr[1];
+    const l1 = Math.hypot(v1x, v1y);
+    const l2 = Math.hypot(v2x, v2y);
+    const p1x = curr[0] + (v1x / l1) * r, p1y = curr[1] + (v1y / l1) * r;
+    const p2x = curr[0] + (v2x / l2) * r, p2y = curr[1] + (v2y / l2) * r;
+    d += i === 0 ? `M${p1x},${p1y}` : ` L${p1x},${p1y}`;
+    d += ` Q${curr[0]},${curr[1]} ${p2x},${p2y}`;
+  }
+  return d + " Z";
+}
 
-function makeInitial(): HexDef[] {
+const HEX_VERTS: Array<[number, number]> = [
+  [50, 4], [91.57, 27], [91.57, 73], [50, 96], [8.43, 73], [8.43, 27],
+];
+const HEX_PATH = roundedHexPath(HEX_VERTS, 5);
+
+function makeInitial(scale: number): HexDef[] {
   return [
-    { size: 360, color: "#0094FF", x: 80,  y: 120, vx:  22, vy:  18, rot:   0, vRot:  4 },
-    { size: 420, color: "#1CD8CA", x: 900, y: 320, vx: -26, vy:  24, rot:  30, vRot: -3 },
-    { size: 300, color: "#936FFA", x: 500, y: 700, vx:  20, vy: -28, rot:  60, vRot:  5 },
+    { size: 360 * scale, color: "#0094FF", x: 80,  y: 120, vx:  22, vy:  18, rot:   0, vRot:  4 },
+    { size: 420 * scale, color: "#1CD8CA", x: 900, y: 320, vx: -26, vy:  24, rot:  30, vRot: -3 },
+    { size: 300 * scale, color: "#936FFA", x: 500, y: 700, vx:  20, vy: -28, rot:  60, vRot:  5 },
   ];
 }
 
@@ -32,11 +56,23 @@ export function RoamingHexes() {
   const reduced = useReducedMotion();
   const containerRef = useRef<HTMLDivElement>(null);
   const refs = useRef<(HTMLDivElement | null)[]>([null, null, null]);
-  const state = useRef<HexDef[]>(makeInitial());
+  const [isMobile, setIsMobile] = useState(false);
+  const state = useRef<HexDef[]>(makeInitial(1));
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const apply = () => {
+      const mob = mq.matches;
+      setIsMobile(mob);
+      state.current = makeInitial(mob ? 1 / 3 : 1);
+    };
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   useEffect(() => {
     if (reduced) {
-      // Estáticos em posições decorativas
       state.current.forEach((h, i) => {
         const el = refs.current[i];
         if (el) el.style.transform = `translate3d(${h.x}px, ${h.y}px, 0) rotate(${h.rot}deg)`;
@@ -48,10 +84,7 @@ export function RoamingHexes() {
     let last = performance.now();
     let paused = false;
 
-    const getBounds = () => ({
-      w: window.innerWidth,
-      h: window.innerHeight,
-    });
+    const getBounds = () => ({ w: window.innerWidth, h: window.innerHeight });
 
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
@@ -91,7 +124,7 @@ export function RoamingHexes() {
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("resize", onResize);
     };
-  }, [reduced]);
+  }, [reduced, isMobile]);
 
   return (
     <div
@@ -109,17 +142,12 @@ export function RoamingHexes() {
             width: h.size,
             height: h.size,
             opacity: 0.3,
-            filter: `drop-shadow(0 0 10px ${h.color}) drop-shadow(0 0 28px ${h.color}66)`,
+            filter: `drop-shadow(0 0 6px ${h.color}) drop-shadow(0 0 18px ${h.color}88)`,
             transform: `translate3d(${h.x}px, ${h.y}px, 0) rotate(${h.rot}deg)`,
           }}
         >
           <svg viewBox="0 0 100 100" width="100%" height="100%" style={{ strokeLinejoin: "round", strokeLinecap: "round" }}>
-            <polygon
-              points={HEX_POINTS}
-              fill="none"
-              stroke={h.color}
-              strokeWidth={1.25}
-            />
+            <path d={HEX_PATH} fill="none" stroke={h.color} strokeWidth={0.42} />
           </svg>
         </div>
       ))}
