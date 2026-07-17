@@ -57,6 +57,13 @@ export async function setUserRole(targetUserId: string, role: AppRole) {
   if (error) throw error;
 }
 
+export async function deleteAgencyUser(targetUserId: string) {
+  const { error } = await supabase.rpc("admin_delete_user", {
+    _target_user_id: targetUserId,
+  });
+  if (error) throw error;
+}
+
 export interface ProductionEntryRow {
   id: string;
   entry_date: string;

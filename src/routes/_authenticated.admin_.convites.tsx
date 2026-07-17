@@ -14,7 +14,7 @@ import { UnauthorizedState } from "@/components/states/UnauthorizedState";
 import { Users, Plus, Copy, Trash2, Link as LinkIcon, CheckCircle2, Pencil, Inbox, X } from "lucide-react";
 import { toast } from "sonner";
 import type { AppRole } from "@/features/auth/types";
-import { listAgencyUsers, type AgencyUserRow } from "@/features/admin/users";
+import { listAgencyUsers, deleteAgencyUser, type AgencyUserRow } from "@/features/admin/users";
 import { UserEditDialog } from "@/features/admin/UserEditDialog";
 import { cargoLabel } from "@/features/auth/cargos";
 
@@ -65,6 +65,8 @@ function Page() {
   const [creating, setCreating] = useState(false);
   const [justCreated, setJustCreated] = useState<Invite | null>(null);
   const [editingUser, setEditingUser] = useState<AgencyUserRow | null>(null);
+  const [deletingUser, setDeletingUser] = useState<AgencyUserRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [processingReqId, setProcessingReqId] = useState<string | null>(null);
 
   const canManage = userRole === "admin" || userRole === "gerente";
@@ -329,11 +331,23 @@ function Page() {
                     <td className="p-3">{cargoLabel(u.cargo, u.cargo_especialidade)}</td>
                     <td className="p-3 capitalize">{u.role ?? "—"}</td>
                     <td className="p-3">
-                      <div className="flex justify-end">
+                      <div className="flex justify-end gap-1">
                         {isOwner ? (
-                          <Button variant="ghost" size="sm" onClick={() => setEditingUser(u)} aria-label="Editar usuário">
-                            <Pencil className="h-3.5 w-3.5" /> Editar
-                          </Button>
+                          <>
+                            <Button variant="ghost" size="sm" onClick={() => setEditingUser(u)} aria-label="Editar usuário">
+                              <Pencil className="h-3.5 w-3.5" /> Editar
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeletingUser(u)}
+                              disabled={u.id === user?.id}
+                              aria-label="Excluir usuário"
+                              title={u.id === user?.id ? "Você não pode excluir a própria conta" : "Excluir usuário"}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </>
                         ) : (
                           <span className="text-xs text-muted-foreground">Somente admin</span>
                         )}
@@ -407,6 +421,48 @@ function Page() {
           currentAdminId={user.id}
         />
       )}
+
+      <Dialog open={!!deletingUser} onOpenChange={(v) => !v && !deleting && setDeletingUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
+            <p>
+              Tem certeza que deseja excluir <strong>{deletingUser?.name ?? deletingUser?.email}</strong>?
+            </p>
+            <p className="text-muted-foreground">
+              Esta ação é permanente e remove o acesso, o perfil e todos os lançamentos, metas e interações
+              vinculados a este usuário. Não é possível desfazer.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingUser(null)} disabled={deleting}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleting}
+              onClick={async () => {
+                if (!deletingUser) return;
+                setDeleting(true);
+                try {
+                  await deleteAgencyUser(deletingUser.id);
+                  toast.success("Usuário excluído");
+                  setDeletingUser(null);
+                  await load();
+                } catch (e) {
+                  toast.error((e as Error).message);
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" /> Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }
