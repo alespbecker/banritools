@@ -33,7 +33,6 @@ import {
  */
 
 const EASE_STANDARD = [0.2, 0, 0, 1] as const;
-const HERO_H = "h-[220vh]";
 const IN_VIEW = { once: true, margin: "-15% 0px" } as const;
 
 /* ============ TOP BAR + tema ============ */
