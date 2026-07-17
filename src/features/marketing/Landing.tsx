@@ -122,44 +122,13 @@ function SectionEyebrow({ icon: Icon, label }: { icon: React.ComponentType<{ cla
   );
 }
 
-/* ============ 1. HERO — scrub por scroll, janela ampla ============ */
+/* ============ 1. HERO — logotipo rota, wordmark em roleta ============ */
 function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
-  // Explosão progride ao longo de ~85% do pin; últimos ~15% costuram a saída.
-  const explode = useTransform(scrollYProgress, [0, 0.85], reduced ? [0, 0] : [0, 1], { clamp: true });
   const exitOpacity = useTransform(scrollYProgress, [0.88, 0.99], reduced ? [1, 1] : [1, 0], { clamp: true });
   const exitY = useTransform(scrollYProgress, [0.88, 0.99], reduced ? [0, 0] : [0, -40], { clamp: true });
-
-  // Deslocamentos 2D (mantidos) + eixo Z + rotações em X/Y para leitura 3D real.
-  const topY = useTransform(explode, [0, 1], [0, -120]);
-  const topZ = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, 90]);
-  const topRotY = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, 160]);
-  const topBrightness = useTransform(explode, [0, 1], [1, 1.15]);
-
-  const leftX = useTransform(explode, [0, 1], [0, -100]);
-  const leftY = useTransform(explode, [0, 1], [0, 60]);
-  const leftZ = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, -70]);
-  const leftRotX = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, -140]);
-  const leftBrightness = useTransform(explode, [0, 1], [1, 0.85]);
-  const leftBlur = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, 1.5]);
-
-  const rightX = useTransform(explode, [0, 1], [0, 100]);
-  const rightY = useTransform(explode, [0, 1], [0, 60]);
-  const rightZ = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, 40]);
-  const rightRotY = useTransform(explode, [0, 1], reduced ? [0, 0] : [0, -120]);
-
-  // Filtros compostos (brightness + shadow dependente de |z|).
-  const topFilter = useTransform([topBrightness, topZ] as unknown as MotionValue<number>[], (arr) => {
-    const [b, z] = arr as unknown as [number, number];
-    const shadow = Math.abs(z) > 20 ? `drop-shadow(0 ${8 + z / 6}px ${18 + z / 4}px rgba(0,148,255,0.35))` : "none";
-    return `brightness(${b}) ${shadow}`;
-  });
-  const leftFilter = useTransform([leftBrightness, leftBlur] as unknown as MotionValue<number>[], (arr) => {
-    const [b, bl] = arr as unknown as [number, number];
-    return `brightness(${b}) blur(${bl}px)`;
-  });
 
   return (
     <section ref={ref} className={`relative ${HERO_H}`}>
@@ -170,34 +139,20 @@ function Hero() {
           animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
           transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
           className="relative"
-          style={{ perspective: 1100 }}
         >
           <motion.div
             animate={reduced ? undefined : { rotate: 360 }}
             transition={{ duration: 30, ease: "linear", repeat: Infinity }}
             className="will-change-transform"
-            style={{ transformStyle: "preserve-3d" }}
           >
-            <div className="relative" style={{ width: 120, height: 120, transformStyle: "preserve-3d" }}>
-              <motion.div
-                style={{ y: topY, z: topZ, rotateY: topRotY, filter: topFilter, transformStyle: "preserve-3d" }}
-                className="absolute inset-0 will-change-transform"
-              >
-                <HexOnly color="#0094FF" points="50,17 64.72,25.5 64.72,42.5 50,51 35.28,42.5 35.28,25.5" />
-              </motion.div>
-              <motion.div
-                style={{ x: leftX, y: leftY, z: leftZ, rotateX: leftRotX, filter: leftFilter, transformStyle: "preserve-3d" }}
-                className="absolute inset-0 will-change-transform"
-              >
+            <div className="relative" style={{ width: 120, height: 120 }}>
+              <HexOnly color="#0094FF" points="50,17 64.72,25.5 64.72,42.5 50,51 35.28,42.5 35.28,25.5" />
+              <div className="absolute inset-0">
                 <HexOnly color="#1CD8CA" points="33.548,45.5 48.268,54 48.268,71 33.548,79.5 18.828,71 18.828,54" />
-              </motion.div>
-              <motion.div
-                style={{ x: rightX, y: rightY, z: rightZ, rotateY: rightRotY, transformStyle: "preserve-3d" }}
-                className="absolute inset-0 will-change-transform"
-              >
+              </div>
+              <div className="absolute inset-0">
                 <HexOnly color="#936FFA" points="66.452,45.5 81.172,54 81.172,71 66.452,79.5 51.732,71 51.732,54" />
-              </motion.div>
-              <Particles intensity={explode} />
+              </div>
             </div>
           </motion.div>
         </motion.div>
@@ -208,8 +163,8 @@ function Hero() {
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
           className="mt-3 flex flex-col items-center text-center px-6 max-w-3xl"
         >
-          <SlotWordmark spinAmount={explode} />
-          <p className="mt-10 text-sm md:text-base text-muted-foreground font-light max-w-xl">
+          <SlotWordmark />
+          <p className="mt-10 text-sm md:text-base font-light max-w-xl" style={{ color: "#C5CCDA" }}>
             Um jogo com cara de gerenciador: veja em tempo real a produção da agência
             e divirta-se enquanto vende.
           </p>
@@ -229,98 +184,116 @@ function Hero() {
 
 function HexOnly({ color, points }: { color: string; points: string }) {
   return (
-    <svg viewBox="0 0 100 100" width="100%" height="100%" style={{ strokeLinejoin: "round", strokeLinecap: "round" }}>
+    <svg
+      viewBox="0 0 100 100"
+      width="100%"
+      height="100%"
+      style={{
+        strokeLinejoin: "round",
+        strokeLinecap: "round",
+        filter: `drop-shadow(0 0 16px ${color})`,
+      }}
+    >
       <polygon fill={color} stroke={color} strokeWidth="2" points={points} />
     </svg>
   );
 }
 
-function Particles({ intensity }: { intensity: MotionValue<number> }) {
-  const sparks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-  const colors = ["#0094FF", "#1CD8CA", "#936FFA", "#B794FF"];
-  return (
-    <>
-      {sparks.map((i) => (
-        <Spark key={i} index={i} total={sparks.length} color={colors[i % colors.length]} intensity={intensity} />
-      ))}
-    </>
-  );
-}
-
-function Spark({ index, total, color, intensity }: { index: number; total: number; color: string; intensity: MotionValue<number> }) {
-  const angle = (index / total) * Math.PI * 2;
-  const baseDist = 55 + (index % 4) * 14;
-  const x = useTransform(intensity, [0, 1], [0, Math.cos(angle) * baseDist]);
-  const y = useTransform(intensity, [0, 1], [0, Math.sin(angle) * baseDist]);
-  const op = useTransform(intensity, [0, 0.1, 1], [0, 0.85, 0]);
-  const scale = useTransform(intensity, [0, 1], [0.4, 1.4]);
-  return (
-    <motion.span
-      style={{ x, y, opacity: op, scale, background: color, boxShadow: `0 0 8px ${color}` }}
-      className="absolute left-1/2 top-1/2 w-1.5 h-1.5 -ml-[3px] -mt-[3px] rounded-full will-change-transform"
-    />
-  );
-}
-
-/** Wordmark "roleta" com inércia. Energia derivada da velocidade global de
- *  scroll: giro acelera/desacelera com ease. Escrita direta via textContent
- *  (zero setState). Reduced motion => sempre "banritools". */
-function SlotWordmark({ spinAmount: _spinAmount }: { spinAmount: MotionValue<number> }) {
-  void _spinAmount;
-  const spanRef = useRef<HTMLSpanElement>(null);
-  const lastTickRef = useRef(0);
-  const settleRef = useRef(0);
-  const reduced = useReducedMotion();
+/** Wordmark "roleta" — cada letra é uma coluna vertical [letra, 0..9].
+ *  Enquanto há energia de scroll, colunas cyclam dígitos (transição curta).
+ *  Ao parar, cada coluna volta à letra com stagger 60ms da direita para a
+ *  esquerda, 700ms, cubic-bezier(0.23,1,0.32,1). */
+function SlotWordmark() {
   const BASE = "banritools";
+  const N = BASE.length;
+  const CHAR_H = 48;
+  const reduced = useReducedMotion();
+  const colRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const lastTickRef = useRef(0);
+  const spinningRef = useRef(false);
 
   const { scrollY } = useScroll();
   const rawVel = useVelocity(scrollY);
   const rawEnergy = useTransform(rawVel, (v) => Math.min(1, Math.abs(v) / 1600));
   const energy = useSpring(rawEnergy, { stiffness: 110, damping: 28 });
 
-  useAnimationFrame((t) => {
-    const el = spanRef.current;
+  const setCol = (i: number, idx: number, spinning: boolean) => {
+    const el = colRefs.current[i];
     if (!el) return;
+    if (spinning) {
+      el.style.transitionDuration = "140ms";
+      el.style.transitionDelay = "0ms";
+      el.style.transitionTimingFunction = "linear";
+      el.style.filter = "blur(1.5px)";
+    } else {
+      el.style.transitionDuration = "700ms";
+      el.style.transitionDelay = `${(N - 1 - i) * 60}ms`;
+      el.style.transitionTimingFunction = "cubic-bezier(0.23, 1, 0.32, 1)";
+      el.style.filter = "blur(0px)";
+    }
+    el.style.transform = `translateY(-${idx * CHAR_H}px)`;
+  };
+
+  useAnimationFrame((t) => {
     if (reduced) {
-      if (el.textContent !== BASE) el.textContent = BASE;
+      for (let i = 0; i < N; i++) setCol(i, 0, false);
       return;
     }
     const e = energy.get();
     if (e < 0.05) {
-      if (settleRef.current === 0) settleRef.current = t;
-      if (t - settleRef.current > 120 && el.textContent !== BASE) {
-        el.textContent = BASE;
+      if (spinningRef.current) {
+        spinningRef.current = false;
+        for (let i = 0; i < N; i++) setCol(i, 0, false);
       }
       return;
     }
-    settleRef.current = 0;
-    // Interpola intervalo: energy=1 -> 50ms, energy=0.05 -> 220ms
+    spinningRef.current = true;
     const interval = 220 - (220 - 50) * e;
     if (t - lastTickRef.current < interval) return;
     lastTickRef.current = t;
-    let out = "";
-    for (let i = 0; i < BASE.length; i++) out += Math.floor(Math.random() * 10).toString();
-    el.textContent = out;
+    for (let i = 0; i < N; i++) {
+      const digit = Math.floor(Math.random() * 10);
+      setCol(i, digit + 1, true);
+    }
   });
 
   return (
     <span
-      ref={spanRef}
       aria-label={BASE}
-      className="lowercase tracking-[0.048em]"
+      className="inline-flex lowercase"
       style={{
         fontFamily: "Poppins, sans-serif",
         fontWeight: 350,
         fontSize: 48,
-        lineHeight: 1,
-        WebkitFontSmoothing: "antialiased",
-        textRendering: "geometricPrecision",
+        lineHeight: `${CHAR_H}px`,
+        height: CHAR_H,
+        letterSpacing: "0.048em",
       }}
     >
-      {BASE}
+      {BASE.split("").map((ch, i) => (
+        <span
+          key={i}
+          className="relative inline-block overflow-hidden align-top"
+          style={{ height: CHAR_H, width: "0.6em" }}
+        >
+          <span
+            ref={(el) => {
+              colRefs.current[i] = el;
+            }}
+            className="block will-change-transform"
+            style={{ transitionProperty: "transform, filter" }}
+          >
+            <span className="block text-center" style={{ height: CHAR_H, lineHeight: `${CHAR_H}px` }}>{ch}</span>
+            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => (
+              <span key={d} className="block text-center tabular-nums" style={{ height: CHAR_H, lineHeight: `${CHAR_H}px` }}>{d}</span>
+            ))}
+          </span>
+        </span>
+      ))}
     </span>
   );
 }
+
 
 /* ============ 2. VIDEO MOCK do Painel da Agência ============ */
 function VideoMock() {
