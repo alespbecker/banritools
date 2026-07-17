@@ -331,11 +331,23 @@ function Page() {
                     <td className="p-3">{cargoLabel(u.cargo, u.cargo_especialidade)}</td>
                     <td className="p-3 capitalize">{u.role ?? "—"}</td>
                     <td className="p-3">
-                      <div className="flex justify-end">
+                      <div className="flex justify-end gap-1">
                         {isOwner ? (
-                          <Button variant="ghost" size="sm" onClick={() => setEditingUser(u)} aria-label="Editar usuário">
-                            <Pencil className="h-3.5 w-3.5" /> Editar
-                          </Button>
+                          <>
+                            <Button variant="ghost" size="sm" onClick={() => setEditingUser(u)} aria-label="Editar usuário">
+                              <Pencil className="h-3.5 w-3.5" /> Editar
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeletingUser(u)}
+                              disabled={u.id === user?.id}
+                              aria-label="Excluir usuário"
+                              title={u.id === user?.id ? "Você não pode excluir a própria conta" : "Excluir usuário"}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </>
                         ) : (
                           <span className="text-xs text-muted-foreground">Somente admin</span>
                         )}
