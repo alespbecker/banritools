@@ -259,10 +259,10 @@ function SlotWordmark() {
   return (
     <span
       aria-label={BASE}
-      className="inline-flex lowercase"
+      className="inline-flex lowercase font-medium"
       style={{
         fontFamily: "Poppins, sans-serif",
-        fontWeight: 350,
+        fontWeight: 500,
         fontSize: 48,
         lineHeight: `${CHAR_H}px`,
         height: CHAR_H,
